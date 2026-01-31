@@ -1,0 +1,282 @@
+id,timestamp,event,market,sport,bookmaker,odds,stake,potential_win,ev,status,result,profit,resolved_at,placed_at
+1,2025-11-18 09:02:12,NBA,Phoenix Suns @ Portland Trail Blazers,Tomorrow at 05:00,600,0.0,10.0,-10.0,0.1431,resolved,loss,-10.0,,
+2,2025-11-18 09:02:12,NBA,Phoenix Suns @ Portland Trail Blazers,Tomorrow at 05:00,600,0.0,10.0,-10.0,0.1431,resolved,win,-10.0,,
+3,2025-11-18 09:02:12,NBA,Memphis Grizzlies @ San Antonio Spurs,Tomorrow at 02:00,203,0.0,10.0,-10.0,0.1187,resolved,loss,-10.0,,
+4,2025-11-18 09:02:22,NBA,Phoenix Suns @ Portland Trail Blazers,Tomorrow at 05:00,600,0.0,10.0,-10.0,0.1431,resolved,win,-10.0,,
+5,2025-11-18 09:02:22,NBA,Phoenix Suns @ Portland Trail Blazers,Tomorrow at 05:00,600,0.0,10.0,-10.0,0.1431,resolved,loss,-10.0,,
+6,2025-11-18 09:02:22,NBA,Memphis Grizzlies @ San Antonio Spurs,Tomorrow at 02:00,203,0.0,10.0,-10.0,0.1187,resolved,win,-10.0,,
+7,2025-11-18 09:08:51,NBA,Memphis Grizzlies @ San Antonio Spurs,Tomorrow at 02:00,203,0.0,10.0,-10.0,0.1187,resolved,loss,-10.0,,
+8,2025-11-18 09:08:51,NBA,Boston Celtics @ Brooklyn Nets,Tomorrow at 01:30,160,0.0,10.0,-10.0,0.1167,resolved,win,-10.0,,
+9,2025-11-18 09:08:51,NBA,Boston Celtics @ Brooklyn Nets,Tomorrow at 01:30,160,0.0,10.0,-10.0,0.1167,resolved,loss,-10.0,,
+10,2025-11-18 09:09:01,NBA,Memphis Grizzlies @ San Antonio Spurs,Tomorrow at 02:00,203,0.0,10.0,-10.0,0.1187,resolved,win,-10.0,,
+11,2025-11-18 09:09:01,NBA,Boston Celtics @ Brooklyn Nets,Tomorrow at 01:30,160,0.0,10.0,-10.0,0.1167,resolved,loss,-10.0,,
+12,2025-11-18 09:09:01,NBA,Boston Celtics @ Brooklyn Nets,Tomorrow at 01:30,160,0.0,10.0,-10.0,0.1167,resolved,win,-10.0,,
+13,2025-11-18 10:42:41,NBA,Boston Celtics @ Brooklyn Nets,Tomorrow at 01:30,+185,0.0,10.0,-10.0,0.1431,resolved,loss,-10.0,,
+14,2025-11-18 10:42:41,NBA,Boston Celtics @ Brooklyn Nets,Tomorrow at 01:30,+185,0.0,10.0,-10.0,0.1431,resolved,loss,-10.0,,
+15,2025-11-18 10:42:41,NBA,Utah Jazz @ Los Angeles Lakers,Tomorrow at 04:30,+148 ($6),0.0,10.0,-10.0,0.1206,resolved,loss,-10.0,,
+16,2025-11-18 10:42:51,NBA,Boston Celtics @ Brooklyn Nets,Tomorrow at 01:30,+185,0.0,10.0,-10.0,0.1431,resolved,win,-10.0,,
+17,2025-11-18 10:42:51,NBA,Boston Celtics @ Brooklyn Nets,Tomorrow at 01:30,+185,0.0,10.0,-10.0,0.1431,resolved,win,-10.0,,
+18,2025-11-18 10:42:51,NBA,Utah Jazz @ Los Angeles Lakers,Tomorrow at 04:30,+148 ($6),0.0,10.0,-10.0,0.1206,resolved,win,-10.0,,
+19,2025-11-18 10:43:22,NBA,Boston Celtics @ Brooklyn Nets,Tomorrow at 01:30,+185,0.0,10.0,-10.0,0.1431,resolved,win,-10.0,,
+20,2025-11-18 10:43:22,NBA,Boston Celtics @ Brooklyn Nets,Tomorrow at 01:30,+185,0.0,10.0,-10.0,0.1431,resolved,win,-10.0,,
+21,2025-11-18 10:43:22,NBA,Utah Jazz @ Los Angeles Lakers,Tomorrow at 04:30,+148 ($6),0.0,10.0,-10.0,0.1206,resolved,loss,-10.0,,
+22,2025-11-18 10:43:32,NBA,Boston Celtics @ Brooklyn Nets,Tomorrow at 01:30,+185,0.0,10.0,-10.0,0.1431,resolved,win,-10.0,,
+23,2025-11-18 10:43:32,NBA,Boston Celtics @ Brooklyn Nets,Tomorrow at 01:30,+185,0.0,10.0,-10.0,0.1431,resolved,win,-10.0,,
+24,2025-11-18 10:43:32,NBA,Utah Jazz @ Los Angeles Lakers,Tomorrow at 04:30,+148 ($6),0.0,10.0,-10.0,0.1206,resolved,win,-10.0,,
+25,2025-11-18 10:48:23,NCAAF,Western Michigan @ Northern Illinois,Tomorrow at 01:00,+6000,61.0,10.0,600.0,0.3744,resolved,win,600.0,,
+26,2025-11-18 10:48:23,NCAAF,Western Michigan @ Northern Illinois,Tomorrow at 01:00,+6000,61.0,10.0,600.0,0.3744,resolved,win,600.0,,
+27,2025-11-18 10:48:23,NCAAF,Western Michigan @ Northern Illinois,Tomorrow at 01:00,+2800,29.0,10.0,280.0,0.3481,resolved,loss,-10.0,,
+28,2025-11-18 10:48:34,NCAAF,Western Michigan @ Northern Illinois,Tomorrow at 01:00,+6000,61.0,10.0,600.0,0.3744,resolved,loss,-10.0,,
+29,2025-11-18 10:48:34,NCAAF,Western Michigan @ Northern Illinois,Tomorrow at 01:00,+6000,61.0,10.0,600.0,0.3744,resolved,loss,-10.0,,
+30,2025-11-18 10:48:34,NCAAF,Western Michigan @ Northern Illinois,Tomorrow at 01:00,+2800,29.0,10.0,280.0,0.3481,resolved,loss,-10.0,,
+31,2025-11-18 17:39:52,NCAAB,Idaho State @ Santa Clara,Tomorrow at 04:00,+700,8.0,10.0,70.0,0.1706,resolved,loss,-10.0,,
+32,2025-11-18 17:39:52,NCAAB,Idaho State @ Santa Clara,Tomorrow at 04:00,+700,8.0,10.0,70.0,0.1706,resolved,win,70.0,,
+33,2025-11-18 17:39:52,NHL,Columbus Blue Jackets @ Winnipeg Jets,Tomorrow at 02:00,+285,3.85,10.0,28.5,0.1205,resolved,loss,-10.0,,
+34,2025-11-18 17:40:01,NCAAB,Idaho State @ Santa Clara,Tomorrow at 04:00,+700,8.0,10.0,70.0,0.1706,resolved,loss,-10.0,,
+35,2025-11-18 17:40:01,NCAAB,Idaho State @ Santa Clara,Tomorrow at 04:00,+700,8.0,10.0,70.0,0.1706,resolved,win,70.0,,
+36,2025-11-18 17:40:01,NHL,Columbus Blue Jackets @ Winnipeg Jets,Tomorrow at 02:00,+285,3.85,10.0,28.5,0.1205,resolved,win,28.5,,
+37,2025-11-18 19:55:51,Utah Jazz vs Los Angeles Lakers,NBA,Tomorrow at 04:30,+4000,41.0,10.0,400.0,0.2946,resolved,loss,-10.0,,
+38,2025-11-18 19:55:51,New York Islanders vs Dallas Stars,NHL,Tomorrow at 02:00,+1700,18.0,10.0,170.0,0.1555,resolved,win,170.0,,
+39,2025-11-18 19:55:51,Utah Jazz vs Los Angeles Lakers,NBA,Tomorrow at 04:30,+130 ($4),0.0,10.0,-10.0,0.1207,resolved,loss,-10.0,,
+40,2025-11-18 19:56:03,Utah Jazz vs Los Angeles Lakers,NBA,Tomorrow at 04:30,+4000,41.0,10.0,400.0,0.2946,resolved,loss,-10.0,,
+41,2025-11-18 19:56:03,New York Islanders vs Dallas Stars,NHL,Tomorrow at 02:00,+1700,18.0,10.0,170.0,0.1555,resolved,win,170.0,,
+42,2025-11-18 19:56:03,Utah Jazz vs Los Angeles Lakers,NBA,Tomorrow at 04:30,+130 ($4),0.0,10.0,-10.0,0.1207,resolved,win,-10.0,,
+43,2025-11-18 21:42:01,Boston Celtics vs Brooklyn Nets,NBA,Basketball,+4000,41.0,10.0,400.0,0.1838,resolved,loss,-10.0,,
+44,2025-11-18 21:42:01,New York Islanders vs Dallas Stars,NHL,Basketball,+1700,18.0,10.0,170.0,0.1532,resolved,win,170.0,,
+45,2025-11-18 21:42:01,Memphis Grizzlies vs San Antonio Spurs,NBA,Basketball,+135,2.35,10.0,13.5,0.1147,resolved,loss,-10.0,,
+46,2025-11-18 21:42:14,Boston Celtics vs Brooklyn Nets,NBA,Basketball,+4000,41.0,10.0,400.0,0.1838,resolved,win,400.0,,
+47,2025-11-18 21:42:14,New York Islanders vs Dallas Stars,NHL,Basketball,+1700,18.0,10.0,170.0,0.1532,resolved,win,170.0,,
+48,2025-11-18 21:42:14,Memphis Grizzlies vs San Antonio Spurs,NBA,Basketball,+135,2.35,10.0,13.5,0.1147,resolved,loss,-10.0,,
+49,2025-11-18 21:57:26,Golden State Warriors vs Orlando Magic,NBA,Basketball,+450,5.5,10.0,45.0,0.1576,resolved,loss,-10.0,,
+50,2025-11-18 21:57:26,Golden State Warriors vs Orlando Magic,NBA,Basketball,+450,5.5,10.0,45.0,0.1576,resolved,win,45.0,,
+51,2025-11-18 21:57:26,Utah Jazz vs Los Angeles Lakers,NBA,Basketball,+145,2.45,10.0,14.5,0.1537,resolved,win,14.500000000000002,,
+52,2025-11-18 21:57:50,Golden State Warriors vs Orlando Magic,NBA,Basketball,+450,5.5,10.0,45.0,0.1576,resolved,loss,-10.0,,
+53,2025-11-18 21:57:50,Golden State Warriors vs Orlando Magic,NBA,Basketball,+450,5.5,10.0,45.0,0.1576,resolved,loss,-10.0,,
+54,2025-11-18 21:57:50,Utah Jazz vs Los Angeles Lakers,NBA,Basketball,+145,2.45,10.0,14.5,0.1537,resolved,loss,-10.0,,
+55,2025-11-18 22:27:30,Memphis Grizzlies vs San Antonio Spurs,NBA,Basketball,+130 ($1),2.3,10.0,13.0,0.127,resolved,win,12.999999999999998,,
+56,2025-11-18 22:27:30,Boston Celtics vs Brooklyn Nets,NBA,Basketball,+140,2.4,10.0,14.0,0.1151,resolved,loss,-10.0,,
+57,2025-11-18 22:27:30,Hampton vs Boston College,NCAAB,Basketball,+400,5.0,10.0,40.0,0.112,resolved,win,40.0,,
+58,2025-11-18 22:27:49,Seattle Seahawks vs Tennessee Titans,NFL,Basketball,+185,2.85,10.0,18.5,0.1073,resolved,loss,-10.0,,
+59,2025-11-18 22:27:49,Detroit Pistons vs Atlanta Hawks,NBA,Basketball,+140,2.4,10.0,14.0,0.0972,resolved,win,14.0,,
+60,2025-11-18 22:27:49,Seattle Seahawks vs Tennessee Titans,NFL,Basketball,+160,2.6,10.0,16.0,0.0944,resolved,loss,-10.0,,
+61,2025-11-19 09:53:12,New York Knicks vs Dallas Mavericks,NBA,Basketball,+140 ($3),2.4,10.0,14.0,0.2237,resolved,win,14.0,,
+62,2025-11-19 09:53:12,Charlotte Hornets vs Indiana Pacers,NBA,Basketball,+165,2.65,10.0,16.5,0.164,resolved,loss,-10.0,,
+63,2025-11-19 09:53:12,Atlanta Falcons vs New Orleans Saints,NFL,Basketball,+140,2.4,10.0,14.0,0.1195,resolved,win,14.0,,
+64,2025-11-19 09:53:46,Toronto Raptors vs Philadelphia 76ers,NBA,Basketball,-120,1.83,10.0,8.33,0.1156,resolved,win,8.3,,
+65,2025-11-19 09:53:46,Seattle Seahawks vs Tennessee Titans,NFL,Basketball,+160,2.6,10.0,16.0,0.1075,resolved,loss,-10.0,,
+66,2025-11-19 09:53:46,Charlotte Hornets vs Indiana Pacers,NBA,Basketball,-130,1.77,10.0,7.69,0.1058,resolved,win,7.7,,
+67,2025-11-19 10:35:23,New York Knicks vs Dallas Mavericks,NBA,Basketball,+140 ($3),2.4,10.0,14.0,0.2069,resolved,loss,-10.0,2025-11-19 10:35:38,
+68,2025-11-19 10:35:23,Sacramento Kings vs Oklahoma City Thunder,NBA,Basketball,+1200,13.0,10.0,120.0,0.1514,resolved,loss,-10.0,2025-11-19 10:35:49,
+69,2025-11-19 10:35:23,Seattle Seahawks vs Tennessee Titans,NFL,Basketball,+185,2.85,10.0,18.5,0.1372,resolved,loss,-10.0,2025-11-19 10:35:59,
+70,2025-11-19 10:36:10,Charlotte Hornets vs Indiana Pacers,NBA,Basketball,-125,1.8,10.0,8.0,0.1355,resolved,win,8.0,2025-11-19 10:36:13,
+71,2025-11-19 10:36:10,Charlotte Hornets vs Indiana Pacers,NBA,Basketball,+170,2.7,10.0,17.0,0.1256,resolved,win,17.0,2025-11-19 10:36:15,
+72,2025-11-19 10:36:10,Charlotte Hornets vs Indiana Pacers,NBA,Basketball,-119,1.84,10.0,8.4,0.1233,resolved,win,8.4,2025-11-19 10:36:16,
+73,2025-11-19 10:58:07,New York Knicks vs Dallas Mavericks,NBA,Basketball,+140 ($3),2.4,10.0,14.0,0.1972,resolved,win,14.0,2025-11-19 10:58:15,
+74,2025-11-19 10:58:07,Seattle Seahawks vs Tennessee Titans,NFL,Basketball,+185,2.85,10.0,18.5,0.1372,resolved,loss,-10.0,2025-11-19 10:58:21,
+75,2025-11-19 10:58:07,Charlotte Hornets vs Indiana Pacers,NBA,Basketball,-119,1.84,10.0,8.4,0.1273,resolved,win,8.4,2025-11-19 10:58:22,
+76,2025-11-19 10:58:31,Charlotte Hornets vs Indiana Pacers,NBA,Basketball,-125,1.8,10.0,8.0,0.1026,resolved,win,8.0,2025-11-19 10:58:32,
+77,2025-11-19 10:58:31,Buffalo Bills vs Houston Texans,NFL,Basketball,+115,2.15,10.0,11.5,0.1,resolved,win,11.5,2025-11-19 10:58:37,
+78,2025-11-19 10:58:31,Charlotte Hornets vs Indiana Pacers,NBA,Basketball,+1580,16.8,10.0,158.0,0.093,resolved,win,158.0,2025-11-19 10:58:43,
+79,2025-11-19 11:44:28,Bellarmine vs Notre Dame,NCAAB,Basketball,+4500,46.0,10.0,450.0,0.4219,resolved,loss,-10.0,2025-11-19 11:44:33,
+80,2025-11-19 11:44:28,Bellarmine vs Notre Dame,NCAAB,Basketball,+4000,41.0,10.0,400.0,0.2673,resolved,loss,-10.0,2025-11-19 11:44:39,
+81,2025-11-19 11:44:28,Seattle Seahawks vs Tennessee Titans,NFL,Basketball,+185,2.85,10.0,18.5,0.1372,resolved,loss,-10.0,2025-11-19 11:44:39,
+82,2025-11-19 11:44:48,Buffalo Bills vs Houston Texans,NFL,Basketball,+140 ($7),2.4,10.0,14.0,0.1104,resolved,win,14.0,2025-11-19 11:44:48,
+83,2025-11-19 11:44:48,Atlanta Falcons vs New Orleans Saints,NFL,Basketball,+135,2.35,10.0,13.5,0.1037,resolved,win,13.5,2025-11-19 11:44:48,
+84,2025-11-19 11:44:48,Denver Nuggets vs New Orleans Pelicans,NBA,Basketball,-110,1.91,10.0,9.09,0.1021,resolved,loss,-10.0,2025-11-19 11:44:53,
+85,2025-11-19 12:13:55,Seattle Seahawks vs Tennessee Titans,NFL,Basketball,+185,2.85,10.0,18.5,0.1372,resolved,loss,-10.0,2025-11-19 12:13:55,
+86,2025-11-19 12:13:55,New York Knicks vs Dallas Mavericks,NBA,Basketball,+150,2.5,10.0,15.0,0.1208,resolved,loss,-10.0,2025-11-19 12:14:02,
+87,2025-11-19 12:13:55,Charlotte Hornets vs Indiana Pacers,NBA,Basketball,-120,1.83,10.0,8.33,0.1189,resolved,loss,-10.0,2025-11-19 12:14:09,
+88,2025-11-19 12:14:19,Buffalo Bills vs Houston Texans,NFL,Basketball,+140 ($7),2.4,10.0,14.0,0.1104,resolved,loss,-10.0,2025-11-19 12:14:19,
+89,2025-11-19 12:14:19,Denver Nuggets vs New Orleans Pelicans,NBA,Basketball,-110,1.91,10.0,9.09,0.1085,resolved,win,9.1,2025-11-19 12:14:25,
+90,2025-11-19 12:14:19,Charlotte Hornets vs Indiana Pacers,NBA,Basketball,+119 ($1),2.19,10.0,11.9,0.1061,resolved,win,11.9,2025-11-19 12:14:31,
+91,2025-11-19 15:33:40,Sacramento Kings vs Oklahoma City Thunder,NBA,Basketball,+145,2.45,10.0,14.5,0.1795,won,win,14.500000000000002,2025-11-22 23:36:45,
+92,2025-11-19 15:33:40,Houston Rockets vs Cleveland Cavaliers,NBA,Basketball,+185,2.85,10.0,18.5,0.1681,won,win,18.5,2025-11-22 23:41:55,
+93,2025-11-19 15:33:40,New York Jets vs Baltimore Ravens,NFL,Basketball,+525,6.25,10.0,52.5,0.1521,resolved,loss,-10.0,2025-11-19 15:33:48,
+94,2025-11-19 15:33:58,Seattle Seahawks vs Tennessee Titans,NFL,Basketball,+185,2.85,10.0,18.5,0.1372,resolved,win,18.5,2025-11-19 15:34:05,
+95,2025-11-19 15:33:58,Toronto Raptors vs Philadelphia 76ers,NBA,Basketball,+134 ($2),2.34,10.0,13.4,0.1209,won,win,13.4,2025-11-22 23:47:06,
+96,2025-11-19 15:33:58,William & Mary vs Bowling Green,NCAAB,Basketball,+110 ($9),1.0,10.0,0.0,0.1156,pending,,0.0,,
+97,2025-11-19 17:08:04,Atlanta Falcons vs New Orleans Saints,NFL,Basketball,+140,2.4,10.0,14.0,0.228,resolved,win,14.0,2025-11-19 17:09:57,
+98,2025-11-19 17:08:04,Chicago Bulls vs Portland Trail Blazers,NBA,Basketball,+1100,12.0,10.0,110.0,0.1804,won,win,100.0,2025-11-24 19:01:46,
+99,2025-11-19 17:08:04,Toronto Raptors vs Philadelphia 76ers,NBA,Basketball,+525,6.25,10.0,52.5,0.1769,lost,loss,-10.0,2025-11-24 19:01:46,
+100,2025-11-19 17:11:02,Charlotte Hornets vs Indiana Pacers,NBA,Basketball,+150,2.5,10.0,15.0,0.1695,lost,loss,-10.0,2025-11-24 19:01:46,
+101,2025-11-19 17:11:02,Seattle Seahawks vs Tennessee Titans,NFL,Basketball,+185,2.85,10.0,18.5,0.1372,resolved,loss,-10.0,2025-11-19 17:15:00,
+102,2025-11-19 17:11:02,Villanova vs La Salle,NCAAB,Basketball,+370,4.7,10.0,37.0,0.1313,pending,,0.0,,
+103,2025-11-19 17:36:03,Atlanta Falcons vs New Orleans Saints,NFL,Basketball,+140,2.4,10.0,14.0,0.2278,resolved,win,14.0,2025-11-19 17:36:03,
+104,2025-11-19 17:36:03,Villanova vs La Salle,NCAAB,Basketball,+390,4.9,10.0,39.0,0.1939,pending,,0.0,,
+105,2025-11-19 17:36:03,Chicago Bulls vs Portland Trail Blazers,NBA,Basketball,+1100,12.0,10.0,110.0,0.1538,won,win,100.0,2025-11-24 19:01:46,
+106,2025-11-19 17:36:13,Philadelphia Eagles vs Dallas Cowboys,NFL,Basketball,+1250,13.5,10.0,125.0,0.1458,resolved,loss,-10.0,2025-11-19 17:36:13,
+107,2025-11-19 17:36:13,Seattle Seahawks vs Tennessee Titans,NFL,Basketball,+185,2.85,10.0,18.5,0.1372,resolved,loss,-10.0,2025-11-19 17:36:13,
+108,2025-11-19 17:36:13,Maine vs Merrimack,NCAAB,Basketball,+225,3.25,10.0,22.5,0.1321,pending,,0.0,,
+109,2025-11-19 19:03:28,Atlanta Falcons vs New Orleans Saints,NFL,Basketball,+140,2.4,10.0,14.0,0.2255,resolved,loss,-10.0,2025-11-19 19:03:29,
+110,2025-11-19 19:03:28,New York Knicks vs Dallas Mavericks,NBA,Basketball,+145,2.45,10.0,14.5,0.1752,pending,,0.0,,
+111,2025-11-19 19:03:28,Golden State Warriors vs Miami Heat,NBA,Basketball,+175,2.75,10.0,17.5,0.1619,pending,,0.0,,
+112,2025-11-19 19:03:38,New York Knicks vs Dallas Mavericks,NBA,Basketball,+190,2.9,10.0,19.0,0.1522,pending,,0.0,,
+113,2025-11-19 19:03:38,New York Knicks vs Dallas Mavericks,NBA,Basketball,+150,2.5,10.0,15.0,0.1466,pending,,0.0,,
+114,2025-11-19 19:03:38,Chicago Bulls vs Portland Trail Blazers,NBA,Basketball,+130,2.3,10.0,13.0,0.1251,won,win,12.999999999999998,2025-11-24 19:01:46,
+115,2025-11-19 21:02:45,Chicago Bulls vs Portland Trail Blazers,NBA,NBA,+800,9.0,10.0,80.0,0.4083,won,win,80.0,2025-11-22 23:36:46,
+116,2025-11-19 21:02:45,Chicago Bulls vs Portland Trail Blazers,NBA,NBA,+750,8.5,10.0,75.0,0.3301,won,win,75.0,2025-11-22 23:41:56,
+117,2025-11-19 21:02:45,Chicago Bulls vs Portland Trail Blazers,NBA,NBA,+700,8.0,10.0,70.0,0.2519,won,win,70.0,2025-11-22 23:47:07,
+118,2025-11-19 21:02:56,Toronto Raptors vs Philadelphia 76ers,NBA,nba,+525,6.25,10.0,52.5,0.1769,won,win,52.5,2025-11-24 19:01:50,
+119,2025-11-19 21:02:56,Buffalo Bills vs Houston Texans,NFL,Unknown,+1300,14.0,10.0,130.0,0.1567,resolved,loss,-10.0,2025-11-19 21:02:56,
+120,2025-11-19 21:02:56,New York Jets vs Baltimore Ravens,NFL,NFL,+300,4.0,10.0,30.0,0.1529,resolved,loss,-10.0,2025-11-19 21:02:56,
+121,2025-11-20 22:12:27,Lakers vs Warriors,Player Points,NBA,DraftKings,1.91,10.0,9.09,0.045,lost,loss,-10.0,2025-11-23 21:27:22,
+122,2025-11-20 22:12:27,Chiefs vs 49ers,Player Receptions,NFL,FanDuel,2.2,10.0,12.0,0.032,won,win,12.000000000000002,2025-11-24 18:12:01,
+123,2025-11-20 22:12:27,Yankees vs Red Sox,Player Hits,MLB,William Hill,1.87,10.0,8.7,0.028,lost,loss,-10.0,2025-11-24 19:01:54,
+124,2025-11-20 22:46:04,Baylor vs Arizona,NCAAF,nfl,+15000,151.0,10.0,1500.0,3.6718,pending,,0.0,,
+125,2025-11-20 22:46:04,New York Jets vs Baltimore Ravens,NFL,NFL,+15000,151.0,10.0,1500.0,3.0298,won,win,1500.0,2025-11-23 21:58:14,
+126,2025-11-20 22:46:04,New York Jets vs Baltimore Ravens,NFL,NFL,+6600,67.0,10.0,660.0,0.788,won,win,660.0,2025-11-23 21:58:14,
+127,2025-11-20 22:49:13,Cleveland Browns vs Las Vegas Raiders,NFL,nfl,+600 ($9),7.0,10.0,60.0,1.851,lost,loss,-10.0,2025-11-24 18:12:01,
+128,2025-11-20 22:49:13,New York Jets vs Baltimore Ravens,NFL,NFL,+6000,61.0,10.0,600.0,0.6279,won,win,600.0,2025-11-23 21:58:14,
+129,2025-11-20 22:49:13,Minnesota Vikings vs Green Bay Packers,NFL,NFL,+10000,101.0,10.0,1000.0,0.4542,lost,loss,-10.0,2025-11-23 21:53:03,
+130,2025-11-22 22:15:37,Philadelphia Eagles vs Dallas Cowboys,NFL,NFL,+10000,101.0,10.0,1000.0,0.3249,won,win,1000.0,2025-11-24 17:09:03,
+131,2025-11-22 22:15:37,New York Giants vs Detroit Lions,NFL,nfl,+5000,51.0,10.0,500.0,0.3207,won,win,100.0,2025-11-24 19:01:59,
+132,2025-11-22 22:15:37,New York Jets vs Baltimore Ravens,NFL,NFL,+5000,51.0,10.0,500.0,0.2704,won,win,500.0,2025-11-23 21:58:14,
+133,2025-11-22 22:19:07,Pittsburgh Steelers vs Chicago Bears,NFL,nfl,+5000,51.0,10.0,500.0,0.2965,pending,,0.0,,
+134,2025-11-22 22:19:07,Jacksonville Jaguars vs Arizona Cardinals,NFL,nfl,+3500,36.0,10.0,350.0,0.2895,pending,,0.0,,
+135,2025-11-22 22:19:07,Tampa Bay Buccaneers vs Los Angeles Rams,NFL,nfl,+10000,101.0,10.0,1000.0,0.2632,pending,,0.0,,
+136,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,151.0,10.0,1510.0,0.4789,pending,,0.0,,2025-11-25 09:46:03
+137,,Green Bay Packers @ Detroit Lions,,NFL,,23.0,10.0,230.0,0.4393999999999999,pending,,0.0,,2025-11-25 09:46:03
+138,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,26.0,10.0,260.0,0.3454,pending,,0.0,,2025-11-25 09:46:03
+139,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,2.55,10.0,25.5,0.1623,pending,,0.0,,2025-11-25 09:46:03
+140,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,2.3,10.0,23.0,0.1543999999999999,pending,,0.0,,2025-11-25 09:46:03
+141,,Orlando Magic @ Philadelphia 76ers,,nba,,2.35,10.0,23.5,0.1496,pending,,0.0,,2025-11-25 09:46:03
+142,,Chicago Bears @ Philadelphia Eagles,,NFL,,2.35,10.0,23.5,0.1389,pending,,0.0,,2025-11-25 09:46:03
+143,,Chicago Bears @ Philadelphia Eagles,,NFL,,3.1,10.0,31.0,0.1281,pending,,0.0,,2025-11-25 09:46:03
+144,,Chicago Bears @ Philadelphia Eagles,,NFL,,4.25,10.0,42.5,0.1226999999999999,pending,,0.0,,2025-11-25 09:46:03
+145,,Chicago Bears @ Philadelphia Eagles,,NFL,,18.0,10.0,180.0,0.1215,pending,,0.0,,2025-11-25 09:46:03
+146,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,2.9,10.0,29.0,0.1178999999999999,pending,,0.0,,2025-11-25 09:46:03
+147,,Jacksonville Jaguars @ Tennessee Titans,,nfl,,9.0,10.0,90.0,0.1174,pending,,0.0,,2025-11-25 09:46:03
+148,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,4.0,10.0,40.0,0.1134999999999999,pending,,0.0,,2025-11-25 09:46:03
+149,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,2.5,10.0,25.0,0.1052999999999999,pending,,0.0,,2025-11-25 09:46:03
+150,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,3.1,10.0,31.0,0.1023,pending,,0.0,,2025-11-25 09:46:03
+151,,Green Bay Packers @ Detroit Lions,,NFL,,2.75,10.0,27.5,0.0951,pending,,0.0,,2025-11-25 09:46:03
+152,,Green Bay Packers @ Detroit Lions,,NFL,,1.9523809523809523,10.0,19.52380952380952,0.0944,pending,,0.0,,2025-11-25 09:46:03
+153,,Green Bay Packers @ Detroit Lions,,NFL,,3.0,10.0,30.0,0.0942,pending,,0.0,,2025-11-25 09:46:03
+154,,Chicago Bears @ Philadelphia Eagles,,NFL,,1.8,10.0,18.0,0.0939,pending,,0.0,,2025-11-25 09:46:03
+155,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,2.0,10.0,20.0,0.0921,pending,,0.0,,2025-11-25 09:46:03
+156,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,5.0,10.0,50.0,0.091,pending,,0.0,,2025-11-25 09:46:03
+157,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,1.8,10.0,18.0,0.088,pending,,0.0,,2025-11-25 09:46:03
+158,,Green Bay Packers @ Detroit Lions,,NFL,,2.2,10.0,22.0,0.0848,pending,,0.0,,2025-11-25 09:46:03
+159,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,4.25,10.0,42.5,0.0844999999999999,pending,,0.0,,2025-11-25 09:46:03
+160,,Houston Texans @ Indianapolis Colts,,nfl,,1.0,10.0,10.0,0.0841,pending,,0.0,,2025-11-25 09:46:03
+161,,Chicago Bears @ Philadelphia Eagles,,NFL,,4.0,10.0,40.0,0.0810999999999999,pending,,0.0,,2025-11-25 09:46:03
+162,,Green Bay Packers @ Detroit Lions,,NFL,,3.75,10.0,37.5,0.0775,pending,,0.0,,2025-11-25 09:46:03
+163,,Atlanta Hawks @ Washington Wizards,,nba,,2.55,10.0,25.5,0.0706,pending,,0.0,,2025-11-25 09:46:03
+164,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,3.95,10.0,39.5,0.0684999999999999,pending,,0.0,,2025-11-25 09:46:03
+165,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,2.08,10.0,20.8,0.0669,pending,,0.0,,2025-11-25 09:46:03
+166,,Green Bay Packers @ Detroit Lions,,NFL,,1.0,10.0,10.0,0.0667,pending,,0.0,,2025-11-25 09:46:03
+167,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,2.2,10.0,22.0,0.0630999999999999,pending,,0.0,,2025-11-25 09:46:03
+168,,New Orleans Saints @ Miami Dolphins,,NFL,,3.2,10.0,32.0,0.0625,pending,,0.0,,2025-11-25 09:46:03
+169,,Green Bay Packers @ Detroit Lions,,NFL,,3.4,10.0,34.0,0.0613,pending,,0.0,,2025-11-25 09:46:03
+170,,Chicago Bears @ Philadelphia Eagles,,NFL,,5.25,10.0,52.5,0.0593,pending,,0.0,,2025-11-25 09:46:03
+171,,Green Bay Packers @ Detroit Lions,,NFL,,4.75,10.0,47.5,0.0586,pending,,0.0,,2025-11-25 09:46:03
+172,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,3.3,10.0,33.0,0.0578,pending,,0.0,,2025-11-25 09:46:03
+173,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,21.0,10.0,210.0,0.0572,pending,,0.0,,2025-11-25 09:46:03
+174,,LSU @ Oklahoma,,nfl,,4.75,10.0,47.5,0.0552,pending,,0.0,,2025-11-25 09:46:03
+175,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,6.25,10.0,62.5,0.0530999999999999,pending,,0.0,,2025-11-25 09:46:03
+176,,Ole Miss @ Mississippi State,,NCAAB,,1.0,10.0,10.0,0.0487,pending,,0.0,,2025-11-25 09:46:03
+177,,Green Bay Packers @ Detroit Lions,,NFL,,6.25,10.0,62.5,0.0475999999999999,pending,,0.0,,2025-11-25 09:46:03
+178,,Orlando Magic @ Philadelphia 76ers,,nba,,1.0,10.0,10.0,0.0475,pending,,0.0,,2025-11-25 09:46:03
+179,,Atlanta Hawks @ Washington Wizards,,nba,,1.869565217391304,10.0,18.695652173913043,0.047,pending,,0.0,,2025-11-25 09:46:03
+180,,Dallas Stars @ Edmonton Oilers,,nfl,,2.0,10.0,20.0,0.0453,pending,,0.0,,2025-11-25 09:46:03
+181,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,1.0,10.0,10.0,0.0449,pending,,0.0,,2025-11-25 09:46:03
+182,,Green Bay Packers @ Detroit Lions,,NFL,,5.5,10.0,55.0,0.0443,pending,,0.0,,2025-11-25 09:46:03
+183,,Green Bay Packers @ Detroit Lions,,NFL,,4.0,10.0,40.0,0.0443,pending,,0.0,,2025-11-25 09:46:03
+184,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,1.625,10.0,16.25,0.0436,pending,,0.0,,2025-11-25 09:46:03
+185,,Western Michigan @ Eastern Michigan,,nfl,,2.1,10.0,21.0,0.0426,pending,,0.0,,2025-11-25 09:46:03
+186,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,1.4761904761904765,10.0,14.761904761904765,0.0424,pending,,0.0,,2025-11-25 09:46:03
+187,,Houston @ Baylor,,nfl,,3.0,10.0,30.0,0.042,pending,,0.0,,2025-11-25 09:46:03
+188,,Chicago Bears @ Philadelphia Eagles,,NFL,,1.4166666666666667,10.0,14.166666666666668,0.0415,pending,,0.0,,2025-11-25 09:46:03
+189,,Green Bay Packers @ Detroit Lions,,NFL,,1.5714285714285714,10.0,15.714285714285714,0.0412,pending,,0.0,,2025-11-25 09:46:03
+190,,Oregon @ Washington,,nfl,,1.0,10.0,10.0,0.0406,pending,,0.0,,2025-11-25 09:46:03
+191,,Orlando Magic @ Philadelphia 76ers,,nba,,2.1,10.0,21.0,0.0397,pending,,0.0,,2025-11-25 09:46:03
+192,,Green Bay Packers @ Detroit Lions,,NFL,,8.5,10.0,85.0,0.0385999999999999,pending,,0.0,,2025-11-25 09:46:03
+193,,Chicago Bears @ Philadelphia Eagles,,NFL,,2.08,10.0,20.8,0.0372,pending,,0.0,,2025-11-25 09:46:03
+194,,Los Angeles Rams @ Carolina Panthers,,nfl,,1.0,10.0,10.0,0.0369,pending,,0.0,,2025-11-25 09:46:03
+195,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,5.25,10.0,52.5,0.0365,pending,,0.0,,2025-11-25 09:46:03
+196,,Chicago Bears @ Philadelphia Eagles,,NFL,,2.85,10.0,28.5,0.0353,pending,,0.0,,2025-11-25 09:46:03
+197,,Tennessee @ Houston,,nfl,,2.1,10.0,21.0,0.0347,pending,,0.0,,2025-11-25 09:46:03
+198,,Green Bay Packers @ Detroit Lions,,NFL,,4.25,10.0,42.5,0.0346,pending,,0.0,,2025-11-25 09:46:03
+199,,New Orleans Saints @ Miami Dolphins,,NFL,,76.0,10.0,760.0,0.0365,pending,,0.0,,2025-11-25 09:51:43
+200,,Georgia @ Georgia Tech,,nfl,,1.0,10.0,10.0,0.0342,pending,,0.0,,2025-11-25 09:51:43
+201,,Chicago Bears @ Philadelphia Eagles,,NFL,,1.0,10.0,10.0,0.0334,pending,,0.0,,2025-11-25 09:51:43
+202,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,151.0,5.0,755.0,0.9292,pending,,0.0,,2025-11-25 10:19:51
+203,,Green Bay Packers @ Detroit Lions,,NFL,,23.0,5.0,115.0,0.4335,pending,,0.0,,2025-11-25 10:19:51
+204,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,26.0,5.0,130.0,0.3701,pending,,0.0,,2025-11-25 10:19:51
+205,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,2.55,5.0,12.75,0.1605,pending,,0.0,,2025-11-25 10:19:51
+206,,Chicago Bears @ Philadelphia Eagles,,NFL,,2.35,5.0,11.75,0.1389,pending,,0.0,,2025-11-25 10:19:51
+207,,Chicago Bears @ Philadelphia Eagles,,NFL,,3.1,5.0,15.5,0.1281,pending,,0.0,,2025-11-25 10:19:51
+208,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,2.25,5.0,11.25,0.1274,pending,,0.0,,2025-11-25 10:19:51
+209,,Chicago Bears @ Philadelphia Eagles,,NFL,,4.25,5.0,21.25,0.1226999999999999,pending,,0.0,,2025-11-25 10:19:51
+210,,Jacksonville Jaguars @ Tennessee Titans,,nfl,,1.0,5.0,5.0,0.1174,pending,,0.0,,2025-11-25 10:19:51
+211,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,2.2,5.0,11.0,0.1159,pending,,0.0,,2025-11-25 10:19:51
+212,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,4.0,5.0,20.0,0.1153,pending,,0.0,,2025-11-25 10:19:51
+213,,Chicago Bears @ Philadelphia Eagles,,NFL,,3.65,5.0,18.25,0.1073,pending,,0.0,,2025-11-25 10:19:51
+214,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,2.5,5.0,12.5,0.1052999999999999,pending,,0.0,,2025-11-25 10:19:51
+215,,Chicago Bears @ Philadelphia Eagles,,NFL,,9.5,5.0,47.5,0.1042,pending,,0.0,,2025-11-25 10:19:51
+216,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,3.1,5.0,15.5,0.1023,pending,,0.0,,2025-11-25 10:19:51
+217,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,2.85,5.0,14.25,0.0994999999999999,pending,,0.0,,2025-11-25 10:19:51
+218,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,2.25,5.0,11.25,0.0978999999999999,pending,,0.0,,2025-11-25 10:19:51
+219,,Green Bay Packers @ Detroit Lions,,NFL,,2.75,5.0,13.75,0.0951,pending,,0.0,,2025-11-25 10:19:51
+220,,Green Bay Packers @ Detroit Lions,,NFL,,1.9523809523809523,5.0,9.76190476190476,0.0944,pending,,0.0,,2025-11-25 10:19:51
+221,,Green Bay Packers @ Detroit Lions,,NFL,,3.0,5.0,15.0,0.0942,pending,,0.0,,2025-11-25 10:19:51
+222,,Chicago Bears @ Philadelphia Eagles,,NFL,,1.8,5.0,9.0,0.0939,pending,,0.0,,2025-11-25 10:19:51
+223,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,2.0,5.0,10.0,0.0921,pending,,0.0,,2025-11-25 10:19:51
+224,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,5.0,5.0,25.0,0.091,pending,,0.0,,2025-11-25 10:19:51
+225,,Green Bay Packers @ Detroit Lions,,NFL,,2.2,5.0,11.0,0.0848,pending,,0.0,,2025-11-25 10:19:51
+226,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,4.25,5.0,21.25,0.0844999999999999,pending,,0.0,,2025-11-25 10:19:51
+227,,Houston Texans @ Indianapolis Colts,,nfl,,2.5,5.0,12.5,0.0841,pending,,0.0,,2025-11-25 10:19:51
+228,,Chicago Bears @ Philadelphia Eagles,,NFL,,4.0,5.0,20.0,0.0810999999999999,pending,,0.0,,2025-11-25 10:19:51
+229,,Green Bay Packers @ Detroit Lions,,NFL,,3.75,5.0,18.75,0.0775,pending,,0.0,,2025-11-25 10:19:51
+230,,Green Bay Packers @ Detroit Lions,,NFL,,1.0,5.0,5.0,0.0725,pending,,0.0,,2025-11-25 10:19:51
+231,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,9.5,5.0,47.5,0.0701,pending,,0.0,,2025-11-25 10:19:51
+232,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,1.0,5.0,5.0,0.0665,pending,,0.0,,2025-11-25 10:19:51
+233,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,4.5,5.0,22.5,0.0653,pending,,0.0,,2025-11-25 10:19:51
+234,,New Orleans Saints @ Miami Dolphins,,NFL,,3.2,5.0,16.0,0.0636,pending,,0.0,,2025-11-25 10:19:51
+235,,Orlando Magic @ Philadelphia 76ers,,nba,,1.8,5.0,9.0,0.0626,pending,,0.0,,2025-11-25 10:19:51
+236,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,3.8,5.0,19.0,0.0624,pending,,0.0,,2025-11-25 10:19:51
+237,,Green Bay Packers @ Detroit Lions,,NFL,,3.4,5.0,17.0,0.0613,pending,,0.0,,2025-11-25 10:19:51
+238,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,4.0,5.0,20.0,0.0588999999999999,pending,,0.0,,2025-11-25 10:19:51
+239,,Green Bay Packers @ Detroit Lions,,NFL,,4.75,5.0,23.75,0.0586,pending,,0.0,,2025-11-25 10:19:51
+240,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,3.3,5.0,16.5,0.0578,pending,,0.0,,2025-11-25 10:19:51
+241,,Orlando Magic @ Philadelphia 76ers,,nba,,1.0,5.0,5.0,0.055,pending,,0.0,,2025-11-25 10:19:51
+242,,LSU @ Oklahoma,,nfl,,4.75,5.0,23.75,0.0545,pending,,0.0,,2025-11-25 10:19:51
+243,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,6.25,5.0,31.25,0.0530999999999999,pending,,0.0,,2025-11-25 10:19:51
+244,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,3.2,5.0,16.0,0.0507,pending,,0.0,,2025-11-25 10:19:51
+245,,Green Bay Packers @ Detroit Lions,,NFL,,6.25,5.0,31.25,0.0475999999999999,pending,,0.0,,2025-11-25 10:19:51
+246,,Ole Miss @ Mississippi State,,NCAAB,,63.5,5.0,317.5,0.0475,pending,,0.0,,2025-11-25 10:19:51
+247,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,2.65,5.0,13.25,0.0473,pending,,0.0,,2025-11-25 10:19:51
+248,,Chicago Bears @ Philadelphia Eagles,,NFL,,4.5,5.0,22.5,0.046,pending,,0.0,,2025-11-25 10:19:51
+249,,Dallas Stars @ Edmonton Oilers,,nfl,,2.0,5.0,10.0,0.0453,pending,,0.0,,2025-11-25 10:19:51
+250,,Green Bay Packers @ Detroit Lions,,NFL,,5.5,5.0,27.5,0.0443,pending,,0.0,,2025-11-25 10:19:51
+251,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,9.5,5.0,47.5,0.0443,pending,,0.0,,2025-11-25 10:19:51
+252,,Los Angeles Rams @ Carolina Panthers,,nfl,,2.5,5.0,12.5,0.0424,pending,,0.0,,2025-11-25 10:19:51
+253,,Houston @ Baylor,,nfl,,1.0,5.0,5.0,0.042,pending,,0.0,,2025-11-25 10:19:51
+254,,Chicago Bears @ Philadelphia Eagles,,NFL,,1.4166666666666667,5.0,7.083333333333334,0.0415,pending,,0.0,,2025-11-25 10:19:51
+255,,Green Bay Packers @ Detroit Lions,,NFL,,1.5714285714285714,5.0,7.857142857142857,0.0412,pending,,0.0,,2025-11-25 10:19:51
+256,,Oregon @ Washington,,nfl,,1.0,5.0,5.0,0.0405,pending,,0.0,,2025-11-25 10:19:51
+257,,Orlando Magic @ Philadelphia 76ers,,nba,,2.1,5.0,10.5,0.0395999999999999,pending,,0.0,,2025-11-25 10:19:51
+258,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,2.0,5.0,10.0,0.0387,pending,,0.0,,2025-11-25 10:19:51
+259,,Green Bay Packers @ Detroit Lions,,NFL,,8.5,5.0,42.5,0.0385999999999999,pending,,0.0,,2025-11-25 10:19:51
+260,,Atlanta Hawks @ Washington Wizards,,nba,,2.72,5.0,13.599999999999998,0.0372,pending,,0.0,,2025-11-25 10:19:51
+261,,Chicago Bears @ Philadelphia Eagles,,NFL,,2.08,5.0,10.4,0.0372,pending,,0.0,,2025-11-25 10:19:51
+262,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,5.25,5.0,26.25,0.0365,pending,,0.0,,2025-11-25 10:19:51
+263,,Chicago Bears @ Philadelphia Eagles,,NFL,,19.5,5.0,97.5,0.0353,pending,,0.0,,2025-11-25 10:19:51
+264,,Atlanta Falcons @ New York Jets,,NFL,,39.5,5.0,197.5,0.0351,pending,,0.0,,2025-11-25 10:19:51
+265,,Tennessee @ Houston,,nfl,,1.0,5.0,5.0,0.035,pending,,0.0,,2025-11-25 10:19:51
+266,,Green Bay Packers @ Detroit Lions,,NFL,,4.25,5.0,21.25,0.0346,pending,,0.0,,2025-11-25 10:19:51
+267,,Georgia @ Georgia Tech,,nfl,,1.0,5.0,5.0,0.0342,pending,,0.0,,2025-11-25 10:19:51
+268,,Orlando Magic @ Philadelphia 76ers,,nba,,4.5,5.0,22.5,0.0327999999999999,pending,,0.0,,2025-11-25 10:19:51
+269,,Missouri @ Arkansas,,nfl,,1.0,5.0,5.0,0.0316,pending,,0.0,,2025-11-25 10:19:51
+270,,Atlanta Hawks @ Washington Wizards,,nba,,1.0,5.0,5.0,0.0306999999999999,pending,,0.0,,2025-11-25 10:19:51
+271,,Chicago Bears @ Philadelphia Eagles,,NFL,,16.0,5.0,80.0,0.1317,pending,,0.0,,2025-11-25 10:25:29
+272,,New Orleans Saints @ Miami Dolphins,,NFL,,76.0,5.0,380.0,0.1303,pending,,0.0,,2025-11-25 10:25:29
+273,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,4.75,5.0,23.75,0.1171,pending,,0.0,,2025-11-25 10:25:29
+274,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,4.0,5.0,20.0,0.1039,pending,,0.0,,2025-11-25 10:25:29
+275,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,4.3,5.0,21.5,0.0813,pending,,0.0,,2025-11-25 10:25:29
+276,,Chicago Bears @ Philadelphia Eagles,,NFL,,4.75,5.0,23.75,0.0799,pending,,0.0,,2025-11-25 10:25:29
+277,,Los Angeles Clippers @ Los Angeles Lakers,,NBA,,5.0,5.0,25.0,0.0608999999999999,pending,,0.0,,2025-11-25 10:25:29
+278,,Atlanta Hawks @ Washington Wizards,,nba,,1.99009900990099,5.0,9.950495049504951,0.0358,pending,,0.0,,2025-11-25 10:37:34
+279,,Cincinnati Bengals @ Baltimore Ravens,,NFL,,23.5,5.0,117.5,0.0299,pending,,0.0,,2025-11-25 10:37:34
+280,,Kansas City Chiefs @ Dallas Cowboys,,NFL,,1.4166666666666667,5.0,7.083333333333334,0.0292,pending,,0.0,,2025-11-25 10:37:34
+281,,New Orleans Saints @ Miami Dolphins,,NFL,,5.0,5.0,25.0,0.0288,pending,,0.0,,2025-11-25 10:43:11

@@ -1,0 +1,41 @@
+{
+  "database": {
+    "db_path": "sports_betting.db",
+    "backup_interval": 3600,
+    "use_supabase": true,
+    "supabase_url": "https://wdbvrhloznteahaqldoq.supabase.co",
+    "supabase_key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkYnZyaGxvem50ZWFoYXFsZG9xIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NDU1NDg5NiwiZXhwIjoyMDgwMTMwODk2fQ.f99tnwl0NlnGM-hlY76qOtxdBvuRKK3AkM-VdOUaFq4"
+  },
+  "api": {
+    "mrdoge_api_key": "sk_live_e257c6e813cf98502600390cd38880c726b9c28a02ac31ec9196684f538727ea",
+    "base_url": "https://api.mrdoge.co/v2",
+    "timeout": 30,
+    "max_retries": 3,
+    "rate_limit_delay": 1.0
+  },
+  "bankroll": {
+    "initial_bankroll": 3000.0,
+    "min_stake_percent": 0.005,
+    "max_stake_percent": 0.10,
+    "max_total_stake_percent": 0.40,
+    "max_kelly_fraction": 0.25
+  },
+  "scanner": {
+    "scan_interval": 300,
+    "max_scans_per_session": 50,
+    "headless": true,
+    "page_load_timeout": 45,
+    "implicit_wait": 15
+  },
+  "betting": {
+    "min_ev_threshold": 0.02,
+    "max_bets_per_scan": 5,
+    "duplicate_cooldown_hours": 2
+  },
+  "logging": {
+    "level": "INFO",
+    "file": "sports_betting.log",
+    "max_file_size": 10485760,
+    "backup_count": 5
+  }
+}

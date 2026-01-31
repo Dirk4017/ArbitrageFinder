@@ -1,0 +1,101 @@
+teams,event,amount,odds,closing_odds,result,sport,Bookietracked,date
+NBA,Phoenix Suns @ Portland Trail Blazers,10.0,0.0,0.0,Lost,Other,600,2025-11-18
+NBA,Phoenix Suns @ Portland Trail Blazers,10.0,0.0,0.0,Won,Other,600,2025-11-18
+NBA,Memphis Grizzlies @ San Antonio Spurs,10.0,0.0,0.0,Lost,Other,203,2025-11-18
+NBA,Phoenix Suns @ Portland Trail Blazers,10.0,0.0,0.0,Won,Other,600,2025-11-18
+NBA,Phoenix Suns @ Portland Trail Blazers,10.0,0.0,0.0,Lost,Other,600,2025-11-18
+NBA,Memphis Grizzlies @ San Antonio Spurs,10.0,0.0,0.0,Won,Other,203,2025-11-18
+NBA,Memphis Grizzlies @ San Antonio Spurs,10.0,0.0,0.0,Lost,Other,203,2025-11-18
+NBA,Boston Celtics @ Brooklyn Nets,10.0,0.0,0.0,Won,Other,160,2025-11-18
+NBA,Boston Celtics @ Brooklyn Nets,10.0,0.0,0.0,Lost,Other,160,2025-11-18
+NBA,Memphis Grizzlies @ San Antonio Spurs,10.0,0.0,0.0,Won,Other,203,2025-11-18
+NBA,Boston Celtics @ Brooklyn Nets,10.0,0.0,0.0,Lost,Other,160,2025-11-18
+NBA,Boston Celtics @ Brooklyn Nets,10.0,0.0,0.0,Won,Other,160,2025-11-18
+NBA,Boston Celtics @ Brooklyn Nets,10.0,0.0,0.0,Lost,Other,+185,2025-11-18
+NBA,Boston Celtics @ Brooklyn Nets,10.0,0.0,0.0,Lost,Other,+185,2025-11-18
+NBA,Utah Jazz @ Los Angeles Lakers,10.0,0.0,0.0,Lost,Other,+148 ($6),2025-11-18
+NBA,Boston Celtics @ Brooklyn Nets,10.0,0.0,0.0,Won,Other,+185,2025-11-18
+NBA,Boston Celtics @ Brooklyn Nets,10.0,0.0,0.0,Won,Other,+185,2025-11-18
+NBA,Utah Jazz @ Los Angeles Lakers,10.0,0.0,0.0,Won,Other,+148 ($6),2025-11-18
+NBA,Boston Celtics @ Brooklyn Nets,10.0,0.0,0.0,Won,Other,+185,2025-11-18
+NBA,Boston Celtics @ Brooklyn Nets,10.0,0.0,0.0,Won,Other,+185,2025-11-18
+NBA,Utah Jazz @ Los Angeles Lakers,10.0,0.0,0.0,Lost,Other,+148 ($6),2025-11-18
+NBA,Boston Celtics @ Brooklyn Nets,10.0,0.0,0.0,Won,Other,+185,2025-11-18
+NBA,Boston Celtics @ Brooklyn Nets,10.0,0.0,0.0,Won,Other,+185,2025-11-18
+NBA,Utah Jazz @ Los Angeles Lakers,10.0,0.0,0.0,Won,Other,+148 ($6),2025-11-18
+NCAAF,Western Michigan @ Northern Illinois,10.0,61.0,61.0,Won,Other,+6000,2025-11-18
+NCAAF,Western Michigan @ Northern Illinois,10.0,61.0,61.0,Won,Other,+6000,2025-11-18
+NCAAF,Western Michigan @ Northern Illinois,10.0,29.0,29.0,Lost,Other,+2800,2025-11-18
+NCAAF,Western Michigan @ Northern Illinois,10.0,61.0,61.0,Lost,Other,+6000,2025-11-18
+NCAAF,Western Michigan @ Northern Illinois,10.0,61.0,61.0,Lost,Other,+6000,2025-11-18
+NCAAF,Western Michigan @ Northern Illinois,10.0,29.0,29.0,Lost,Other,+2800,2025-11-18
+NCAAB,Idaho State @ Santa Clara,10.0,8.0,8.0,Lost,Other,+700,2025-11-18
+NCAAB,Idaho State @ Santa Clara,10.0,8.0,8.0,Won,Other,+700,2025-11-18
+NHL,Columbus Blue Jackets @ Winnipeg Jets,10.0,3.85,3.85,Lost,Other,+285,2025-11-18
+NCAAB,Idaho State @ Santa Clara,10.0,8.0,8.0,Lost,Other,+700,2025-11-18
+NCAAB,Idaho State @ Santa Clara,10.0,8.0,8.0,Won,Other,+700,2025-11-18
+NHL,Columbus Blue Jackets @ Winnipeg Jets,10.0,3.85,3.85,Won,Other,+285,2025-11-18
+Utah Jazz vs Los Angeles Lakers,NBA,10.0,41.0,41.0,Lost,Other,+4000,2025-11-18
+New York Islanders vs Dallas Stars,NHL,10.0,18.0,18.0,Won,Other,+1700,2025-11-18
+Utah Jazz vs Los Angeles Lakers,NBA,10.0,0.0,0.0,Lost,Other,+130 ($4),2025-11-18
+Utah Jazz vs Los Angeles Lakers,NBA,10.0,41.0,41.0,Lost,Other,+4000,2025-11-18
+New York Islanders vs Dallas Stars,NHL,10.0,18.0,18.0,Won,Other,+1700,2025-11-18
+Utah Jazz vs Los Angeles Lakers,NBA,10.0,0.0,0.0,Won,Other,+130 ($4),2025-11-18
+Boston Celtics vs Brooklyn Nets,NBA,10.0,41.0,41.0,Lost,Basketball,+4000,2025-11-18
+New York Islanders vs Dallas Stars,NHL,10.0,18.0,18.0,Won,Basketball,+1700,2025-11-18
+Memphis Grizzlies vs San Antonio Spurs,NBA,10.0,2.35,2.35,Lost,Basketball,+135,2025-11-18
+Boston Celtics vs Brooklyn Nets,NBA,10.0,41.0,41.0,Won,Basketball,+4000,2025-11-18
+New York Islanders vs Dallas Stars,NHL,10.0,18.0,18.0,Won,Basketball,+1700,2025-11-18
+Memphis Grizzlies vs San Antonio Spurs,NBA,10.0,2.35,2.35,Lost,Basketball,+135,2025-11-18
+Golden State Warriors vs Orlando Magic,NBA,10.0,5.5,5.5,Lost,Basketball,+450,2025-11-18
+Golden State Warriors vs Orlando Magic,NBA,10.0,5.5,5.5,Won,Basketball,+450,2025-11-18
+Utah Jazz vs Los Angeles Lakers,NBA,10.0,2.45,2.45,Won,Basketball,+145,2025-11-18
+Golden State Warriors vs Orlando Magic,NBA,10.0,5.5,5.5,Lost,Basketball,+450,2025-11-18
+Golden State Warriors vs Orlando Magic,NBA,10.0,5.5,5.5,Lost,Basketball,+450,2025-11-18
+Utah Jazz vs Los Angeles Lakers,NBA,10.0,2.45,2.45,Lost,Basketball,+145,2025-11-18
+Memphis Grizzlies vs San Antonio Spurs,NBA,10.0,2.3,2.3,Won,Basketball,+130 ($1),2025-11-18
+Boston Celtics vs Brooklyn Nets,NBA,10.0,2.4,2.4,Lost,Basketball,+140,2025-11-18
+Hampton vs Boston College,NCAAB,10.0,5.0,5.0,Won,Basketball,+400,2025-11-18
+Seattle Seahawks vs Tennessee Titans,NFL,10.0,2.85,2.85,Lost,Basketball,+185,2025-11-18
+Detroit Pistons vs Atlanta Hawks,NBA,10.0,2.4,2.4,Won,Basketball,+140,2025-11-18
+Seattle Seahawks vs Tennessee Titans,NFL,10.0,2.6,2.6,Lost,Basketball,+160,2025-11-18
+New York Knicks vs Dallas Mavericks,NBA,10.0,2.4,2.4,Won,Basketball,+140 ($3),2025-11-19
+Charlotte Hornets vs Indiana Pacers,NBA,10.0,2.65,2.65,Lost,Basketball,+165,2025-11-19
+Atlanta Falcons vs New Orleans Saints,NFL,10.0,2.4,2.4,Won,Basketball,+140,2025-11-19
+Toronto Raptors vs Philadelphia 76ers,NBA,10.0,1.83,1.83,Won,Basketball,-120,2025-11-19
+Seattle Seahawks vs Tennessee Titans,NFL,10.0,2.6,2.6,Lost,Basketball,+160,2025-11-19
+Charlotte Hornets vs Indiana Pacers,NBA,10.0,1.77,1.77,Won,Basketball,-130,2025-11-19
+New York Knicks vs Dallas Mavericks,NBA,10.0,2.4,2.4,Lost,Basketball,+140 ($3),2025-11-19
+Sacramento Kings vs Oklahoma City Thunder,NBA,10.0,13.0,13.0,Lost,Basketball,+1200,2025-11-19
+Seattle Seahawks vs Tennessee Titans,NFL,10.0,2.85,2.85,Lost,Basketball,+185,2025-11-19
+Charlotte Hornets vs Indiana Pacers,NBA,10.0,1.8,1.8,Won,Basketball,-125,2025-11-19
+Charlotte Hornets vs Indiana Pacers,NBA,10.0,2.7,2.7,Won,Basketball,+170,2025-11-19
+Charlotte Hornets vs Indiana Pacers,NBA,10.0,1.84,1.84,Won,Basketball,-119,2025-11-19
+New York Knicks vs Dallas Mavericks,NBA,10.0,2.4,2.4,Won,Basketball,+140 ($3),2025-11-19
+Seattle Seahawks vs Tennessee Titans,NFL,10.0,2.85,2.85,Lost,Basketball,+185,2025-11-19
+Charlotte Hornets vs Indiana Pacers,NBA,10.0,1.84,1.84,Won,Basketball,-119,2025-11-19
+Charlotte Hornets vs Indiana Pacers,NBA,10.0,1.8,1.8,Won,Basketball,-125,2025-11-19
+Buffalo Bills vs Houston Texans,NFL,10.0,2.15,2.15,Won,Basketball,+115,2025-11-19
+Charlotte Hornets vs Indiana Pacers,NBA,10.0,16.8,16.8,Won,Basketball,+1580,2025-11-19
+Bellarmine vs Notre Dame,NCAAB,10.0,46.0,46.0,Lost,Basketball,+4500,2025-11-19
+Bellarmine vs Notre Dame,NCAAB,10.0,41.0,41.0,Lost,Basketball,+4000,2025-11-19
+Seattle Seahawks vs Tennessee Titans,NFL,10.0,2.85,2.85,Lost,Basketball,+185,2025-11-19
+Buffalo Bills vs Houston Texans,NFL,10.0,2.4,2.4,Won,Basketball,+140 ($7),2025-11-19
+Atlanta Falcons vs New Orleans Saints,NFL,10.0,2.35,2.35,Won,Basketball,+135,2025-11-19
+Denver Nuggets vs New Orleans Pelicans,NBA,10.0,1.91,1.91,Lost,Basketball,-110,2025-11-19
+Seattle Seahawks vs Tennessee Titans,NFL,10.0,2.85,2.85,Lost,Basketball,+185,2025-11-19
+New York Knicks vs Dallas Mavericks,NBA,10.0,2.5,2.5,Lost,Basketball,+150,2025-11-19
+Charlotte Hornets vs Indiana Pacers,NBA,10.0,1.83,1.83,Lost,Basketball,-120,2025-11-19
+Buffalo Bills vs Houston Texans,NFL,10.0,2.4,2.4,Lost,Basketball,+140 ($7),2025-11-19
+Denver Nuggets vs New Orleans Pelicans,NBA,10.0,1.91,1.91,Won,Basketball,-110,2025-11-19
+Charlotte Hornets vs Indiana Pacers,NBA,10.0,2.19,2.19,Won,Basketball,+119 ($1),2025-11-19
+New York Jets vs Baltimore Ravens,NFL,10.0,6.25,6.25,Lost,Basketball,+525,2025-11-19
+Seattle Seahawks vs Tennessee Titans,NFL,10.0,2.85,2.85,Won,Basketball,+185,2025-11-19
+Atlanta Falcons vs New Orleans Saints,NFL,10.0,2.4,2.4,Won,Basketball,+140,2025-11-19
+Seattle Seahawks vs Tennessee Titans,NFL,10.0,2.85,2.85,Lost,Basketball,+185,2025-11-19
+Atlanta Falcons vs New Orleans Saints,NFL,10.0,2.4,2.4,Won,Basketball,+140,2025-11-19
+Philadelphia Eagles vs Dallas Cowboys,NFL,10.0,13.5,13.5,Lost,Basketball,+1250,2025-11-19
+Seattle Seahawks vs Tennessee Titans,NFL,10.0,2.85,2.85,Lost,Basketball,+185,2025-11-19
+Atlanta Falcons vs New Orleans Saints,NFL,10.0,2.4,2.4,Lost,Basketball,+140,2025-11-19
+Buffalo Bills vs Houston Texans,NFL,10.0,14.0,14.0,Lost,Other,+1300,2025-11-19
+New York Jets vs Baltimore Ravens,NFL,10.0,4.0,4.0,Lost,Am. Football,+300,2025-11-19
