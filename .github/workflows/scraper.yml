@@ -1,0 +1,41 @@
+name: Daily Sports Bet Scanner
+
+on:
+  schedule:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:        # Manual trigger
+
+jobs:
+  scan-for-opportunities:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Get the code from GitHub
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+
+    # Step 2: Setup Python 3.10
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    # Step 3: Install Chrome for Selenium
+    - name: 🌐 Setup Chrome
+      uses: browser-actions/setup-chrome@v1
+
+    # Step 4: Install dependencies
+    - name: 📦 Install packages
+      run: |
+        pip install selenium==4.15.0
+        pip install supabase==2.1.1
+        pip install python-dotenv==1.0.0
+        pip install requests==2.31.0
+    # Step 5: Run your scraper
+    - name: 🎯 Run Scanner
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      run: |
+        echo "🚀 Starting GitHub Actions scraper..."
+        python test_scraper.py
