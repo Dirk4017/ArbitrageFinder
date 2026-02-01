@@ -20,66 +20,83 @@ jobs:
       with:
         python-version: '3.10'
 
-    # Step 3: Install system dependencies FIRST
+    # Step 3: Install system dependencies
     - name: 🔧 Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y python3-dev build-essential
+        
+    # Step 4: Install R
+    - name: 📊 Install R language
+      run: |
+        # Add R repository
+        sudo apt-get install -y software-properties-common
+        sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/'
+        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
+        
+        # Install R
+        sudo apt-get update
+        sudo apt-get install -y r-base r-base-dev
+        
+        # Verify
+        echo "R version:"
+        R --version
+        echo "Rscript location:"
+        which Rscript
 
-    # Step 4: Install Chrome for Selenium
+    # Step 5: Install Chrome for Selenium
     - name: 🌐 Setup Chrome
       uses: browser-actions/setup-chrome@v1
     
-    # Step 5: Install Python packages
-    - name: 📦 Install packages
+    # Step 6: Install Python packages
+    - name: 📦 Install Python packages
       run: |
-        # Update pip first
         pip install --upgrade pip
-        
-        # Install selenium FIRST (it has many dependencies)
         pip install selenium==4.15.0
-        
-        # Install other core packages
         pip install requests==2.31.0
         pip install python-dotenv==1.0.0
         pip install rich==12.6.0
-        
-        # Install supabase
         pip install supabase==1.1.1
-        
-        # Install data science packages
         pip install pandas==1.5.0
         pip install numpy==1.24.0
-        
-        # Install HTML parsing packages
         pip install beautifulsoup4==4.11.0
         pip install lxml==4.9.0
-        
-        # Install fuzzy matching packages
         pip install fuzzywuzzy==0.18.0
         pip install python-Levenshtein==0.25.1
-        
-        # Verify selenium installation
-        python -c "import selenium; print(f'✅ Selenium version: {selenium.__version__}')"
 
-    # Step 6: Test imports (optional but recommended)
-    - name: 🧪 Test imports
+    # Step 7: Test R installation
+    - name: 🧪 Test R
       run: |
         python -c "
-        packages = ['selenium', 'requests', 'pandas', 'numpy', 'bs4', 'supabase', 'fuzzywuzzy', 'rich']
-        for pkg in packages:
+        import subprocess
+        import shutil
+        
+        # Check if Rscript exists
+        rscript_path = shutil.which('Rscript')
+        if rscript_path:
+            print(f'✅ Rscript found at: {rscript_path}')
+            
+            # Test Rscript
             try:
-                __import__(pkg.replace('-', '_'))
-                print(f'✅ {pkg}')
-            except ImportError:
-                print(f'❌ {pkg}')
+                result = subprocess.run(['Rscript', '--version'], 
+                                      capture_output=True, text=True)
+                print(f'✅ Rscript works: {result.stdout[:50]}...')
+            except Exception as e:
+                print(f'❌ Rscript failed: {e}')
+        else:
+            print('❌ Rscript not found in PATH')
+            
+        # Check R
+        r_path = shutil.which('R')
+        if r_path:
+            print(f'✅ R found at: {r_path}')
         "
-
-    # Step 7: Run your scraper
+        
+    # Step 8: Run your scraper
     - name: 🎯 Run Scanner
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       run: |
         echo "🚀 Starting GitHub Actions scraper..."
-        python main.py  # or whatever your script is called
+        python main.py
