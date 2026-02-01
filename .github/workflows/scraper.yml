@@ -28,7 +28,7 @@ jobs:
     - name: 📦 Install packages
       run: |
         pip install selenium==4.15.0
-        pip install supabase==2.1.1
+        pip install supabase==1.1.1
         pip install python-dotenv==1.0.0
         pip install requests==2.31.0
     # Step 5: Run your scraper
