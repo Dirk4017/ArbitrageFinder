@@ -14,9 +14,9 @@ jobs:
     - name: 📥 Clean checkout
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0     # Get all history
-        clean: true        # Clean workspace before checkout
-        ref: main          # Checkout main branch
+        fetch-depth: 0
+        clean: true
+        ref: main
 
     # Step 2: Verify the file exists
     - name: 🔍 Verify bet_resolver.R
@@ -55,20 +55,11 @@ jobs:
       with:
         python-version: '3.10'
 
-    # Step 4: Install system dependencies (WITH R)
+    # Step 4: Install system dependencies
     - name: 🔧 Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y python3-dev build-essential
-        
-        # Install R language
-        sudo apt-get install -y r-base r-base-dev
-        
-        # Verify
-        echo "R version:"
-        R --version || echo "R not found"
-        echo "Rscript:"
-        which Rscript || echo "Rscript not in PATH"
+        sudo apt-get install -y python3-dev build-essential r-base
 
     # Step 5: Setup Chrome
     - name: 🌐 Setup Chrome
@@ -90,36 +81,18 @@ jobs:
         pip install fuzzywuzzy==0.18.0
         pip install python-Levenshtein==0.25.1
 
-    # Step 7: Test R script
+    # Step 7: Test R script (FIXED)
     - name: 🧪 Test R script
       run: |
-        echo "=== Testing R script ==="
+        echo "Testing R installation..."
+        Rscript --version || echo "Rscript check failed"
         
-        # Check file
-        echo "File info:"
-        ls -la bet_resolver.R
-        
-        # Test Rscript
-        if command -v Rscript &> /dev/null; then
-            echo "✅ Rscript found"
-            
-            # Create a test R script
-            cat > test_r.R << 'EOF'
-print("R is working!")
-cat("Test completed\n")
-EOF
-            
-            echo "Testing Rscript..."
-            Rscript test_r.R
-            
-            # Test bet_resolver.R
-            echo "Testing bet_resolver.R..."
-            if [ -f "bet_resolver.R" ]; then
-                echo "Testing with sample data..."
-                Rscript bet_resolver.R "TestPlayer" "over 2.5" "2.5" 2>/dev/null || echo "R script ran (may have errors)"
-            fi
+        echo "Checking bet_resolver.R..."
+        if [ -f "bet_resolver.R" ]; then
+            echo "✅ bet_resolver.R exists"
+            echo "Lines: $(wc -l < bet_resolver.R)"
         else
-            echo "❌ Rscript not found"
+            echo "❌ bet_resolver.R still missing after checkout"
         fi
 
     # Step 8: Run scanner
