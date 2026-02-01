@@ -35,6 +35,36 @@ jobs:
         echo "Rscript:"
         which Rscript || echo "Rscript not found"
 
+    # Step 3.5: Install R packages (CRITICAL - ADD THIS!)
+    - name: 📦 Install R packages
+      run: |
+        echo "Installing R packages for bet resolution..."
+        
+        # Set CRAN mirror
+        Rscript -e "options(repos = c(CRAN = 'https://cloud.r-project.org'))"
+        
+        # Install required packages
+        Rscript -e "install.packages('nflreadr')"
+        Rscript -e "install.packages('hoopR')"
+        Rscript -e "install.packages('jsonlite')"
+        Rscript -e "install.packages('httr')"
+        Rscript -e "install.packages('dplyr')"
+        Rscript -e "install.packages('lubridate')"
+        Rscript -e "install.packages('stringr')"
+        
+        # Verify installation
+        echo "Verifying R packages..."
+        Rscript -e "
+          packages <- c('nflreadr', 'hoopR', 'jsonlite', 'httr', 'dplyr', 'lubridate', 'stringr')
+          for (pkg in packages) {
+            if (require(pkg, character.only = TRUE)) {
+              cat(paste0('✓ ', pkg, ' loaded successfully\\n'))
+            } else {
+              cat(paste0('✗ ', pkg, ' FAILED to load\\n'))
+            }
+          }
+        "
+
     # Step 4: Setup Chrome
     - name: 🌐 Setup Chrome
       uses: browser-actions/setup-chrome@v1
