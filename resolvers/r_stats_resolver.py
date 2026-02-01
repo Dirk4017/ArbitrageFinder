@@ -32,12 +32,35 @@ class RStatsResolver:
             raise RuntimeError("Rscript not found. Install R from https://cran.r-project.org/")
 
         import os
-        # Use relative path
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        project_root = os.path.dirname(os.path.dirname(current_dir))
-        self.r_script_path = os.path.join(project_root, "bet_resolver.R")
-        if not os.path.exists(self.r_script_path):
-            raise FileNotFoundError(f"R script not found: {self.r_script_path}")
+        # Try multiple possible locations
+        possible_paths = [
+            os.path.join(os.getcwd(), "bet_resolver.R"),  # Current working directory
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "bet_resolver.R"),
+            # Relative from this file
+            "/home/runner/work/ArbitrageFinder/bet_resolver.R",  # Absolute GitHub Actions path
+            "bet_resolver.R",  # Just the filename
+        ]
+
+        self.r_script_path = None
+        for path in possible_paths:
+            if os.path.exists(path):
+                self.r_script_path = os.path.abspath(path)
+                self.logger.info(f"Found R script at: {self.r_script_path}")
+                break
+
+        if not self.r_script_path or not os.path.exists(self.r_script_path):
+            # Try to find it anywhere
+            import glob
+            found = glob.glob("**/bet_resolver.R", recursive=True)
+            if found:
+                self.r_script_path = os.path.abspath(found[0])
+                self.logger.info(f"Found R script via glob: {self.r_script_path}")
+            else:
+                # Last resort: current directory
+                if os.path.exists("bet_resolver.R"):
+                    self.r_script_path = os.path.abspath("bet_resolver.R")
+                else:
+                    raise FileNotFoundError(f"R script not found. Tried: {possible_paths}. Current dir: {os.getcwd()}")
 
         # Tracking and state
         self.r_calls = 0
