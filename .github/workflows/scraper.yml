@@ -29,36 +29,67 @@ jobs:
         # Install R
         sudo apt-get install -y r-base r-base-dev
         
+        # Install R package dependencies
+        sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+        
         # Verify
         echo "R version:"
         R --version || echo "R check failed"
         echo "Rscript:"
         which Rscript || echo "Rscript not found"
 
-    # Step 3.5: Install R packages (USER DIRECTORY VERSION) - KEEP THIS ONE ONLY!
+    # Step 3.5: Install R packages (FIXED VERSION)
     - name: 📦 Install R packages
       run: |
-        echo "Installing R packages for bet resolution..."
+        echo "=== Installing R packages for bet resolution ==="
         
-        # Set up user library
-        export R_LIBS_USER="$HOME/R/library"
-        mkdir -p "$R_LIBS_USER"
+        # Create user library directory
+        mkdir -p ~/R/library
         
-        # Install packages to user library
+        # Set environment variable
+        echo "R_LIBS_USER=~/R/library" >> ~/.Renviron
+        
+        # Install packages one by one with error handling
+        echo "Installing jsonlite..."
+        Rscript -e "install.packages('jsonlite', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "jsonlite installation had issues"
+        
+        echo "Installing httr..."
+        Rscript -e "install.packages('httr', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "httr installation had issues"
+        
+        echo "Installing dplyr..."
+        Rscript -e "install.packages('dplyr', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "dplyr installation had issues"
+        
+        echo "Installing lubridate..."
+        Rscript -e "install.packages('lubridate', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "lubridate installation had issues"
+        
+        echo "Installing stringr..."
+        Rscript -e "install.packages('stringr', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "stringr installation had issues"
+        
+        echo "Installing nflreadr..."
+        Rscript -e "install.packages('nflreadr', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "nflreadr installation had issues"
+        
+        echo "Installing hoopR..."
+        Rscript -e "install.packages('hoopR', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "hoopR installation had issues"
+        
+        # Verify installation
+        echo "=== Verifying package installation ==="
         Rscript -e "
-          options(repos = c(CRAN = 'https://cloud.r-project.org'))
-          install.packages(c('nflreadr', 'hoopR', 'jsonlite', 'httr', 'dplyr', 'lubridate', 'stringr'), 
-                          lib = '$R_LIBS_USER')
-        "
-        
-        # Test loading packages
-        echo "Testing package loading..."
-        Rscript -e "
-          .libPaths(c('$R_LIBS_USER', .libPaths()))
-          packages <- c('nflreadr', 'hoopR', 'jsonlite', 'httpr', 'dplyr', 'lubridate', 'stringr')
-          loaded <- sapply(packages, function(pkg) require(pkg, character.only = TRUE))
-          cat('Packages loaded:', sum(loaded), 'out of', length(packages), '\\n')
-          if (all(loaded)) cat('✓ All packages loaded successfully!\\n')
+          # Add user library to path
+          .libPaths(c('~/R/library', .libPaths()))
+          cat('Library paths:\\n')
+          print(.libPaths())
+          
+          # Test each package
+          packages <- c('jsonlite', 'httr', 'dplyr', 'lubridate', 'stringr', 'nflreadr', 'hoopR')
+          cat('\\nTesting package loading:\\n')
+          for (pkg in packages) {
+            success <- require(pkg, character.only = TRUE, quietly = TRUE)
+            if (success) {
+              cat(paste0('✓ ', pkg, ' loaded successfully\\n'))
+            } else {
+              cat(paste0('✗ ', pkg, ' FAILED to load\\n'))
+            }
+          }
         "
 
     # Step 4: Setup Chrome
@@ -81,7 +112,46 @@ jobs:
         pip install lxml==4.9.0
         pip install rich==12.6.0
 
-    # Step 6: Run the dedicated runner script
+    # Step 6: Add debug step to test R script
+    - name: 🧪 Test R script execution
+      run: |
+        echo "=== Testing R script execution ==="
+        
+        # Create a simple test script
+        cat > test_r_script.R << 'EOF'
+        # Set library path
+        .libPaths(c('~/R/library', .libPaths()))
+        
+        # Try to load packages
+        cat("Loading R packages...\\n")
+        packages <- c('jsonlite', 'httr', 'dplyr', 'lubridate', 'stringr', 'nflreadr', 'hoopR')
+        
+        for (pkg in packages) {
+          if (require(pkg, character.only = TRUE)) {
+            cat(paste0("✓ ", pkg, "\\n"))
+          } else {
+            cat(paste0("✗ ", pkg, "\\n"))
+          }
+        }
+        
+        # Test a simple function
+        cat("\\nTesting simple R function...\\n")
+        result <- list(
+          success = TRUE,
+          test = "R script works",
+          packages = packages
+        )
+        
+        # Output JSON for Python to parse
+        cat("\\nJSON_OUTPUT_START\\n")
+        cat(jsonlite::toJSON(result, auto_unbox = TRUE))
+        cat("\\nJSON_OUTPUT_END\\n")
+        EOF
+        
+        echo "Running test R script..."
+        Rscript test_r_script.R || echo "R script execution failed"
+
+    # Step 7: Run the dedicated runner script
     - name: 🎯 Run Automated Scanner (Options 1 & 5)
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
