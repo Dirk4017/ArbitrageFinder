@@ -35,34 +35,30 @@ jobs:
         echo "Rscript:"
         which Rscript || echo "Rscript not found"
 
-    # Step 3.5: Install R packages (CRITICAL - ADD THIS!)
+    # Step 3.5: Install R packages (USER DIRECTORY VERSION) - KEEP THIS ONE ONLY!
     - name: 📦 Install R packages
       run: |
         echo "Installing R packages for bet resolution..."
         
-        # Set CRAN mirror
-        Rscript -e "options(repos = c(CRAN = 'https://cloud.r-project.org'))"
+        # Set up user library
+        export R_LIBS_USER="$HOME/R/library"
+        mkdir -p "$R_LIBS_USER"
         
-        # Install required packages
-        Rscript -e "install.packages('nflreadr')"
-        Rscript -e "install.packages('hoopR')"
-        Rscript -e "install.packages('jsonlite')"
-        Rscript -e "install.packages('httr')"
-        Rscript -e "install.packages('dplyr')"
-        Rscript -e "install.packages('lubridate')"
-        Rscript -e "install.packages('stringr')"
-        
-        # Verify installation
-        echo "Verifying R packages..."
+        # Install packages to user library
         Rscript -e "
-          packages <- c('nflreadr', 'hoopR', 'jsonlite', 'httr', 'dplyr', 'lubridate', 'stringr')
-          for (pkg in packages) {
-            if (require(pkg, character.only = TRUE)) {
-              cat(paste0('✓ ', pkg, ' loaded successfully\\n'))
-            } else {
-              cat(paste0('✗ ', pkg, ' FAILED to load\\n'))
-            }
-          }
+          options(repos = c(CRAN = 'https://cloud.r-project.org'))
+          install.packages(c('nflreadr', 'hoopR', 'jsonlite', 'httr', 'dplyr', 'lubridate', 'stringr'), 
+                          lib = '$R_LIBS_USER')
+        "
+        
+        # Test loading packages
+        echo "Testing package loading..."
+        Rscript -e "
+          .libPaths(c('$R_LIBS_USER', .libPaths()))
+          packages <- c('nflreadr', 'hoopR', 'jsonlite', 'httpr', 'dplyr', 'lubridate', 'stringr')
+          loaded <- sapply(packages, function(pkg) require(pkg, character.only = TRUE))
+          cat('Packages loaded:', sum(loaded), 'out of', length(packages), '\\n')
+          if (all(loaded)) cat('✓ All packages loaded successfully!\\n')
         "
 
     # Step 4: Setup Chrome
