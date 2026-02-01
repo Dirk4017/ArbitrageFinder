@@ -31,7 +31,11 @@ class RStatsResolver:
         if not self.rscript_path:
             raise RuntimeError("Rscript not found. Install R from https://cran.r-project.org/")
 
-        self.r_script_path = r"C:\Users\David\PycharmProject\ArbitrageFinder\bet_resolver.R"
+        import os
+        # Use relative path
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(os.path.dirname(current_dir))
+        self.r_script_path = os.path.join(project_root, "bet_resolver.R")
         if not os.path.exists(self.r_script_path):
             raise FileNotFoundError(f"R script not found: {self.r_script_path}")
 
