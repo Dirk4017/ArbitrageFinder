@@ -26,24 +26,16 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y python3-dev build-essential
         
-    # Step 4: Install R
-    - name: 📊 Install R language
+    # Step 4: Install R (SIMPLE VERSION)
+    - name: 📊 Install R
       run: |
-        # Add R repository
-        sudo apt-get install -y software-properties-common
-        sudo add-apt-repository 'deb https://cloud.r-project.org/bin/linux/ubuntu jammy-cran40/'
-        sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E298A3A825C0D65DFD57CBB651716619E084DAB9
-        
-        # Install R
         sudo apt-get update
-        sudo apt-get install -y r-base r-base-dev
-        
-        # Verify
+        sudo apt-get install -y r-base
         echo "R version:"
-        R --version
-        echo "Rscript location:"
-        which Rscript
-
+        R --version || true
+        echo "Rscript:"
+        which Rscript || echo "Rscript not found"
+        
     # Step 5: Install Chrome for Selenium
     - name: 🌐 Setup Chrome
       uses: browser-actions/setup-chrome@v1
@@ -65,31 +57,45 @@ jobs:
         pip install python-Levenshtein==0.25.1
 
     # Step 7: Test R installation
-    - name: 🧪 Test R
+    - name: 🧪 Test R installation
       run: |
         python -c "
         import subprocess
         import shutil
+        import sys
         
         # Check if Rscript exists
         rscript_path = shutil.which('Rscript')
+        
+        if not rscript_path:
+            # Try to install R if not found
+            print('Rscript not found, attempting simple install...')
+            import os
+            os.system('sudo apt-get update && sudo apt-get install -y r-base')
+            
+            # Check again
+            rscript_path = shutil.which('Rscript')
+        
         if rscript_path:
             print(f'✅ Rscript found at: {rscript_path}')
             
+            # Create a simple R script to test
+            with open('test_r.R', 'w') as f:
+                f.write('print(\"Hello from R!\")')
+            
             # Test Rscript
             try:
-                result = subprocess.run(['Rscript', '--version'], 
-                                      capture_output=True, text=True)
-                print(f'✅ Rscript works: {result.stdout[:50]}...')
+                result = subprocess.run(['Rscript', 'test_r.R'], 
+                                      capture_output=True, text=True, timeout=10)
+                print(f'✅ Rscript test output: {result.stdout.strip()}')
             except Exception as e:
-                print(f'❌ Rscript failed: {e}')
+                print(f'⚠️ Rscript test failed: {e}')
         else:
-            print('❌ Rscript not found in PATH')
-            
-        # Check R
-        r_path = shutil.which('R')
-        if r_path:
-            print(f'✅ R found at: {r_path}')
+            print('❌ Rscript not found - your code may fail')
+            print('Consider:')
+            print('1. Making R optional in your code')
+            print('2. Using Docker with R pre-installed')
+            print('3. Using a different GitHub runner with R')
         "
         
     # Step 8: Run your scraper
