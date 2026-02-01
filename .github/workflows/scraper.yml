@@ -20,17 +20,62 @@ jobs:
       with:
         python-version: '3.10'
 
-    # Step 3: Install Chrome for Selenium
-    - name: 🌐 Setup Chrome
-      uses: browser-actions/setup-chrome@v1
-
-    # Step 4: Install dependencies    
-    - name: 📦 Install from requirements.txt
+    # Step 3: Install system dependencies FIRST
+    - name: 🔧 Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y python3-dev build-essential
-        pip install -r requirements.txt
-    # Step 5: Run your scraper
+
+    # Step 4: Install Chrome for Selenium
+    - name: 🌐 Setup Chrome
+      uses: browser-actions/setup-chrome@v1
+    
+    # Step 5: Install Python packages
+    - name: 📦 Install packages
+      run: |
+        # Update pip first
+        pip install --upgrade pip
+        
+        # Install selenium FIRST (it has many dependencies)
+        pip install selenium==4.15.0
+        
+        # Install other core packages
+        pip install requests==2.31.0
+        pip install python-dotenv==1.0.0
+        pip install rich==12.6.0
+        
+        # Install supabase
+        pip install supabase==1.1.1
+        
+        # Install data science packages
+        pip install pandas==1.5.0
+        pip install numpy==1.24.0
+        
+        # Install HTML parsing packages
+        pip install beautifulsoup4==4.11.0
+        pip install lxml==4.9.0
+        
+        # Install fuzzy matching packages
+        pip install fuzzywuzzy==0.18.0
+        pip install python-Levenshtein==0.25.1
+        
+        # Verify selenium installation
+        python -c "import selenium; print(f'✅ Selenium version: {selenium.__version__}')"
+
+    # Step 6: Test imports (optional but recommended)
+    - name: 🧪 Test imports
+      run: |
+        python -c "
+        packages = ['selenium', 'requests', 'pandas', 'numpy', 'bs4', 'supabase', 'fuzzywuzzy', 'rich']
+        for pkg in packages:
+            try:
+                __import__(pkg.replace('-', '_'))
+                print(f'✅ {pkg}')
+            except ImportError:
+                print(f'❌ {pkg}')
+        "
+
+    # Step 7: Run your scraper
     - name: 🎯 Run Scanner
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
