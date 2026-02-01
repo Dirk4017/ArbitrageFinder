@@ -10,12 +10,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout with LFS
+    # Step 1: Checkout code
     - name: 📥 Checkout code
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-        lfs: true
 
     # Step 2: Setup Python
     - name: 🐍 Setup Python
@@ -27,41 +24,54 @@ jobs:
     - name: 🔧 Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y python3-dev build-essential r-base git-lfs
+        sudo apt-get install -y python3-dev build-essential
         
-        # Setup Git LFS
-        git lfs install
-
-    # Step 4: Pull LFS files
-    - name: 📥 Pull LFS files
-      run: |
-        echo "Pulling LFS files..."
-        git lfs pull || echo "LFS pull may have failed"
+        # Install R
+        sudo apt-get install -y r-base r-base-dev
         
-        echo "Checking bet_resolver.R..."
-        if [ -f "bet_resolver.R" ]; then
-            echo "✅ bet_resolver.R exists"
-            ls -la bet_resolver.R
-        else
-            echo "❌ bet_resolver.R missing even after LFS"
-            # Create emergency version
-            echo "# Emergency R script" > bet_resolver.R
-            echo "resolve_bet <- function(p,m,l) { return(list(result=TRUE)) }" >> bet_resolver.R
-        fi
+        # Verify
+        echo "R version:"
+        R --version || echo "R check failed"
+        echo "Rscript:"
+        which Rscript || echo "Rscript not found"
 
-    # Step 5: Setup Chrome
+    # Step 4: Setup Chrome
     - name: 🌐 Setup Chrome
       uses: browser-actions/setup-chrome@v1
 
-    # Step 6: Install Python packages
+    # Step 5: Install Python packages
     - name: 📦 Install Python packages
       run: |
+        pip install --upgrade pip
         pip install selenium==4.15.0
         pip install python-dotenv==1.0.0
         pip install requests==2.31.0
         pip install supabase==1.1.1
         pip install fuzzywuzzy==0.18.0
         pip install python-Levenshtein==0.25.1
+        pip install pandas==1.5.0
+        pip install numpy==1.24.0
+        pip install beautifulsoup4==4.11.0
+        pip install lxml==4.9.0
+        pip install rich==12.6.0
+
+    # Step 6: Verify setup
+    - name: 🔍 Verify setup
+      run: |
+        echo "=== Verification ==="
+        echo "Current directory: $(pwd)"
+        echo ""
+        echo "File check:"
+        ls -la bet_resolver.R 2>/dev/null || echo "bet_resolver.R not found"
+        echo ""
+        echo "Python test:"
+        python -c "
+        import os
+        print(f'Current dir: {os.getcwd()}')
+        print(f'bet_resolver.R exists: {os.path.exists(\"bet_resolver.R\")}')
+        if os.path.exists('bet_resolver.R'):
+            print(f'File size: {os.path.getsize(\"bet_resolver.R\")} bytes')
+        "
 
     # Step 7: Run scanner
     - name: 🎯 Run Scanner
@@ -70,6 +80,4 @@ jobs:
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       run: |
         echo "🚀 Starting GitHub Actions scraper..."
-        echo "File exists:"
-        ls -la bet_resolver.R
         python main.py
