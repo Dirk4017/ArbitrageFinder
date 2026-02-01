@@ -24,13 +24,12 @@ jobs:
     - name: 🌐 Setup Chrome
       uses: browser-actions/setup-chrome@v1
 
-    # Step 4: Install dependencies
-    - name: 📦 Install packages
+    # Step 4: Install dependencies    
+    - name: 📦 Install from requirements.txt
       run: |
-        pip install selenium==4.15.0
-        pip install supabase==1.1.1
-        pip install python-dotenv==1.0.0
-        pip install requests==2.31.0
+        sudo apt-get update
+        sudo apt-get install -y python3-dev build-essential
+        pip install -r requirements.txt
     # Step 5: Run your scraper
     - name: 🎯 Run Scanner
       env:
