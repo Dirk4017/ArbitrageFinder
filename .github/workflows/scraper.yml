@@ -38,4 +38,4 @@ jobs:
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       run: |
         echo "🚀 Starting GitHub Actions scraper..."
-        python test_scraper.py
+        python main.py  # or whatever your script is called
