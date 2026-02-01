@@ -10,73 +10,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout
+    # Step 1: Checkout with LFS
     - name: 📥 Checkout code
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        lfs: true  # Try with LFS
+        lfs: true
 
-    # Step 2: Force download if missing
-    - name: 📥 ENSURE bet_resolver.R exists
-      run: |
-        echo "=== Ensuring bet_resolver.R exists ==="
-        
-        # Check if file exists from checkout
-        if [ -f "bet_resolver.R" ] && [ -s "bet_resolver.R" ]; then
-            echo "✅ File exists from checkout"
-            ls -la bet_resolver.R
-        else
-            echo "❌ File missing, downloading..."
-            
-            # Try Git LFS if installed
-            if command -v git-lfs &> /dev/null; then
-                echo "Trying Git LFS..."
-                git lfs pull --include="bet_resolver.R" 2>&1 || echo "LFS pull failed"
-            fi
-            
-            # Force checkout
-            git checkout HEAD -- bet_resolver.R 2>&1 || echo "Git checkout failed"
-            
-            # Final check
-            if [ -f "bet_resolver.R" ]; then
-                echo "✅ File restored"
-            else
-                echo "❌ Still missing, using GitHub API..."
-                curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-                  -H "Accept: application/vnd.github.v3.raw" \
-                  -o bet_resolver.R \
-                  "https://api.github.com/repos/Dirk4017/ArbitrageFinder/contents/bet_resolver.R"
-                
-                if [ ! -f "bet_resolver.R" ] || [ ! -s "bet_resolver.R" ]; then
-                    echo "❌❌ CRITICAL: Cannot get bet_resolver.R"
-                    echo "Creating emergency version..."
-                    echo "# Emergency R script" > bet_resolver.R
-                    echo "resolve_bet <- function(p,m,l) { return(list(result=TRUE)) }" >> bet_resolver.R
-                fi
-            fi
-        fi
-        
-        echo "Final status:"
-        ls -la bet_resolver.R
-        echo "First 3 lines:"
-        head -3 bet_resolver.R
-
-    # Step 3: Setup Python
+    # Step 2: Setup Python
     - name: 🐍 Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
 
-    # Step 4: Install system dependencies
-    - name: 🔧 Install dependencies
+    # Step 3: Install system dependencies
+    - name: 🔧 Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y python3-dev build-essential r-base
+        sudo apt-get install -y python3-dev build-essential r-base git-lfs
         
-        # Install Git LFS if needed
-        sudo apt-get install -y git-lfs
+        # Setup Git LFS
         git lfs install
+
+    # Step 4: Pull LFS files
+    - name: 📥 Pull LFS files
+      run: |
+        echo "Pulling LFS files..."
+        git lfs pull || echo "LFS pull may have failed"
+        
+        echo "Checking bet_resolver.R..."
+        if [ -f "bet_resolver.R" ]; then
+            echo "✅ bet_resolver.R exists"
+            ls -la bet_resolver.R
+        else
+            echo "❌ bet_resolver.R missing even after LFS"
+            # Create emergency version
+            echo "# Emergency R script" > bet_resolver.R
+            echo "resolve_bet <- function(p,m,l) { return(list(result=TRUE)) }" >> bet_resolver.R
+        fi
 
     # Step 5: Setup Chrome
     - name: 🌐 Setup Chrome
@@ -90,6 +61,7 @@ jobs:
         pip install requests==2.31.0
         pip install supabase==1.1.1
         pip install fuzzywuzzy==0.18.0
+        pip install python-Levenshtein==0.25.1
 
     # Step 7: Run scanner
     - name: 🎯 Run Scanner
@@ -98,6 +70,6 @@ jobs:
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       run: |
         echo "🚀 Starting GitHub Actions scraper..."
-        echo "Final file check:"
+        echo "File exists:"
         ls -la bet_resolver.R
         python main.py
