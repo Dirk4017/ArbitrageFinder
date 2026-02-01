@@ -1,41 +1,73 @@
-name: Daily Sports Bet Scanner
+name: Sports Betting Scraper
 
 on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
   schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours
-  workflow_dispatch:        # Manual trigger
+    - cron: '0 7,19 * * *'
+  workflow_dispatch:
 
 jobs:
-  scan-for-opportunities:
+  run-scraper:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Get the code from GitHub
-    - name: 📥 Checkout code
+    - name: ⬇️ Checkout repository
       uses: actions/checkout@v4
 
-    # Step 2: Setup Python 3.10
-    - name: 🐍 Setup Python
-      uses: actions/setup-python@v4
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v5
       with:
         python-version: '3.10'
 
-    # Step 3: Install Chrome for Selenium
     - name: 🌐 Setup Chrome
       uses: browser-actions/setup-chrome@v1
 
-    # Step 4: Install dependencies
-    - name: 📦 Install packages
+    - name: 📦 Install from requirements.txt
       run: |
-        pip install selenium==4.15.0
-        pip install supabase==2.1.1
-        pip install python-dotenv==1.0.0
-        pip install requests==2.31.0
-    # Step 5: Run your scraper
-    - name: 🎯 Run Scanner
+        sudo apt-get update
+        sudo apt-get install -y python3-dev build-essential
+        pip install -r requirements.txt
+
+    - name: 🧪 Test Connection
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       run: |
-        echo "🚀 Starting GitHub Actions scraper..."
-        python test_scraper.py
+        python -c "
+        import os
+        from supabase import create_client
+        
+        url = os.getenv('SUPABASE_URL')
+        key = os.getenv('SUPABASE_KEY')
+        
+        print(f'Testing Supabase v1.x...')
+        print(f'URL: {bool(url)}')
+        print(f'Key: {bool(key)}')
+        
+        if url and key:
+            try:
+                # OLD API - no proxy parameter
+                client = create_client(url, key)
+                print('✅ Client created successfully')
+                
+                # Test query
+                result = client.table('bets').select('*').limit(1).execute()
+                print(f'✅ Found {len(result.data)} rows')
+            except Exception as e:
+                print(f'❌ Error: {e}')
+                import traceback
+                traceback.print_exc()
+        else:
+            print('❌ Missing credentials')
+        "
+
+    - name: 🚀 Run Your Actual Scraper
+      env:
+        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      run: |
+        # Run your actual script
+        python main.py  # or whatever your script is called
