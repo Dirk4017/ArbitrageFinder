@@ -274,8 +274,8 @@ class RStatsResolver:
                 before = normalized_event
                 normalized_event = re.sub(pattern, replacement, normalized_event, flags=re.IGNORECASE)
                 if before != normalized_event:
-                    changes_made.append(f"{pattern.replace('\\\\b', '')} -> {replacement}")
-
+                    changes_made.append(pattern.replace('\\b', '') + " -> " + replacement)
+                    
         # CRITICAL FIX: Handle "Knicks" carefully - don't replace if already "New York Knicks"
         if "New York Knicks" not in normalized_event and re.search(r'\bKnicks\b', normalized_event, re.IGNORECASE):
             before = normalized_event
