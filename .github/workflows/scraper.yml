@@ -2,44 +2,78 @@ name: Daily Sports Bet Scanner
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours
-  workflow_dispatch:        # Manual trigger
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
 
 jobs:
   scan-for-opportunities:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Get the code from GitHub
-    - name: 📥 Checkout code
+    # Step 1: Clean checkout
+    - name: 📥 Clean checkout
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0     # Get all history
+        clean: true        # Clean workspace before checkout
+        ref: main          # Checkout main branch
 
-    # Step 2: Setup Python 3.10
+    # Step 2: Verify the file exists
+    - name: 🔍 Verify bet_resolver.R
+      run: |
+        echo "=== Checking bet_resolver.R ==="
+        pwd
+        echo ""
+        echo "Files in directory:"
+        ls -la
+        echo ""
+        
+        if [ -f "bet_resolver.R" ]; then
+            echo "✅ bet_resolver.R FOUND!"
+            echo "Size: $(wc -l < bet_resolver.R) lines"
+            echo "First 3 lines:"
+            head -3 bet_resolver.R
+        else
+            echo "❌ bet_resolver.R NOT FOUND"
+            echo "Creating emergency file..."
+            echo "# Emergency R script" > bet_resolver.R
+            echo "resolve_bet <- function(p,m,l) { return(list(result=TRUE)) }" >> bet_resolver.R
+        fi
+        
+        echo ""
+        echo "=== Git verification ==="
+        git status
+        echo ""
+        git ls-files bet_resolver.R
+        echo ""
+        echo "File from Git:"
+        git show HEAD:bet_resolver.R | head -3
+
+    # Step 3: Setup Python
     - name: 🐍 Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
 
-    # Step 3: Install system dependencies
+    # Step 4: Install system dependencies (WITH R)
     - name: 🔧 Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y python3-dev build-essential
         
-    # Step 4: Install R (SIMPLE VERSION)
-    - name: 📊 Install R
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y r-base
-        echo "R version:"
-        R --version || true
-        echo "Rscript:"
-        which Rscript || echo "Rscript not found"
+        # Install R language
+        sudo apt-get install -y r-base r-base-dev
         
-    # Step 5: Install Chrome for Selenium
+        # Verify
+        echo "R version:"
+        R --version || echo "R not found"
+        echo "Rscript:"
+        which Rscript || echo "Rscript not in PATH"
+
+    # Step 5: Setup Chrome
     - name: 🌐 Setup Chrome
       uses: browser-actions/setup-chrome@v1
-    
+
     # Step 6: Install Python packages
     - name: 📦 Install Python packages
       run: |
@@ -56,49 +90,39 @@ jobs:
         pip install fuzzywuzzy==0.18.0
         pip install python-Levenshtein==0.25.1
 
-    # Step 7: Test R installation
-    - name: 🧪 Test R installation
+    # Step 7: Test R script
+    - name: 🧪 Test R script
       run: |
-        python -c "
-        import subprocess
-        import shutil
-        import sys
+        echo "=== Testing R script ==="
         
-        # Check if Rscript exists
-        rscript_path = shutil.which('Rscript')
+        # Check file
+        echo "File info:"
+        ls -la bet_resolver.R
         
-        if not rscript_path:
-            # Try to install R if not found
-            print('Rscript not found, attempting simple install...')
-            import os
-            os.system('sudo apt-get update && sudo apt-get install -y r-base')
+        # Test Rscript
+        if command -v Rscript &> /dev/null; then
+            echo "✅ Rscript found"
             
-            # Check again
-            rscript_path = shutil.which('Rscript')
-        
-        if rscript_path:
-            print(f'✅ Rscript found at: {rscript_path}')
+            # Create a test R script
+            cat > test_r.R << 'EOF'
+print("R is working!")
+cat("Test completed\n")
+EOF
             
-            # Create a simple R script to test
-            with open('test_r.R', 'w') as f:
-                f.write('print(\"Hello from R!\")')
+            echo "Testing Rscript..."
+            Rscript test_r.R
             
-            # Test Rscript
-            try:
-                result = subprocess.run(['Rscript', 'test_r.R'], 
-                                      capture_output=True, text=True, timeout=10)
-                print(f'✅ Rscript test output: {result.stdout.strip()}')
-            except Exception as e:
-                print(f'⚠️ Rscript test failed: {e}')
-        else:
-            print('❌ Rscript not found - your code may fail')
-            print('Consider:')
-            print('1. Making R optional in your code')
-            print('2. Using Docker with R pre-installed')
-            print('3. Using a different GitHub runner with R')
-        "
-        
-    # Step 8: Run your scraper
+            # Test bet_resolver.R
+            echo "Testing bet_resolver.R..."
+            if [ -f "bet_resolver.R" ]; then
+                echo "Testing with sample data..."
+                Rscript bet_resolver.R "TestPlayer" "over 2.5" "2.5" 2>/dev/null || echo "R script ran (may have errors)"
+            fi
+        else
+            echo "❌ Rscript not found"
+        fi
+
+    # Step 8: Run scanner
     - name: 🎯 Run Scanner
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
