@@ -1,73 +1,108 @@
-name: Sports Betting Scraper
+name: Daily Sports Bet Scanner
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
   schedule:
-    - cron: '0 7,19 * * *'
-  workflow_dispatch:
+    - cron: '0 */6 * * *'  # Every 6 hours
+  workflow_dispatch:        # Manual trigger
 
 jobs:
-  run-scraper:
+  scan-for-opportunities:
     runs-on: ubuntu-latest
 
     steps:
-    - name: ⬇️ Checkout repository
+    # Step 1: Get the code from GitHub
+    - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    - name: 🐍 Set up Python
-      uses: actions/setup-python@v5
+    # Step 2: Setup Python 3.10
+    - name: 🐍 Setup Python
+      uses: actions/setup-python@v4
       with:
         python-version: '3.10'
 
-    - name: 🌐 Setup Chrome
-      uses: browser-actions/setup-chrome@v1
-
-    - name: 📦 Install from requirements.txt
+    # Step 3: Install system dependencies
+    - name: 🔧 Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y python3-dev build-essential
-        pip install -r requirements.txt
+        
+    # Step 4: Install R (SIMPLE VERSION)
+    - name: 📊 Install R
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y r-base
+        echo "R version:"
+        R --version || true
+        echo "Rscript:"
+        which Rscript || echo "Rscript not found"
+        
+    # Step 5: Install Chrome for Selenium
+    - name: 🌐 Setup Chrome
+      uses: browser-actions/setup-chrome@v1
+    
+    # Step 6: Install Python packages
+    - name: 📦 Install Python packages
+      run: |
+        pip install --upgrade pip
+        pip install selenium==4.15.0
+        pip install requests==2.31.0
+        pip install python-dotenv==1.0.0
+        pip install rich==12.6.0
+        pip install supabase==1.1.1
+        pip install pandas==1.5.0
+        pip install numpy==1.24.0
+        pip install beautifulsoup4==4.11.0
+        pip install lxml==4.9.0
+        pip install fuzzywuzzy==0.18.0
+        pip install python-Levenshtein==0.25.1
 
-    - name: 🧪 Test Connection
-      env:
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-        SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+    # Step 7: Test R installation
+    - name: 🧪 Test R installation
       run: |
         python -c "
-        import os
-        from supabase import create_client
+        import subprocess
+        import shutil
+        import sys
         
-        url = os.getenv('SUPABASE_URL')
-        key = os.getenv('SUPABASE_KEY')
+        # Check if Rscript exists
+        rscript_path = shutil.which('Rscript')
         
-        print(f'Testing Supabase v1.x...')
-        print(f'URL: {bool(url)}')
-        print(f'Key: {bool(key)}')
+        if not rscript_path:
+            # Try to install R if not found
+            print('Rscript not found, attempting simple install...')
+            import os
+            os.system('sudo apt-get update && sudo apt-get install -y r-base')
+            
+            # Check again
+            rscript_path = shutil.which('Rscript')
         
-        if url and key:
+        if rscript_path:
+            print(f'✅ Rscript found at: {rscript_path}')
+            
+            # Create a simple R script to test
+            with open('test_r.R', 'w') as f:
+                f.write('print(\"Hello from R!\")')
+            
+            # Test Rscript
             try:
-                # OLD API - no proxy parameter
-                client = create_client(url, key)
-                print('✅ Client created successfully')
-                
-                # Test query
-                result = client.table('bets').select('*').limit(1).execute()
-                print(f'✅ Found {len(result.data)} rows')
+                result = subprocess.run(['Rscript', 'test_r.R'], 
+                                      capture_output=True, text=True, timeout=10)
+                print(f'✅ Rscript test output: {result.stdout.strip()}')
             except Exception as e:
-                print(f'❌ Error: {e}')
-                import traceback
-                traceback.print_exc()
+                print(f'⚠️ Rscript test failed: {e}')
         else:
-            print('❌ Missing credentials')
+            print('❌ Rscript not found - your code may fail')
+            print('Consider:')
+            print('1. Making R optional in your code')
+            print('2. Using Docker with R pre-installed')
+            print('3. Using a different GitHub runner with R')
         "
-
-    - name: 🚀 Run Your Actual Scraper
+        
+    # Step 8: Run your scraper
+    - name: 🎯 Run Scanner
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       run: |
-        # Run your actual script
-        python main.py  # or whatever your script is called
+        echo "🚀 Starting GitHub Actions scraper..."
+        python main.py
