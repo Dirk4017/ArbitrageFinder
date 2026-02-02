@@ -24,79 +24,44 @@ jobs:
     - name: 🔧 Install system dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y python3-dev build-essential
-        
-        # Install R
-        sudo apt-get install -y r-base r-base-dev
-        
-        # Install R package dependencies
-        sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
-        
-        # Verify
-        echo "R version:"
-        R --version || echo "R check failed"
-        echo "Rscript:"
-        which Rscript || echo "Rscript not found"
+        sudo apt-get install -y \
+          python3-dev \
+          build-essential \
+          wget \
+          unzip \
+          curl \
+          xvfb \
+          libnss3 \
+          libatk-bridge2.0-0 \
+          libdrm2 \
+          libxkbcommon0 \
+          libxcomposite1 \
+          libxdamage1 \
+          libxrandr2 \
+          libgbm1 \
+          libpango-1.0-0 \
+          libcairo2 \
+          libasound2 \
+          libxshmfence1
 
-    # Step 3.5: Install R packages
-    - name: 📦 Install R packages
+    # Step 4: Setup Chrome with CI optimizations
+    - name: 🌐 Setup Chrome for CI
       run: |
-        echo "=== Installing R packages for bet resolution ==="
+        echo "=== Setting up Chrome for CI ==="
         
-        # Create user library directory
-        mkdir -p ~/R/library
+        # Install Chrome from Google's official repository
+        wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo apt-get install -y /tmp/chrome.deb
         
-        # Set environment variable
-        echo "R_LIBS_USER=~/R/library" >> ~/.Renviron
+        # Install ChromeDriver via webdriver-manager (will be done by Python)
+        pip install webdriver-manager==4.0.1
         
-        # Install packages one by one with error handling
-        echo "Installing jsonlite..."
-        Rscript -e "install.packages('jsonlite', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "jsonlite installation had issues"
+        # Setup Xvfb display for headless Chrome
+        echo "Starting Xvfb display server..."
+        Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
+        export DISPLAY=:99
         
-        echo "Installing httr..."
-        Rscript -e "install.packages('httr', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "httr installation had issues"
-        
-        echo "Installing dplyr..."
-        Rscript -e "install.packages('dplyr', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "dplyr installation had issues"
-        
-        echo "Installing lubridate..."
-        Rscript -e "install.packages('lubridate', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "lubridate installation had issues"
-        
-        echo "Installing stringr..."
-        Rscript -e "install.packages('stringr', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "stringr installation had issues"
-        
-        echo "Installing nflreadr..."
-        Rscript -e "install.packages('nflreadr', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "nflreadr installation had issues"
-        
-        echo "Installing hoopR..."
-        Rscript -e "install.packages('hoopR', lib='~/R/library', repos='https://cloud.r-project.org')" || echo "hoopR installation had issues"
-        
-        # Verify installation
-        echo "=== Verifying package installation ==="
-        Rscript -e "
-          # Add user library to path
-          .libPaths(c('~/R/library', .libPaths()))
-          cat('Library paths:\\n')
-          print(.libPaths())
-          
-          # Test each package
-          packages <- c('jsonlite', 'httr', 'dplyr', 'lubridate', 'stringr', 'nflreadr', 'hoopR')
-          cat('\\nTesting package loading:\\n')
-          for (pkg in packages) {
-            success <- require(pkg, character.only = TRUE, quietly = TRUE)
-            if (success) {
-              cat(paste0('✓ ', pkg, ' loaded successfully\\n'))
-            } else {
-              cat(paste0('✗ ', pkg, ' FAILED to load\\n'))
-            }
-          }
-        "
-
-    # Step 4: Setup Chrome using official action
-    - name: 🌐 Setup Chrome and ChromeDriver
-      uses: browser-actions/setup-chrome@v1
-      with:
-        chrome-version: 'stable'
+        echo "✅ Chrome setup complete"
 
     # Step 5: Install Python packages
     - name: 📦 Install Python packages
@@ -115,130 +80,175 @@ jobs:
         pip install rich==12.6.0
         pip install webdriver-manager==4.0.1
 
-    # Step 6: Test R script execution
-    - name: 🧪 Test R script execution
+    # Step 6: Install R packages (simplified)
+    - name: 📦 Install R packages
       run: |
-        echo "=== Testing R script execution ==="
+        echo "=== Installing R packages ==="
         
-        # Create a simple test script
-        cat > test_r_script.R << 'EOF'
-        # Set library path
+        # Install R if not already installed
+        sudo apt-get install -y r-base r-base-dev
+        
+        # Install required system libraries
+        sudo apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev
+        
+        # Install R packages
+        Rscript -e "
+        # Create user library
+        dir.create('~/R/library', recursive = TRUE, showWarnings = FALSE)
         .libPaths(c('~/R/library', .libPaths()))
         
-        # Try to load packages
-        cat("Loading R packages...\\n")
-        packages <- c('jsonlite', 'httr', 'dplyr', 'lubridate', 'stringr', 'nflreadr', 'hoopR')
+        # Install packages
+        install.packages(c('jsonlite', 'httr', 'dplyr', 'lubridate', 'stringr'), 
+                        lib = '~/R/library', 
+                        repos = 'https://cloud.r-project.org')
         
-        for (pkg in packages) {
-          if (require(pkg, character.only = TRUE)) {
-            cat(paste0("✓ ", pkg, "\\n"))
-          } else {
-            cat(paste0("✗ ", pkg, "\\n"))
-          }
-        }
+        # Try to install sports packages
+        tryCatch({
+          install.packages('nflreadr', lib = '~/R/library', repos = 'https://cloud.r-project.org')
+        }, error = function(e) cat('nflreadr installation failed\\n'))
         
-        # Test a simple function
-        cat("\\nTesting simple R function...\\n")
-        result <- list(
-          success = TRUE,
-          test = "R script works",
-          packages = packages
-        )
-        
-        # Output JSON for Python to parse
-        cat("\\nJSON_OUTPUT_START\\n")
-        cat(jsonlite::toJSON(result, auto_unbox = TRUE))
-        cat("\\nJSON_OUTPUT_END\\n")
-        EOF
-        
-        echo "Running test R script..."
-        Rscript test_r_script.R || echo "R script execution failed"
+        tryCatch({
+          install.packages('hoopR', lib = '~/R/library', repos = 'https://cloud.r-project.org')
+        }, error = function(e) cat('hoopR installation failed\\n'))
+        "
 
-    # Step 7: Test Selenium setup
-    - name: 🧪 Test Selenium setup
+    # Step 7: Create CI-optimized scraper patch
+    - name: 🔧 Create CI Scraper Patch
       run: |
-        echo "=== Testing Selenium setup ==="
+        echo "=== Creating CI-optimized scraper ==="
         
-        # Create a test script
-        cat > test_selenium.py << 'EOF'
+        cat > ci_scraper_patch.py << 'EOF'
+        """
+        CI-optimized patch for UltraStableScanner
+        This monkey-patches the scraper to work better in GitHub Actions
+        """
+        import os
         from selenium import webdriver
         from selenium.webdriver.chrome.options import Options
-        from selenium.webdriver.chrome.service import Service
-        from selenium.webdriver.common.by import By
-        import os
         
-        print("Testing Selenium with Chrome...")
-        
-        # Configure Chrome options
-        chrome_options = Options()
-        chrome_options.add_argument('--no-sandbox')
-        chrome_options.add_argument('--disable-dev-shm-usage')
-        chrome_options.add_argument('--headless')
-        chrome_options.add_argument('--disable-gpu')
-        chrome_options.add_argument('--window-size=1920,1080')
-        
-        # Use webdriver-manager for automatic ChromeDriver management
-        try:
-            from webdriver_manager.chrome import ChromeDriverManager
-            from selenium.webdriver.chrome.service import Service as ChromeService
+        def patch_ultra_stable_scanner():
+            """Patch the UltraStableScanner for CI"""
+            print("=== PATCHING SCRAPER FOR CI ===")
             
-            print("Using webdriver-manager for ChromeDriver...")
-            service = ChromeService(ChromeDriverManager().install())
-            driver = webdriver.Chrome(service=service, options=chrome_options)
-        except:
-            print("Falling back to default ChromeDriver...")
-            # Fallback to default
-            driver = webdriver.Chrome(options=chrome_options)
-        
-        try:
-            print("Loading Google.com...")
-            driver.get('https://www.google.com')
-            print(f"✅ Success! Page title: {driver.title}")
-            
-            print("Testing page source...")
-            if 'google' in driver.page_source.lower():
-                print("✅ Google page loaded correctly")
-            else:
-                print("⚠️ Page loaded but content unexpected")
-            
-            # Test that we can find elements
-            search_box = driver.find_element(By.NAME, 'q')
-            print("✅ Can find page elements")
-            
-            driver.quit()
-            print("✅ Selenium test passed!")
-            
-        except Exception as e:
-            print(f"❌ Selenium error: {e}")
-            import traceback
-            traceback.print_exc()
+            # Store original initialize_webdriver method
             try:
-                driver.quit()
-            except:
-                pass
+                from scraper.ultra_stable_scanner import UltraStableScanner
+                original_init = UltraStableScanner.initialize_webdriver
+            except ImportError:
+                print("⚠️ Could not import UltraStableScanner")
+                return
+            
+            def ci_initialize_webdriver(self):
+                """CI-optimized WebDriver initialization"""
+                try:
+                    # Close existing driver if any
+                    if self.driver:
+                        try:
+                            self.driver.quit()
+                        except:
+                            pass
+                        self.driver = None
+                    
+                    print("Initializing CI-optimized Chrome driver...")
+                    
+                    chrome_options = Options()
+                    
+                    # ESSENTIAL for CI
+                    chrome_options.add_argument("--no-sandbox")
+                    chrome_options.add_argument("--disable-dev-shm-usage")
+                    chrome_options.add_argument("--disable-gpu")
+                    chrome_options.add_argument("--window-size=1920,1080")
+                    
+                    # CRITICAL: Use new headless mode in CI
+                    chrome_options.add_argument("--headless=new")
+                    
+                    # Anti-detection
+                    chrome_options.add_argument("--disable-blink-features=AutomationControlled")
+                    chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+                    chrome_options.add_experimental_option('useAutomationExtension', False)
+                    
+                    # Performance optimizations for CI
+                    chrome_options.add_argument("--disable-extensions")
+                    chrome_options.add_argument("--disable-background-timer-throttling")
+                    chrome_options.add_argument("--disable-backgrounding-occluded-windows")
+                    chrome_options.add_argument("--disable-renderer-backgrounding")
+                    
+                    # User agent
+                    chrome_options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                    
+                    # Disable features that cause timeouts
+                    chrome_options.add_argument("--disable-dev-shm-usage")
+                    chrome_options.add_argument("--disable-software-rasterizer")
+                    chrome_options.add_argument("--disable-features=VizDisplayCompositor")
+                    
+                    # Use webdriver-manager for ChromeDriver
+                    try:
+                        from webdriver_manager.chrome import ChromeDriverManager
+                        from selenium.webdriver.chrome.service import Service as ChromeService
+                        
+                        print("Using webdriver-manager for ChromeDriver...")
+                        service = ChromeService(ChromeDriverManager().install())
+                        driver = webdriver.Chrome(service=service, options=chrome_options)
+                    except Exception as e:
+                        print(f"webdriver-manager failed, falling back: {e}")
+                        driver = webdriver.Chrome(options=chrome_options)
+                    
+                    # Set longer timeouts for CI
+                    driver.set_page_load_timeout(90)  # 90 seconds
+                    driver.implicitly_wait(20)
+                    
+                    # Hide automation
+                    driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+                        'source': '''
+                            Object.defineProperty(navigator, 'webdriver', {
+                                get: () => undefined
+                            });
+                            window.chrome = { runtime: {} };
+                        '''
+                    })
+                    
+                    print("✅ CI-optimized WebDriver initialized")
+                    return driver
+                    
+                except Exception as e:
+                    print(f"❌ CI WebDriver initialization failed: {e}")
+                    return None
+            
+            # Apply the patch
+            UltraStableScanner.initialize_webdriver = ci_initialize_webdriver
+            print("✅ UltraStableScanner patched for CI")
+        
+        # Apply patch
+        patch_ultra_stable_scanner()
         EOF
         
-        python test_selenium.py
+        echo "✅ CI scraper patch created"
 
-    # Step 8: Run the Automated Scanner (FINAL CORRECTED VERSION)
+    # Step 8: Run the Enhanced Paper Trading System with CI fixes
     - name: 🎯 Run Enhanced Paper Trading System
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        DISPLAY: ':99'  # REQUIRED for Chrome in CI
       run: |
         echo "🚀 Running Enhanced Paper Trading System"
         echo "=========================================="
         echo "Current time: $(date)"
         
-        # Create the correct runner script based on your actual class methods
-        cat > automated_runner.py << 'EOF'
+        # Create the main runner with all fixes
+        cat > run_ci_optimized.py << 'EOF'
         import os
         import sys
+        import time
         import logging
         import traceback
         from datetime import datetime
         
-        # Setup logging for GitHub Actions
+        # Setup environment for CI
+        os.environ['DISPLAY'] = ':99'
+        sys.path.insert(0, os.getcwd())
+        
+        # Setup logging
         logging.basicConfig(
             level=logging.INFO,
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -247,242 +257,276 @@ jobs:
         logger = logging.getLogger(__name__)
         
         print("=" * 60)
-        print("ENHANCED PAPER TRADING SYSTEM - AUTOMATED RUN")
-        print(f"Started at: {datetime.now()}")
+        print("ENHANCED PAPER TRADING - CI OPTIMIZED")
+        print(f"Started: {datetime.now()}")
         print("=" * 60)
         
-        def main():
+        def apply_ci_fixes():
+            """Apply all CI-specific fixes before running"""
+            print("\\n=== APPLYING CI FIXES ===")
+            
+            # 1. Apply scraper patch
             try:
-                # Add current directory to Python path
-                sys.path.insert(0, os.getcwd())
+                import ci_scraper_patch
+                print("✅ CI scraper patch applied")
+            except Exception as e:
+                print(f"⚠️ CI scraper patch failed: {e}")
+            
+            # 2. Fix datetime bug in enhanced_paper_trading
+            try:
+                import enhanced_paper_trading as ep_module
                 
-                # Import the system
+                # Check if _is_future_game has the datetime bug
+                import inspect
+                source = inspect.getsource(ep_module.EnhancedPaperTradingSystem._is_future_game)
+                if 'datetime' in source and 'import' not in source.split('datetime')[0][-10:]:
+                    print("Fixing datetime bug in _is_future_game...")
+                    
+                    # Monkey-patch the method
+                    original_method = ep_module.EnhancedPaperTradingSystem._is_future_game
+                    
+                    def patched_is_future_game(self, game_date: str) -> bool:
+                        """Patched version with proper datetime import"""
+                        if not game_date:
+                            return False
+                        
+                        try:
+                            from datetime import datetime, timedelta
+                            
+                            # Parse the game date
+                            if ' ' in str(game_date):
+                                game_date_obj = datetime.strptime(str(game_date), '%Y-%m-%d %H:%M:%S')
+                            else:
+                                game_date_obj = datetime.strptime(str(game_date), '%Y-%m-%d')
+                                game_date_obj = game_date_obj.replace(hour=20, minute=0, second=0)
+                            
+                            current_time = datetime.now()
+                            time_buffer = timedelta(hours=3)
+                            future_cutoff = game_date_obj + time_buffer
+                            
+                            if current_time < future_cutoff:
+                                return True
+                            
+                            return False
+                            
+                        except Exception as e:
+                            print(f"Could not parse game date '{game_date}': {e}")
+                            return True
+                    
+                    ep_module.EnhancedPaperTradingSystem._is_future_game = patched_is_future_game
+                    print("✅ Datetime bug fixed")
+                else:
+                    print("✅ No datetime bug found")
+                    
+            except Exception as e:
+                print(f"⚠️ Datetime fix failed: {e}")
+        
+        def run_system():
+            """Run the Enhanced Paper Trading System"""
+            print("\\n=== INITIALIZING SYSTEM ===")
+            
+            try:
+                # Apply CI fixes first
+                apply_ci_fixes()
+                
+                # Import after fixes are applied
                 from enhanced_paper_trading import EnhancedPaperTradingSystem
                 
-                print("✅ Imported EnhancedPaperTradingSystem")
-                
                 # Initialize system
-                print("Initializing system...")
+                print("Initializing EnhancedPaperTradingSystem...")
                 system = EnhancedPaperTradingSystem()
-                print("✅ System initialized")
+                print(f"✅ System initialized | Bankroll: €{system.bankroll:.2f}")
+                
+                return system
+                
+            except Exception as e:
+                print(f"❌ System initialization failed: {e}")
+                traceback.print_exc()
+                return None
+        
+        def run_automated_tasks(system):
+            """Run all automated tasks"""
+            print("\\n=== RUNNING AUTOMATED TASKS ===")
+            
+            # TASK 1: Automated scanning
+            print("\\n1. AUTOMATED SCANNING")
+            print("-" * 40)
+            
+            scanning_success = False
+            try:
+                if hasattr(system, 'automated_scanning'):
+                    print("Running automated_scanning(max_scans=1)...")
+                    
+                    # Test website accessibility first
+                    print("Checking website accessibility...")
+                    try:
+                        import requests
+                        response = requests.get('https://crazyninjaodds.com', timeout=10)
+                        if response.status_code == 200:
+                            print("✅ Website is accessible")
+                        else:
+                            print(f"⚠️ Website returned status {response.status_code}")
+                    except Exception as e:
+                        print(f"⚠️ Website check failed: {e}")
+                    
+                    # Run scanning
+                    system.automated_scanning(max_scans=1)
+                    scanning_success = True
+                    print("✅ Scanning completed")
+                else:
+                    print("⚠️ automated_scanning method not found")
+                    
+            except Exception as e:
+                print(f"❌ Scanning failed: {e}")
+                logger.warning(f"Scanning failed: {e}")
+            
+            # TASK 2: Resolve pending bets (MOST IMPORTANT)
+            print("\\n2. RESOLVE PENDING BETS")
+            print("-" * 40)
+            
+            resolution_success = False
+            try:
+                if hasattr(system, '_resolve_pending'):
+                    print("Running _resolve_pending()...")
+                    system._resolve_pending()
+                    resolution_success = True
+                    print("✅ Bet resolution completed")
+                else:
+                    print("⚠️ _resolve_pending method not found")
+                    
+            except Exception as e:
+                print(f"❌ Bet resolution failed: {e}")
+                traceback.print_exc()
+                
+                # Try alternative resolution
+                print("\\nTrying alternative resolution...")
+                try:
+                    pending_bets = system.db.get_pending_bets()
+                    print(f"Found {len(pending_bets)} pending bets")
+                    
+                    if pending_bets:
+                        resolved = 0
+                        for bet in pending_bets[:5]:  # Try first 5
+                            try:
+                                if hasattr(system, 'resolve_bet_intelligently'):
+                                    result = system.resolve_bet_intelligently(bet['id'])
+                                    if result.get('resolved'):
+                                        resolved += 1
+                            except:
+                                pass
+                        
+                        if resolved > 0:
+                            resolution_success = True
+                            print(f"✅ Resolved {resolved} bets")
+                except Exception as alt_e:
+                    print(f"Alternative resolution also failed: {alt_e}")
+            
+            # TASK 3: Performance summary
+            print("\\n3. PERFORMANCE SUMMARY")
+            print("-" * 40)
+            
+            try:
+                stats = system.db.get_performance_stats()
+                pending = len(system.db.get_pending_bets())
+                
                 print(f"Bankroll: €{system.bankroll:.2f}")
+                print(f"Total Profit: €{stats.get('total_profit', 0):.2f}")
+                print(f"Total Bets: {stats.get('total_bets', 0)}")
+                print(f"Won: {stats.get('won_bets', 0)} | Lost: {stats.get('lost_bets', 0)}")
+                print(f"Pending: {pending}")
                 
-                # TASK 1: Run automated scanning
-                print("\\n" + "=" * 40)
-                print("TASK 1: AUTOMATED SCANNING")
-                print("=" * 40)
+                if stats.get('total_bets', 0) > 0:
+                    win_rate = (stats.get('won_bets', 0) / stats.get('total_bets', 0)) * 100
+                    print(f"Win Rate: {win_rate:.1f}%")
+                    
+                print(f"\\nTask Summary:")
+                print(f"  Scanning: {'✅' if scanning_success else '❌'}")
+                print(f"  Bet Resolution: {'✅' if resolution_success else '❌'}")
                 
-                try:
-                    # Check if automated_scanning method exists
-                    if hasattr(system, 'automated_scanning'):
-                        print("Running automated_scanning()...")
-                        system.automated_scanning(max_scans=1)
-                        print("✅ Automated scanning completed")
-                    else:
-                        print("⚠️ automated_scanning method not found")
-                        
-                        # Try scanner.scrape_crazyninja_odds directly
-                        if hasattr(system, 'scanner'):
-                            print("Trying scanner.scrape_crazyninja_odds()...")
-                            opportunities = system.scanner.scrape_crazyninja_odds()
-                            if opportunities:
-                                print(f"Found {len(opportunities)} opportunities")
-                                for opp in opportunities[:3]:
-                                    print(f"  - {opp.get('player', 'Unknown')}: {opp.get('market', 'Unknown')}")
-                            else:
-                                print("No opportunities found")
-                except Exception as e:
-                    print(f"❌ Automated scanning failed: {e}")
-                    logger.error(f"Scanning failed: {e}")
+            except Exception as e:
+                print(f"⚠️ Performance summary failed: {e}")
+            
+            return scanning_success, resolution_success
+        
+        def main():
+            """Main execution function"""
+            try:
+                # Run system
+                system = run_system()
+                if not system:
+                    return False
                 
-                # TASK 2: Resolve pending bets (MOST IMPORTANT)
-                print("\\n" + "=" * 40)
-                print("TASK 2: RESOLVE PENDING BETS")
-                print("=" * 40)
+                # Run tasks
+                scanning_success, resolution_success = run_automated_tasks(system)
                 
-                try:
-                    # Check if _resolve_pending method exists (private method)
-                    if hasattr(system, '_resolve_pending'):
-                        print("Running _resolve_pending()...")
-                        system._resolve_pending()
-                        print("✅ Bet resolution completed")
-                    else:
-                        print("⚠️ _resolve_pending method not found, trying resolve_bet_intelligently")
-                        
-                        # Try to get pending bets and resolve them one by one
-                        if hasattr(system, 'db'):
-                            pending_bets = system.db.get_pending_bets()
-                            print(f"Found {len(pending_bets)} pending bets")
-                            
-                            if pending_bets:
-                                resolved_count = 0
-                                future_count = 0
-                                college_count = 0
-                                error_count = 0
-                                
-                                for bet in pending_bets:
-                                    player = bet.get('player', 'Unknown')
-                                    market = bet.get('market', 'Unknown')
-                                    game_date = bet.get('game_date', 'Unknown')
-                                    sport = bet.get('sport', 'Unknown')
-                                    
-                                    print(f"\\n  Bet: {player} - {market}")
-                                    print(f"    Game: {game_date} | Sport: {sport}")
-                                    
-                                    if hasattr(system, 'resolve_bet_intelligently'):
-                                        result = system.resolve_bet_intelligently(bet['id'])
-                                        
-                                        if not result.get('success'):
-                                            error_msg = result.get('error', 'Unknown error')
-                                            print(f"    ✗ Error: {error_msg}")
-                                            error_count += 1
-                                        elif result.get('resolved'):
-                                            status = "WON" if result.get('won') else "LOST"
-                                            profit = result.get('profit', 0)
-                                            print(f"    ✓ {status}: €{profit:.2f}")
-                                            resolved_count += 1
-                                        elif result.get('skip_reason') == 'future_game':
-                                            message = result.get('message', 'Game in future')
-                                            print(f"    ⏸ Skipped (future): {message}")
-                                            future_count += 1
-                                        elif result.get('skip_reason') == 'college_game':
-                                            message = result.get('message', 'College game')
-                                            print(f"    🎓 Skipped (college): {message}")
-                                            college_count += 1
-                                        else:
-                                            message = result.get('message', 'Not yet resolvable')
-                                            print(f"    ○ Not resolved: {message}")
-                                            error_count += 1
-                                    
-                                print(f"\\nBet resolution summary:")
-                                print(f"  Resolved: {resolved_count}")
-                                print(f"  Future games (skipped): {future_count}")
-                                print(f"  College games (skipped): {college_count}")
-                                print(f"  Errors/unresolved: {error_count}")
-                            else:
-                                print("No pending bets to resolve")
-                except Exception as e:
-                    print(f"❌ Bet resolution failed: {e}")
-                    logger.error(f"Bet resolution failed: {e}", exc_info=True)
-                
-                # TASK 3: Update missing bet categories
-                print("\\n" + "=" * 40)
-                print("TASK 3: UPDATE MISSING BET CATEGORIES")
-                print("=" * 40)
-                
-                try:
-                    if hasattr(system, 'db') and hasattr(system.db, 'update_existing_bet_categories'):
-                        print("Updating existing bet categories...")
-                        updated = system.db.update_existing_bet_categories()
-                        print(f"✅ Updated {updated} bets with missing categories")
-                    else:
-                        print("⚠️ update_existing_bet_categories method not available")
-                except Exception as e:
-                    print(f"❌ Category update failed: {e}")
-                
-                # TASK 4: Show performance summary
-                print("\\n" + "=" * 40)
-                print("TASK 4: PERFORMANCE SUMMARY")
-                print("=" * 40)
-                
-                try:
-                    if hasattr(system, '_view_performance'):
-                        system._view_performance()
-                    elif hasattr(system, 'db'):
-                        stats = system.db.get_performance_stats()
-                        
-                        print(f"Bankroll: €{system.bankroll:.2f}")
-                        print(f"Total Profit/Loss: €{stats.get('total_profit', 0):.2f}")
-                        print(f"Total Bets: {stats.get('total_bets', 0)}")
-                        print(f"Won: {stats.get('won_bets', 0)} | Lost: {stats.get('lost_bets', 0)}")
-                        print(f"Pending: {stats.get('pending_bets', 0)}")
-                        
-                        if stats.get('total_bets', 0) > 0:
-                            win_rate = (stats.get('won_bets', 0) / stats.get('total_bets', 0)) * 100
-                            print(f"Win Rate: {win_rate:.1f}%")
-                except Exception as e:
-                    print(f"❌ Performance summary failed: {e}")
+                # Overall success - bet resolution is most important
+                overall_success = resolution_success
                 
                 print("\\n" + "=" * 60)
-                print(f"COMPLETED AT: {datetime.now()}")
-                print("✅ ALL TASKS COMPLETED SUCCESSFULLY")
+                print(f"COMPLETED: {datetime.now()}")
+                
+                if overall_success:
+                    print("✅ SUCCESS: Bet resolution completed (main goal)")
+                elif scanning_success:
+                    print("⚠️ PARTIAL: Scanning worked but bet resolution failed")
+                else:
+                    print("❌ FAILED: Both scanning and bet resolution failed")
+                
                 print("=" * 60)
                 
-                return True
+                return overall_success
                 
-            except ImportError as e:
-                print(f"❌ Import Error: {e}")
-                print(f"Current directory: {os.getcwd()}")
-                print(f"Files in directory: {os.listdir('.')}")
-                traceback.print_exc()
-                return False
             except Exception as e:
-                print(f"❌ Unexpected Error: {e}")
+                print(f"❌ CRITICAL ERROR: {e}")
                 traceback.print_exc()
                 return False
         
+        # Run and exit
         if __name__ == "__main__":
             success = main()
             sys.exit(0 if success else 1)
         EOF
         
-        # Run the automated runner
-        echo "\\n=== EXECUTING AUTOMATED RUNNER ==="
-        python automated_runner.py
+        # Run the CI-optimized script
+        echo "\\n=== EXECUTING CI-OPTIMIZED RUNNER ==="
+        python run_ci_optimized.py
         
-        # Check result
-        if [ $? -eq 0 ]; then
-            echo "✅ Workflow completed successfully!"
+        EXIT_CODE=$?
+        
+        if [ $EXIT_CODE -eq 0 ]; then
+            echo "\\n✅ GitHub Actions workflow completed SUCCESSFULLY!"
         else
-            echo "⚠️ Workflow completed with errors"
+            echo "\\n⚠️ GitHub Actions workflow completed with ERRORS"
+            echo "Check logs above for details."
             
-            # Try fallback: Run main.py directly
-            echo "\\n=== TRYING FALLBACK: RUN MAIN.PY ==="
-            python -c "
+            # Try a simple fallback - just bet resolution
+            echo "\\n=== TRYING SIMPLE FALLBACK ==="
+            python3 -c "
             import os
             import sys
             sys.path.insert(0, os.getcwd())
+            os.environ['DISPLAY'] = ':99'
             
-            # Mock input for automated execution
-            import builtins
-            original_input = builtins.input
-            
-            def mock_input(prompt=''):
-                print(f'Mock input called with prompt: {prompt}')
-                # Return '5' for resolve pending bets, then '0' to exit
-                if 'Select option' in prompt:
-                    return '5'
-                elif 'Place bet?' in prompt:
-                    return 'n'
-                else:
-                    return ''
-            
-            builtins.input = mock_input
+            print('Running simple bet resolution only...')
             
             try:
-                import main
-                print('✅ main.py imported successfully')
-                
-                # We can't run main.main() because it's interactive
-                # Instead, import EnhancedPaperTradingSystem directly
                 from enhanced_paper_trading import EnhancedPaperTradingSystem
                 system = EnhancedPaperTradingSystem()
-                print('✅ System initialized')
+                print(f'System initialized. Bankroll: €{system.bankroll:.2f}')
                 
-                # Try to resolve pending bets
-                print('\\n=== RESOLVING PENDING BETS ===')
+                # Just try to resolve bets
                 if hasattr(system, '_resolve_pending'):
+                    print('Resolving pending bets...')
                     system._resolve_pending()
+                    print('✅ Simple bet resolution completed')
                 else:
-                    print('⚠️ _resolve_pending method not found')
-                
+                    print('⚠️ _resolve_pending not found')
+                    
             except Exception as e:
-                print(f'❌ Error: {e}')
+                print(f'❌ Simple fallback failed: {e}')
                 import traceback
                 traceback.print_exc()
-            
-            builtins.input = original_input
             "
         fi
         
-        echo "\\n✅ GitHub Actions workflow execution completed!"
+        echo "\\n🏁 GitHub Actions workflow execution finished!"
