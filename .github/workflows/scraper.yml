@@ -92,11 +92,11 @@ jobs:
           }
         "
 
-    # Step 4: Setup Chrome using official action (FIXED)
+    # Step 4: Setup Chrome using official action
     - name: 🌐 Setup Chrome and ChromeDriver
       uses: browser-actions/setup-chrome@v1
       with:
-        chrome-version: 'stable'  # Use stable version
+        chrome-version: 'stable'
 
     # Step 5: Install Python packages
     - name: 📦 Install Python packages
@@ -113,7 +113,7 @@ jobs:
         pip install beautifulsoup4==4.11.0
         pip install lxml==4.9.0
         pip install rich==12.6.0
-        pip install webdriver-manager==4.0.1  # Added to help with ChromeDriver
+        pip install webdriver-manager==4.0.1
 
     # Step 6: Test R script execution
     - name: 🧪 Test R script execution
@@ -220,7 +220,7 @@ jobs:
         
         python test_selenium.py
 
-    # Step 8: Run the main script (with fallback options)
+    # Step 8: Run the main script (FIXED VERSION)
     - name: 🎯 Run Automated Scanner
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -230,78 +230,241 @@ jobs:
         echo "=================================================="
         echo "Current time: $(date)"
         
-        # Create a robust runner script
-        cat > github_runner.py << 'EOF'
+        # First check project structure
+        echo "=== Project Structure ==="
+        echo "Files in repository:"
+        ls -la
+        echo ""
+        echo "Python files:"
+        find . -name "*.py" -type f | head -20
+        
+        # Create the fixed runner script
+        cat > run_scanner.py << 'EOF'
         import os
         import sys
-        import time
+        import traceback
         from datetime import datetime
         
-        # Add current directory to path
-        sys.path.append('.')
+        print("=" * 60)
+        print("SPORTS BET SCANNER - GITHUB ACTIONS")
+        print(f"Started at: {datetime.now()}")
+        print("=" * 60)
         
-        def main():
-            print("=== GitHub Actions Runner ===")
-            print(f"Start time: {datetime.now()}")
+        # Setup Python path
+        current_dir = os.getcwd()
+        sys.path.insert(0, current_dir)
+        print(f"Current directory: {current_dir}")
+        print(f"Python path: {sys.path}")
+        
+        def import_scraper():
+            """Try multiple ways to import the scraper module"""
+            print("\\n=== IMPORTING SCRAPER MODULE ===")
             
+            # Method 1: Direct import
             try:
-                # Try to import the scraper
-                from src.scraper import EnhancedPaperTradingSystem
-                print("✅ Successfully imported scraper module")
+                import scraper
+                print("✅ Method 1: Direct import successful")
+                return scraper
+            except ImportError as e:
+                print(f"❌ Method 1 failed: {e}")
+            
+            # Method 2: Import as module from file
+            try:
+                import importlib.util
+                spec = importlib.util.spec_from_file_location("scraper", "scraper.py")
+                scraper = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(scraper)
+                print("✅ Method 2: File import successful")
+                return scraper
+            except Exception as e:
+                print(f"❌ Method 2 failed: {e}")
+            
+            # Method 3: Execute the file
+            try:
+                with open('scraper.py', 'r') as f:
+                    code = f.read()
                 
-                # Initialize system
-                system = EnhancedPaperTradingSystem()
-                print("✅ System initialized")
+                # Create a module dictionary
+                module_dict = {'__name__': 'scraper'}
+                exec(code, module_dict)
                 
-                # OPTION 1: Try to scan for opportunities (might fail due to website blocking)
-                print("\\n=== Attempting to scan for opportunities ===")
+                # Create a simple module-like object
+                class SimpleModule:
+                    pass
+                module = SimpleModule()
+                for key, value in module_dict.items():
+                    if not key.startswith('__'):
+                        setattr(module, key, value)
+                
+                print("✅ Method 3: Code execution successful")
+                return module
+            except Exception as e:
+                print(f"❌ Method 3 failed: {e}")
+            
+            return None
+        
+        def find_scraper_class(scraper_module):
+            """Find the main scraper class in the module"""
+            print("\\n=== FINDING SCRAPER CLASS ===")
+            
+            # List all attributes in the module
+            attrs = [attr for attr in dir(scraper_module) if not attr.startswith('_')]
+            print(f"Available attributes: {attrs[:10]}...")
+            
+            # Look for likely class names
+            class_candidates = [
+                'EnhancedPaperTradingSystem',
+                'PaperTradingSystem', 
+                'SportsBetScanner',
+                'BetScanner',
+                'TradingSystem'
+            ]
+            
+            for candidate in class_candidates:
+                if hasattr(scraper_module, candidate):
+                    print(f"✅ Found class: {candidate}")
+                    return getattr(scraper_module, candidate)
+            
+            # If not found by name, look for any class
+            for attr_name in attrs:
+                attr = getattr(scraper_module, attr_name)
+                if isinstance(attr, type):
+                    print(f"Found class '{attr_name}' - using it")
+                    return attr
+            
+            raise AttributeError("No scraper class found in module")
+        
+        def run_scan(system):
+            """Run the opportunity scan"""
+            print("\\n=== SCANNING FOR OPPORTUNITIES ===")
+            
+            method_name = 'option_1_scan_for_opportunities'
+            if hasattr(system, method_name):
                 try:
-                    print("Running Option 1: Scan for positive EV opportunities...")
-                    opportunities = system.option_1_scan_for_opportunities()
+                    print(f"Running {method_name}...")
+                    opportunities = getattr(system, method_name)()
                     
                     if opportunities and len(opportunities) > 0:
-                        print(f"✅ Found {len(opportunities)} opportunities")
-                        for opp in opportunities[:3]:  # Show first 3
-                            print(f"  - {opp.get('sport', 'Unknown')}: {opp.get('team', 'Unknown')}")
+                        print(f"✅ Found {len(opportunities)} opportunities!")
+                        for i, opp in enumerate(opportunities[:3]):
+                            sport = opp.get('sport', 'Unknown')
+                            team = opp.get('team', 'Unknown')
+                            ev = opp.get('ev_percentage', opp.get('ev', 0))
+                            print(f"  {i+1}. {sport}: {team} (EV: {ev}%)")
+                        return True
                     else:
-                        print("⚠️ No opportunities found or scanning failed")
+                        print("⚠️ No opportunities found")
+                        return False
                 except Exception as e:
-                    print(f"❌ Scanning failed (website may be blocking): {e}")
-                    print("Continuing with bet resolution...")
-                
-                # OPTION 5: Always run bet resolution (critical)
-                print("\\n=== Running bet resolution ===")
-                try:
-                    print("Running Option 5: Resolve pending bets...")
-                    resolved_count = system.option_5_resolve_pending_bets()
-                    print(f"✅ Bet resolution attempted for pending bets")
-                except Exception as e:
-                    print(f"❌ Bet resolution failed: {e}")
-                    import traceback
+                    print(f"❌ Scan failed: {e}")
                     traceback.print_exc()
-                
-                # Cleanup
-                print("\\n=== Cleanup ===")
+                    return False
+            else:
+                print(f"⚠️ Method '{method_name}' not found")
+                return False
+        
+        def run_bet_resolution(system):
+            """Run bet resolution"""
+            print("\\n=== RESOLVING PENDING BETS ===")
+            
+            # Try different possible method names
+            method_names = [
+                'option_5_resolve_pending_bets',
+                'resolve_pending_bets',
+                'update_pending_bets',
+                'check_bet_results'
+            ]
+            
+            for method_name in method_names:
+                if hasattr(system, method_name):
+                    try:
+                        print(f"Running {method_name}...")
+                        result = getattr(system, method_name)()
+                        print(f"✅ Bet resolution completed")
+                        return True
+                    except Exception as e:
+                        print(f"❌ {method_name} failed: {e}")
+                        traceback.print_exc()
+            
+            print("⚠️ No bet resolution method found")
+            return False
+        
+        def run_cleanup(system):
+            """Cleanup resources"""
+            print("\\n=== CLEANUP ===")
+            if hasattr(system, 'cleanup'):
                 try:
                     system.cleanup()
                     print("✅ Cleanup completed")
-                except:
-                    print("⚠️ Cleanup had issues (normal if no resources to clean)")
+                except Exception as e:
+                    print(f"⚠️ Cleanup failed: {e}")
+            else:
+                print("⚠️ No cleanup method found")
+        
+        def main():
+            """Main execution function"""
+            try:
+                # Step 1: Import scraper
+                scraper_module = import_scraper()
+                if not scraper_module:
+                    print("❌ Failed to import scraper module")
+                    return False
                 
-                print(f"\\n=== Runner completed at {datetime.now()} ===")
+                # Step 2: Find class
+                try:
+                    ScraperClass = find_scraper_class(scraper_module)
+                except AttributeError as e:
+                    print(f"❌ {e}")
+                    return False
+                
+                # Step 3: Create instance
+                print("\\n=== INITIALIZING SYSTEM ===")
+                try:
+                    system = ScraperClass()
+                    print("✅ System initialized")
+                except Exception as e:
+                    print(f"❌ Failed to initialize system: {e}")
+                    traceback.print_exc()
+                    return False
+                
+                # Step 4: Run scan (optional)
+                try:
+                    run_scan(system)
+                except:
+                    print("Scan failed, continuing...")
+                
+                # Step 5: Run bet resolution (critical)
+                success = run_bet_resolution(system)
+                
+                # Step 6: Cleanup
+                run_cleanup(system)
+                
+                return success
                 
             except Exception as e:
-                print(f"❌ FATAL ERROR: {e}")
-                import traceback
+                print(f"❌ UNEXPECTED ERROR: {e}")
                 traceback.print_exc()
-                sys.exit(1)
+                return False
         
+        # Run the main function
         if __name__ == "__main__":
-            main()
+            success = main()
+            print("\\n" + "=" * 60)
+            print(f"COMPLETED AT: {datetime.now()}")
+            print(f"RESULT: {'SUCCESS' if success else 'FAILED (but tried)'}")
+            print("=" * 60)
+            
+            # Exit with appropriate code
+            sys.exit(0 if success else 1)
         EOF
         
-        # Run the runner script
-        echo "Executing main script..."
-        python github_runner.py
+        # Run the scanner
+        echo "\\n=== EXECUTING MAIN SCRIPT ==="
+        python run_scanner.py
         
-        echo "✅ Workflow completed!"
+        # Check result
+        if [ $? -eq 0 ]; then
+            echo "✅ Workflow completed successfully!"
+        else
+            echo "⚠️ Workflow completed with errors (but tried to run)"
+        fi
