@@ -20,7 +20,7 @@ jobs:
       with:
         python-version: '3.10'
 
-    # Step 3: Install system dependencies (FIXED - using correct package names)
+    # Step 3: Install system dependencies
     - name: 🔧 Install Chrome dependencies
       run: |
         sudo apt-get update
@@ -34,7 +34,7 @@ jobs:
           curl \
           xvfb
         
-        # Install Chrome dependencies with correct names for Ubuntu 24.04
+        # Install Chrome dependencies
         sudo apt-get install -y \
           libnss3 \
           libatk-bridge2.0-0t64 \
@@ -88,12 +88,33 @@ jobs:
         pip install rich==12.6.0
         pip install webdriver-manager==4.0.1
 
-    # Step 6: Skip R installation (remove if not needed)
-    - name: 📦 Skip R installation
+    # Step 6: Install R and essential packages (FIXED - required for RStatsResolver)
+    - name: 📦 Install R and packages
       run: |
-        echo "=== Skipping R installation ==="
-        echo "R will not be installed to avoid issues"
-        echo "If bet resolution needs R, install it locally instead"
+        echo "=== Installing R ==="
+        
+        # Install R
+        sudo apt-get install -y r-base r-base-core
+        
+        # Verify R installation
+        echo "R version:"
+        R --version || echo "R not found"
+        echo "Rscript path:"
+        which Rscript || echo "Rscript not found"
+        
+        # Install minimal R packages
+        echo "Installing R packages..."
+        Rscript -e "
+        # Create user library
+        dir.create('~/R/library', recursive = TRUE, showWarnings = FALSE)
+        .libPaths(c('~/R/library', .libPaths()))
+        
+        # Install essential packages
+        install.packages('jsonlite', lib = '~/R/library', repos = 'https://cloud.r-project.org')
+        install.packages('httr', lib = '~/R/library', repos = 'https://cloud.r-project.org')
+        
+        cat('\\n✅ R packages installed\\n')
+        "
 
     # Step 7: Create CI patch
     - name: 🔧 Create CI Patch
@@ -113,6 +134,25 @@ jobs:
             # Set display for Chrome
             os.environ['DISPLAY'] = ':99'
             print("✅ DISPLAY set to :99")
+            
+            # Fix for RStatsResolver in CI
+            try:
+                # Check if Rscript is available
+                import subprocess
+                result = subprocess.run(['which', 'Rscript'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    print(f"✅ Rscript found at: {result.stdout.strip()}")
+                else:
+                    print("⚠️ Rscript not found, trying to locate...")
+                    # Try to find Rscript
+                    import shutil
+                    rscript_path = shutil.which('Rscript')
+                    if rscript_path:
+                        print(f"✅ Found Rscript at: {rscript_path}")
+                    else:
+                        print("❌ Rscript not available")
+            except Exception as e:
+                print(f"⚠️ Rscript check failed: {e}")
         
         # Apply the fix
         apply_ci_fix()
@@ -131,11 +171,12 @@ jobs:
         echo "=========================================="
         echo "Current time: $(date)"
         
-        # Simple runner
+        # Create runner with R validation
         cat > runner.py << 'EOF'
         import os
         import sys
         import traceback
+        import subprocess
         from datetime import datetime
         
         # Setup
@@ -147,6 +188,33 @@ jobs:
         print(f"Started: {datetime.now()}")
         print("=" * 60)
         
+        def check_r_installation():
+            """Check if R is properly installed"""
+            print("Checking R installation...")
+            
+            try:
+                # Check Rscript
+                result = subprocess.run(['which', 'Rscript'], capture_output=True, text=True)
+                if result.returncode == 0:
+                    rscript_path = result.stdout.strip()
+                    print(f"✅ Rscript found: {rscript_path}")
+                    
+                    # Check Rscript works
+                    version_result = subprocess.run(['Rscript', '--version'], capture_output=True, text=True)
+                    if version_result.returncode == 0:
+                        print(f"✅ Rscript version: {version_result.stdout.split()[2]}")
+                        return True
+                    else:
+                        print("❌ Rscript not working")
+                        return False
+                else:
+                    print("❌ Rscript not found")
+                    return False
+                    
+            except Exception as e:
+                print(f"❌ R check failed: {e}")
+                return False
+        
         def main():
             try:
                 # Apply CI fix
@@ -155,6 +223,10 @@ jobs:
                     print("CI patch applied")
                 except:
                     print("CI patch skipped")
+                
+                # Check R installation
+                if not check_r_installation():
+                    print("\\n⚠️ R not properly installed. Trying to continue anyway...")
                 
                 # Import system
                 print("\\nInitializing system...")
@@ -187,6 +259,7 @@ jobs:
                     stats = system.db.get_performance_stats()
                     print(f"Bankroll: €{system.bankroll:.2f}")
                     print(f"Total Bets: {stats.get('total_bets', 0)}")
+                    print(f"Won: {stats.get('won_bets', 0)} | Lost: {stats.get('lost_bets', 0)}")
                     print(f"Pending: {len(system.db.get_pending_bets())}")
                 except:
                     print("Summary unavailable")
@@ -219,19 +292,31 @@ jobs:
         else
             echo "\\n⚠️ Had errors"
             
-            # Simple fallback
-            echo "\\n=== FALLBACK ==="
+            # Fallback with R check
+            echo "\\n=== FALLBACK WITH R CHECK ==="
             python3 -c "
             import os
+            import subprocess
+            import sys
             sys.path.insert(0, os.getcwd())
             
-            try:
-                from enhanced_paper_trading import EnhancedPaperTradingSystem
-                system = EnhancedPaperTradingSystem()
-                print(f'System: €{system.bankroll:.2f}')
-                print('Fallback completed')
-            except Exception as e:
-                print(f'Fallback error: {e}')
+            print('Checking R installation...')
+            result = subprocess.run(['which', 'Rscript'], capture_output=True, text=True)
+            if result.returncode == 0:
+                print(f'Rscript found: {result.stdout.strip()}')
+                try:
+                    from enhanced_paper_trading import EnhancedPaperTradingSystem
+                    system = EnhancedPaperTradingSystem()
+                    print(f'System: €{system.bankroll:.2f}')
+                    print('Fallback completed')
+                except Exception as e:
+                    print(f'System init failed: {e}')
+            else:
+                print('❌ Rscript not found. Installing R...')
+                import subprocess
+                subprocess.run(['sudo', 'apt-get', 'install', '-y', 'r-base', 'r-base-core'], check=False)
+                subprocess.run(['Rscript', '-e', \"install.packages('jsonlite', repos='https://cloud.r-project.org')\"], check=False)
+                print('R installed, try again next run')
             "
         fi
         
