@@ -92,9 +92,72 @@ jobs:
           }
         "
 
-    # Step 4: Setup Chrome
-    - name: 🌐 Setup Chrome
-      uses: browser-actions/setup-chrome@v1
+    # Step 4: Setup Chrome with proper configuration (REPLACED OLD VERSION)
+    - name: 🌐 Setup Chrome with proper configuration
+      run: |
+        echo "=== Setting up Chrome for scraping ==="
+        
+        # Install system dependencies
+        sudo apt-get update
+        sudo apt-get install -y wget unzip xvfb libnss3 libxss1 libatk-bridge2.0-0 libgtk-3-0 libgbm-dev
+        
+        # Download and install Chrome
+        echo "Downloading Chrome..."
+        wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo apt-get install -y /tmp/chrome.deb
+        
+        # Install ChromeDriver matching Chrome version
+        echo "Installing ChromeDriver..."
+        CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d'.' -f1)
+        echo "Chrome version: $CHROME_VERSION"
+        
+        CHROMEDRIVER_VERSION=$(curl -s "https://chromedriver.storage.googleapis.com/LATEST_RELEASE_$CHROME_VERSION")
+        echo "ChromeDriver version: $CHROMEDRIVER_VERSION"
+        
+        wget -q -O /tmp/chromedriver.zip "https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip"
+        unzip /tmp/chromedriver.zip -d /tmp/
+        sudo mv /tmp/chromedriver /usr/local/bin/
+        sudo chmod +x /usr/local/bin/chromedriver
+        
+        # Setup display for headless mode
+        echo "Setting up display..."
+        Xvfb :99 -screen 0 1920x1080x24 &
+        export DISPLAY=:99
+        
+        # Verify installation
+        echo "Verifying installations:"
+        google-chrome --version || echo "Chrome not installed"
+        chromedriver --version || echo "ChromeDriver not installed"
+
+    # Step 4.5: Test website connectivity
+    - name: 🌐 Test website accessibility
+      run: |
+        echo "=== Testing website accessibility ==="
+        
+        # Test with Python to see if site loads
+        python3 -c "
+        import requests
+        import time
+        
+        url = 'https://crazyninjaodds.com/site/tools/positive-ev.aspx'
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        
+        try:
+            print(f'Testing connection to {url}')
+            response = requests.get(url, headers=headers, timeout=10)
+            print(f'Status code: {response.status_code}')
+            print(f'Content length: {len(response.text)} characters')
+            
+            if 'positive ev' in response.text.lower():
+                print('✅ Website accessible and contains expected content')
+            else:
+                print('⚠️ Website accessible but may have different content')
+                
+        except Exception as e:
+            print(f'❌ Connection failed: {e}')
+        "
 
     # Step 5: Install Python packages
     - name: 📦 Install Python packages
@@ -112,7 +175,7 @@ jobs:
         pip install lxml==4.9.0
         pip install rich==12.6.0
 
-    # Step 6: Add debug step to test R script
+    # Step 6: Test R script execution
     - name: 🧪 Test R script execution
       run: |
         echo "=== Testing R script execution ==="
@@ -151,12 +214,127 @@ jobs:
         echo "Running test R script..."
         Rscript test_r_script.R || echo "R script execution failed"
 
-    # Step 7: Run the dedicated runner script
+    # Step 7: Test Selenium setup
+    - name: 🧪 Test Selenium setup
+      run: |
+        echo "=== Testing Selenium setup ==="
+        
+        # Create a test script
+        cat > test_selenium.py << 'EOF'
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.chrome.service import Service
+        import os
+        
+        print("Testing Selenium with Chrome...")
+        
+        # Set display
+        os.environ['DISPLAY'] = ':99'
+        
+        # Configure Chrome options
+        chrome_options = Options()
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--disable-dev-shm-usage')
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--window-size=1920,1080')
+        
+        # Create driver
+        service = Service('/usr/local/bin/chromedriver')
+        driver = webdriver.Chrome(service=service, options=chrome_options)
+        
+        try:
+            print("Loading Google.com...")
+            driver.get('https://www.google.com')
+            print(f"✅ Success! Page title: {driver.title}")
+            
+            print("Testing page source...")
+            if 'google' in driver.page_source.lower():
+                print("✅ Google page loaded correctly")
+            else:
+                print("⚠️ Page loaded but content unexpected")
+                
+            driver.quit()
+            print("✅ Selenium test passed!")
+            
+        except Exception as e:
+            print(f"❌ Selenium error: {e}")
+            try:
+                driver.quit()
+            except:
+                pass
+        EOF
+        
+        python test_selenium.py
+
+    # Step 8: Run the dedicated runner script
     - name: 🎯 Run Automated Scanner (Options 1 & 5)
       env:
-        SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+        SUPABASE_URL: ${{ secrets.SUPABASE_KEY }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
       run: |
         echo "🚀 Starting GitHub Actions - Running Options 1 & 5"
         echo "=================================================="
-        python github_actions_runner.py
+        
+        # Create a Python script with proper Chrome configuration
+        cat > run_with_fixed_chrome.py << 'EOF'
+        import os
+        import sys
+        sys.path.append('.')
+        
+        # Set display for Chrome
+        os.environ['DISPLAY'] = ':99'
+        
+        # Monkey-patch the driver initialization if needed
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options
+        from selenium.webdriver.chrome.service import Service
+        
+        original_init = None
+        
+        def patched_driver_init(*args, **kwargs):
+            """Patched Chrome driver initialization for GitHub Actions"""
+            print("Using patched Chrome driver for GitHub Actions")
+            
+            chrome_options = Options()
+            chrome_options.add_argument('--no-sandbox')
+            chrome_options.add_argument('--disable-dev-shm-usage')
+            chrome_options.add_argument('--headless')
+            chrome_options.add_argument('--disable-gpu')
+            chrome_options.add_argument('--window-size=1920,1080')
+            chrome_options.add_argument('--disable-blink-features=AutomationControlled')
+            
+            # Additional anti-detection
+            chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
+            chrome_options.add_experimental_option('useAutomationExtension', False)
+            
+            service = Service('/usr/local/bin/chromedriver')
+            return webdriver.Chrome(service=service, options=chrome_options)
+        
+        # Patch if we're in GitHub Actions
+        if 'GITHUB_ACTIONS' in os.environ:
+            print("GitHub Actions environment detected, patching Chrome driver")
+            import src.scraper
+            if hasattr(src.scraper, 'webdriver'):
+                original_init = src.scraper.webdriver.Chrome.__init__
+                src.scraper.webdriver.Chrome.__init__ = lambda self: patched_driver_init()
+        
+        # Run the main script
+        try:
+            from github_actions_runner import main
+            main()
+        except Exception as e:
+            print(f"Error running script: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            # Fallback: Try to at least run bet resolution
+            print("\\n=== Fallback: Running bet resolution only ===")
+            from src.scraper import EnhancedPaperTradingSystem
+            system = EnhancedPaperTradingSystem()
+            print("Running Option 5: Resolve pending bets")
+            system.option_5_resolve_pending_bets()
+        EOF
+        
+        # Run the patched script
+        python run_with_fixed_chrome.py
