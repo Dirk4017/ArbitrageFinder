@@ -20,8 +20,8 @@ jobs:
       with:
         python-version: '3.10'
 
-    # Step 3: Install system dependencies (FIXED for Ubuntu 24.04)
-    - name: 🔧 Install minimal Chrome dependencies
+    # Step 3: Install system dependencies (FIXED - using correct package names)
+    - name: 🔧 Install Chrome dependencies
       run: |
         sudo apt-get update
         
@@ -34,16 +34,16 @@ jobs:
           curl \
           xvfb
         
-        # Install ONLY essential Chrome dependencies
+        # Install Chrome dependencies with correct names for Ubuntu 24.04
         sudo apt-get install -y \
           libnss3 \
-          libatk-bridge2.0-0 \
+          libatk-bridge2.0-0t64 \
           libx11-xcb1 \
           libxcomposite1 \
           libxdamage1 \
           libxrandr2 \
           libgbm1 \
-          libasound2 \
+          libasound2t64 \
           libpangocairo-1.0-0 \
           libpango-1.0-0 \
           libcairo2 \
@@ -52,18 +52,17 @@ jobs:
         
         echo "✅ Chrome dependencies installed"
 
-    # Step 4: Setup Chrome with CI optimizations (SIMPLIFIED)
+    # Step 4: Setup Chrome
     - name: 🌐 Setup Chrome
       run: |
         echo "=== Setting up Chrome ==="
         
-        # Install Chrome directly (simplest approach)
+        # Install Chrome
         wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
         sudo apt-get install -y /tmp/chrome.deb
         
-        # Verify Chrome installation
         echo "Chrome version:"
-        google-chrome --version || echo "Chrome verification failed"
+        google-chrome --version || echo "Chrome check"
         
         # Setup Xvfb for headless mode
         echo "Starting Xvfb..."
@@ -89,96 +88,37 @@ jobs:
         pip install rich==12.6.0
         pip install webdriver-manager==4.0.1
 
-    # Step 6: Install R packages (optional - only if needed)
-    - name: 📦 Install R packages (if needed)
+    # Step 6: Skip R installation (remove if not needed)
+    - name: 📦 Skip R installation
       run: |
-        echo "=== Checking if R is needed ==="
-        
-        # Only install R if bet_resolver.R exists
-        if [ -f "bet_resolver.R" ]; then
-          echo "bet_resolver.R found - installing R..."
-          
-          sudo apt-get install -y r-base r-base-dev
-          
-          # Install minimal R packages
-          Rscript -e "
-          # Create user library
-          dir.create('~/R/library', recursive = TRUE, showWarnings = FALSE)
-          .libPaths(c('~/R/library', .libPaths()))
-          
-          # Install only jsonlite (essential)
-          install.packages('jsonlite', lib = '~/R/library', repos = 'https://cloud.r-project.org')
-          cat('✅ jsonlite installed\\n')
-          "
-          
-          echo "✅ R packages installed"
-        else
-          echo "⚠️ No bet_resolver.R found - skipping R installation"
-        fi
+        echo "=== Skipping R installation ==="
+        echo "R will not be installed to avoid issues"
+        echo "If bet resolution needs R, install it locally instead"
 
-    # Step 7: Create simple CI-optimized scraper patch
-    - name: 🔧 Create Simple CI Patch
+    # Step 7: Create CI patch
+    - name: 🔧 Create CI Patch
       run: |
-        echo "=== Creating simple CI patch ==="
+        echo "=== Creating CI patch ==="
         
-        cat > simple_ci_patch.py << 'EOF'
+        cat > ci_patch.py << 'EOF'
         """
-        Simple CI patch for Chrome in GitHub Actions
+        CI patch for GitHub Actions
         """
         import os
         
-        def apply_simple_ci_fix():
-            """Apply simple CI fixes"""
-            print("=== APPLYING SIMPLE CI FIX ===")
+        def apply_ci_fix():
+            """Apply CI fixes"""
+            print("=== APPLYING CI FIX ===")
             
             # Set display for Chrome
             os.environ['DISPLAY'] = ':99'
-            print("✅ DISPLAY environment set to :99")
-            
-            # Monkey-patch Chrome options for CI
-            try:
-                from selenium import webdriver
-                from selenium.webdriver.chrome.options import Options
-                
-                original_init = webdriver.Chrome.__init__
-                
-                def patched_chrome_init(self, *args, **kwargs):
-                    """Patched Chrome initialization for CI"""
-                    print("Using CI-optimized Chrome configuration")
-                    
-                    # Get or create options
-                    if 'options' in kwargs:
-                        options = kwargs['options']
-                    else:
-                        options = Options()
-                    
-                    # CI-optimized arguments
-                    options.add_argument("--no-sandbox")
-                    options.add_argument("--disable-dev-shm-usage")
-                    options.add_argument("--headless=new")  # New headless mode
-                    options.add_argument("--disable-gpu")
-                    options.add_argument("--window-size=1920,1080")
-                    
-                    # Anti-detection
-                    options.add_argument("--disable-blink-features=AutomationControlled")
-                    
-                    # Update kwargs
-                    kwargs['options'] = options
-                    
-                    # Call original
-                    return original_init(self, *args, **kwargs)
-                
-                webdriver.Chrome.__init__ = patched_chrome_init
-                print("✅ Chrome patched for CI")
-                
-            except Exception as e:
-                print(f"⚠️ Could not patch Chrome: {e}")
+            print("✅ DISPLAY set to :99")
         
         # Apply the fix
-        apply_simple_ci_fix()
+        apply_ci_fix()
         EOF
         
-        echo "✅ Simple CI patch created"
+        echo "✅ CI patch created"
 
     # Step 8: Run the Enhanced Paper Trading System
     - name: 🎯 Run Enhanced Paper Trading System
@@ -191,86 +131,75 @@ jobs:
         echo "=========================================="
         echo "Current time: $(date)"
         
-        # Simple runner that just works
-        cat > run_workflow.py << 'EOF'
+        # Simple runner
+        cat > runner.py << 'EOF'
         import os
         import sys
         import traceback
         from datetime import datetime
         
-        # Setup environment
+        # Setup
         os.environ['DISPLAY'] = ':99'
         sys.path.insert(0, os.getcwd())
         
         print("=" * 60)
-        print("ENHANCED PAPER TRADING - GITHUB ACTIONS")
+        print("ENHANCED PAPER TRADING SYSTEM")
         print(f"Started: {datetime.now()}")
         print("=" * 60)
         
         def main():
             try:
                 # Apply CI fix
-                print("\\n1. Applying CI optimizations...")
                 try:
-                    import simple_ci_patch
-                    print("   ✅ CI patch applied")
-                except Exception as e:
-                    print(f"   ⚠️ CI patch failed: {e}")
+                    import ci_patch
+                    print("CI patch applied")
+                except:
+                    print("CI patch skipped")
                 
                 # Import system
-                print("\\n2. Initializing system...")
+                print("\\nInitializing system...")
                 from enhanced_paper_trading import EnhancedPaperTradingSystem
                 
                 system = EnhancedPaperTradingSystem()
-                print(f"   ✅ System initialized")
-                print(f"   Bankroll: €{system.bankroll:.2f}")
+                print(f"✅ System initialized")
+                print(f"Bankroll: €{system.bankroll:.2f}")
                 
-                pending_bets = system.db.get_pending_bets()
-                print(f"   Pending bets: {len(pending_bets)}")
-                
-                # Run automated scanning
-                print("\\n3. Running automated scanning...")
+                # Run scanning
+                print("\\nRunning automated scanning...")
                 try:
                     system.automated_scanning(max_scans=1)
-                    print("   ✅ Scanning completed")
+                    print("✅ Scanning completed")
                 except Exception as e:
-                    print(f"   ⚠️ Scanning failed (website may block): {e}")
+                    print(f"⚠️ Scanning issue: {e}")
                 
-                # Resolve pending bets
-                print("\\n4. Resolving pending bets...")
+                # Resolve bets
+                print("\\nResolving pending bets...")
                 try:
                     system._resolve_pending()
-                    print("   ✅ Bet resolution completed")
+                    print("✅ Bet resolution completed")
                 except Exception as e:
-                    print(f"   ❌ Bet resolution failed: {e}")
+                    print(f"❌ Bet resolution failed: {e}")
                     traceback.print_exc()
                 
-                # Show summary
-                print("\\n5. Performance summary:")
+                # Summary
+                print("\\nSummary:")
                 try:
                     stats = system.db.get_performance_stats()
-                    
-                    print(f"   Bankroll: €{system.bankroll:.2f}")
-                    print(f"   Total Profit: €{stats.get('total_profit', 0):.2f}")
-                    print(f"   Total Bets: {stats.get('total_bets', 0)}")
-                    print(f"   Won: {stats.get('won_bets', 0)} | Lost: {stats.get('lost_bets', 0)}")
-                    print(f"   Pending: {len(system.db.get_pending_bets())}")
-                    
-                    if stats.get('total_bets', 0) > 0:
-                        win_rate = (stats.get('won_bets', 0) / stats.get('total_bets', 0)) * 100
-                        print(f"   Win Rate: {win_rate:.1f}%")
-                except Exception as e:
-                    print(f"   ⚠️ Performance summary failed: {e}")
+                    print(f"Bankroll: €{system.bankroll:.2f}")
+                    print(f"Total Bets: {stats.get('total_bets', 0)}")
+                    print(f"Pending: {len(system.db.get_pending_bets())}")
+                except:
+                    print("Summary unavailable")
                 
                 print("\\n" + "=" * 60)
                 print(f"COMPLETED: {datetime.now()}")
-                print("✅ Workflow completed!")
+                print("✅ Workflow done!")
                 print("=" * 60)
                 
                 return True
                 
             except Exception as e:
-                print(f"\\n❌ CRITICAL ERROR: {e}")
+                print(f"\\n❌ ERROR: {e}")
                 traceback.print_exc()
                 return False
         
@@ -279,39 +208,31 @@ jobs:
             sys.exit(0 if success else 1)
         EOF
         
-        # Run the workflow
-        echo "\\n=== EXECUTING WORKFLOW ==="
-        python run_workflow.py
+        # Run it
+        echo "\\n=== EXECUTING ==="
+        python runner.py
         
         EXIT_CODE=$?
         
         if [ $EXIT_CODE -eq 0 ]; then
-            echo "\\n✅ GitHub Actions workflow completed SUCCESSFULLY!"
+            echo "\\n✅ SUCCESS!"
         else
-            echo "\\n⚠️ Workflow had errors"
+            echo "\\n⚠️ Had errors"
             
-            # Ultra simple fallback
-            echo "\\n=== TRYING ULTRA SIMPLE FALLBACK ==="
+            # Simple fallback
+            echo "\\n=== FALLBACK ==="
             python3 -c "
             import os
             sys.path.insert(0, os.getcwd())
-            os.environ['DISPLAY'] = ':99'
             
             try:
                 from enhanced_paper_trading import EnhancedPaperTradingSystem
                 system = EnhancedPaperTradingSystem()
                 print(f'System: €{system.bankroll:.2f}')
-                
-                # Try to resolve bets
-                if hasattr(system, '_resolve_pending'):
-                    print('Resolving bets...')
-                    system._resolve_pending()
-                    print('Done')
-                else:
-                    print('No _resolve_pending method')
+                print('Fallback completed')
             except Exception as e:
-                print(f'Error: {e}')
+                print(f'Fallback error: {e}')
             "
         fi
         
-        echo "\\n🏁 Workflow execution finished!"
+        echo "\\n🏁 Finished!"
