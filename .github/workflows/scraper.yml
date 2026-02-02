@@ -21,7 +21,7 @@ jobs:
         python-version: '3.10'
 
     # Step 3: Install system dependencies (FIXED for Ubuntu 24.04)
-    - name: 🔧 Install system dependencies
+    - name: 🔧 Install minimal Chrome dependencies
       run: |
         sudo apt-get update
         
@@ -34,40 +34,39 @@ jobs:
           curl \
           xvfb
         
-        # Install Chrome dependencies (updated for Ubuntu 24.04)
+        # Install ONLY essential Chrome dependencies
         sudo apt-get install -y \
           libnss3 \
-          libatk-bridge2.0-0t64 \
-          libdrm2 \
-          libxkbcommon0 \
+          libatk-bridge2.0-0 \
+          libx11-xcb1 \
           libxcomposite1 \
           libxdamage1 \
-          libxrandr2t64 \
+          libxrandr2 \
           libgbm1 \
+          libasound2 \
+          libpangocairo-1.0-0 \
           libpango-1.0-0 \
           libcairo2 \
-          libasound2t64 \
-          libxshmfence1 \
-          libgl1-mesa-glx \
-          libglib2.0-0t64
+          libgdk-pixbuf2.0-0 \
+          libgtk-3-0
         
-        echo "✅ System dependencies installed"
+        echo "✅ Chrome dependencies installed"
 
-    # Step 4: Setup Chrome with CI optimizations
-    - name: 🌐 Setup Chrome for CI
+    # Step 4: Setup Chrome with CI optimizations (SIMPLIFIED)
+    - name: 🌐 Setup Chrome
       run: |
-        echo "=== Setting up Chrome for CI ==="
+        echo "=== Setting up Chrome ==="
         
-        # Install Chrome from Google's official repository
+        # Install Chrome directly (simplest approach)
         wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
         sudo apt-get install -y /tmp/chrome.deb
         
         # Verify Chrome installation
         echo "Chrome version:"
-        google-chrome --version || echo "Chrome not installed"
+        google-chrome --version || echo "Chrome verification failed"
         
-        # Setup Xvfb display for headless Chrome
-        echo "Starting Xvfb display server..."
+        # Setup Xvfb for headless mode
+        echo "Starting Xvfb..."
         Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
         export DISPLAY=:99
         
@@ -90,158 +89,96 @@ jobs:
         pip install rich==12.6.0
         pip install webdriver-manager==4.0.1
 
-    # Step 6: Install R packages (simplified)
-    - name: 📦 Install R packages
+    # Step 6: Install R packages (optional - only if needed)
+    - name: 📦 Install R packages (if needed)
       run: |
-        echo "=== Installing R packages ==="
+        echo "=== Checking if R is needed ==="
         
-        # Install R
-        sudo apt-get install -y r-base r-base-dev
-        
-        # Install minimal R packages for bet resolution
-        Rscript -e "
-        # Create user library
-        dir.create('~/R/library', recursive = TRUE, showWarnings = FALSE)
-        .libPaths(c('~/R/library', .libPaths()))
-        
-        # Install essential packages
-        cat('Installing jsonlite...\\n')
-        install.packages('jsonlite', lib = '~/R/library', repos = 'https://cloud.r-project.org')
-        
-        cat('Installing httr...\\n')
-        install.packages('httr', lib = '~/R/library', repos = 'https://cloud.r-project.org')
-        
-        cat('Installing dplyr...\\n')
-        install.packages('dplyr', lib = '~/R/library', repos = 'https://cloud.r-project.org')
-        
-        cat('\\nR packages installed successfully\\n')
-        "
+        # Only install R if bet_resolver.R exists
+        if [ -f "bet_resolver.R" ]; then
+          echo "bet_resolver.R found - installing R..."
+          
+          sudo apt-get install -y r-base r-base-dev
+          
+          # Install minimal R packages
+          Rscript -e "
+          # Create user library
+          dir.create('~/R/library', recursive = TRUE, showWarnings = FALSE)
+          .libPaths(c('~/R/library', .libPaths()))
+          
+          # Install only jsonlite (essential)
+          install.packages('jsonlite', lib = '~/R/library', repos = 'https://cloud.r-project.org')
+          cat('✅ jsonlite installed\\n')
+          "
+          
+          echo "✅ R packages installed"
+        else
+          echo "⚠️ No bet_resolver.R found - skipping R installation"
+        fi
 
-    # Step 7: Create CI-optimized scraper patch
-    - name: 🔧 Create CI Scraper Patch
+    # Step 7: Create simple CI-optimized scraper patch
+    - name: 🔧 Create Simple CI Patch
       run: |
-        echo "=== Creating CI-optimized scraper patch ==="
+        echo "=== Creating simple CI patch ==="
         
-        cat > ci_scraper_patch.py << 'EOF'
+        cat > simple_ci_patch.py << 'EOF'
         """
-        CI-optimized patch for UltraStableScanner
+        Simple CI patch for Chrome in GitHub Actions
         """
         import os
-        import sys
         
-        def patch_ultra_stable_scanner():
-            """Patch the UltraStableScanner for CI"""
-            print("=== APPLYING CI OPTIMIZATIONS TO SCRAPER ===")
+        def apply_simple_ci_fix():
+            """Apply simple CI fixes"""
+            print("=== APPLYING SIMPLE CI FIX ===")
             
+            # Set display for Chrome
+            os.environ['DISPLAY'] = ':99'
+            print("✅ DISPLAY environment set to :99")
+            
+            # Monkey-patch Chrome options for CI
             try:
-                # Import the scanner module
-                import importlib.util
-                import importlib
+                from selenium import webdriver
+                from selenium.webdriver.chrome.options import Options
                 
-                # First, try to reload the module if already loaded
-                if 'scraper.ultra_stable_scanner' in sys.modules:
-                    importlib.reload(sys.modules['scraper.ultra_stable_scanner'])
+                original_init = webdriver.Chrome.__init__
                 
-                # Import fresh
-                from scraper.ultra_stable_scanner import UltraStableScanner
+                def patched_chrome_init(self, *args, **kwargs):
+                    """Patched Chrome initialization for CI"""
+                    print("Using CI-optimized Chrome configuration")
+                    
+                    # Get or create options
+                    if 'options' in kwargs:
+                        options = kwargs['options']
+                    else:
+                        options = Options()
+                    
+                    # CI-optimized arguments
+                    options.add_argument("--no-sandbox")
+                    options.add_argument("--disable-dev-shm-usage")
+                    options.add_argument("--headless=new")  # New headless mode
+                    options.add_argument("--disable-gpu")
+                    options.add_argument("--window-size=1920,1080")
+                    
+                    # Anti-detection
+                    options.add_argument("--disable-blink-features=AutomationControlled")
+                    
+                    # Update kwargs
+                    kwargs['options'] = options
+                    
+                    # Call original
+                    return original_init(self, *args, **kwargs)
                 
-                # Store original method
-                original_init = UltraStableScanner.initialize_webdriver
-                
-                def ci_initialize_webdriver(self):
-                    """CI-optimized WebDriver initialization"""
-                    try:
-                        # Close existing driver
-                        if self.driver:
-                            try:
-                                self.driver.quit()
-                            except:
-                                pass
-                            self.driver = None
-                        
-                        print("🔄 Initializing Chrome with CI optimizations...")
-                        
-                        from selenium import webdriver
-                        from selenium.webdriver.chrome.options import Options
-                        
-                        chrome_options = Options()
-                        
-                        # ESSENTIAL for CI
-                        chrome_options.add_argument("--no-sandbox")
-                        chrome_options.add_argument("--disable-dev-shm-usage")
-                        chrome_options.add_argument("--disable-gpu")
-                        chrome_options.add_argument("--window-size=1920,1080")
-                        
-                        # Use new headless mode
-                        chrome_options.add_argument("--headless=new")
-                        
-                        # Anti-detection
-                        chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-                        chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
-                        chrome_options.add_experimental_option('useAutomationExtension', False)
-                        
-                        # Performance
-                        chrome_options.add_argument("--disable-extensions")
-                        chrome_options.add_argument("--disable-background-timer-throttling")
-                        
-                        # User agent
-                        chrome_options.add_argument("--user-agent=Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
-                        
-                        # Additional CI optimizations
-                        chrome_options.add_argument("--disable-dev-shm-usage")
-                        chrome_options.add_argument("--disable-software-rasterizer")
-                        
-                        # Create driver
-                        try:
-                            from webdriver_manager.chrome import ChromeDriverManager
-                            from selenium.webdriver.chrome.service import Service as ChromeService
-                            
-                            print("   Using webdriver-manager for ChromeDriver...")
-                            service = ChromeService(ChromeDriverManager().install())
-                            driver = webdriver.Chrome(service=service, options=chrome_options)
-                        except Exception as e:
-                            print(f"   webdriver-manager failed: {e}, using fallback...")
-                            driver = webdriver.Chrome(options=chrome_options)
-                        
-                        # Set CI-optimized timeouts
-                        driver.set_page_load_timeout(60)  # 60 seconds
-                        driver.implicitly_wait(15)
-                        
-                        # Hide automation
-                        try:
-                            driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
-                                'source': '''
-                                    Object.defineProperty(navigator, 'webdriver', {
-                                        get: () => undefined
-                                    });
-                                '''
-                            })
-                        except:
-                            pass
-                        
-                        print("✅ CI-optimized ChromeDriver ready")
-                        return driver
-                        
-                    except Exception as e:
-                        print(f"❌ CI WebDriver initialization failed: {e}")
-                        import traceback
-                        traceback.print_exc()
-                        return None
-                
-                # Apply patch
-                UltraStableScanner.initialize_webdriver = ci_initialize_webdriver
-                print("✅ UltraStableScanner patched for CI environment")
+                webdriver.Chrome.__init__ = patched_chrome_init
+                print("✅ Chrome patched for CI")
                 
             except Exception as e:
-                print(f"⚠️ Could not patch scanner: {e}")
-                import traceback
-                traceback.print_exc()
+                print(f"⚠️ Could not patch Chrome: {e}")
         
-        # Run the patch
-        patch_ultra_stable_scanner()
+        # Apply the fix
+        apply_simple_ci_fix()
         EOF
         
-        echo "✅ CI scraper patch created"
+        echo "✅ Simple CI patch created"
 
     # Step 8: Run the Enhanced Paper Trading System
     - name: 🎯 Run Enhanced Paper Trading System
@@ -254,11 +191,10 @@ jobs:
         echo "=========================================="
         echo "Current time: $(date)"
         
-        # Simple, reliable runner
-        cat > run_simple.py << 'EOF'
+        # Simple runner that just works
+        cat > run_workflow.py << 'EOF'
         import os
         import sys
-        import time
         import traceback
         from datetime import datetime
         
@@ -267,51 +203,40 @@ jobs:
         sys.path.insert(0, os.getcwd())
         
         print("=" * 60)
-        print("ENHANCED PAPER TRADING - SIMPLE CI RUNNER")
+        print("ENHANCED PAPER TRADING - GITHUB ACTIONS")
         print(f"Started: {datetime.now()}")
         print("=" * 60)
         
         def main():
             try:
-                # 1. Apply CI patches
+                # Apply CI fix
                 print("\\n1. Applying CI optimizations...")
                 try:
-                    import ci_scraper_patch
-                    print("   ✅ CI scraper patch applied")
+                    import simple_ci_patch
+                    print("   ✅ CI patch applied")
                 except Exception as e:
                     print(f"   ⚠️ CI patch failed: {e}")
                 
-                # 2. Import and initialize system
+                # Import system
                 print("\\n2. Initializing system...")
                 from enhanced_paper_trading import EnhancedPaperTradingSystem
+                
                 system = EnhancedPaperTradingSystem()
                 print(f"   ✅ System initialized")
                 print(f"   Bankroll: €{system.bankroll:.2f}")
-                print(f"   Pending bets: {len(system.db.get_pending_bets())}")
                 
-                # 3. Run automated scanning (with timeout protection)
+                pending_bets = system.db.get_pending_bets()
+                print(f"   Pending bets: {len(pending_bets)}")
+                
+                # Run automated scanning
                 print("\\n3. Running automated scanning...")
                 try:
-                    # Test if website is accessible first
-                    import requests
-                    print("   Testing website connection...")
-                    try:
-                        resp = requests.get('https://crazyninjaodds.com', timeout=10)
-                        if resp.status_code == 200:
-                            print("   ✅ Website is accessible")
-                        else:
-                            print(f"   ⚠️ Website status: {resp.status_code}")
-                    except Exception as e:
-                        print(f"   ⚠️ Website check failed: {e}")
-                    
-                    # Run scanning
-                    print("   Starting scan...")
                     system.automated_scanning(max_scans=1)
                     print("   ✅ Scanning completed")
                 except Exception as e:
-                    print(f"   ⚠️ Scanning failed (may be expected): {e}")
+                    print(f"   ⚠️ Scanning failed (website may block): {e}")
                 
-                # 4. Resolve pending bets (MOST IMPORTANT)
+                # Resolve pending bets
                 print("\\n4. Resolving pending bets...")
                 try:
                     system._resolve_pending()
@@ -320,17 +245,16 @@ jobs:
                     print(f"   ❌ Bet resolution failed: {e}")
                     traceback.print_exc()
                 
-                # 5. Show performance summary
+                # Show summary
                 print("\\n5. Performance summary:")
                 try:
                     stats = system.db.get_performance_stats()
-                    pending = len(system.db.get_pending_bets())
                     
                     print(f"   Bankroll: €{system.bankroll:.2f}")
                     print(f"   Total Profit: €{stats.get('total_profit', 0):.2f}")
                     print(f"   Total Bets: {stats.get('total_bets', 0)}")
                     print(f"   Won: {stats.get('won_bets', 0)} | Lost: {stats.get('lost_bets', 0)}")
-                    print(f"   Pending: {pending}")
+                    print(f"   Pending: {len(system.db.get_pending_bets())}")
                     
                     if stats.get('total_bets', 0) > 0:
                         win_rate = (stats.get('won_bets', 0) / stats.get('total_bets', 0)) * 100
@@ -340,7 +264,7 @@ jobs:
                 
                 print("\\n" + "=" * 60)
                 print(f"COMPLETED: {datetime.now()}")
-                print("✅ Workflow completed successfully!")
+                print("✅ Workflow completed!")
                 print("=" * 60)
                 
                 return True
@@ -355,40 +279,38 @@ jobs:
             sys.exit(0 if success else 1)
         EOF
         
-        # Run the simple runner
-        echo "\\n=== EXECUTING SIMPLE RUNNER ==="
-        python run_simple.py
+        # Run the workflow
+        echo "\\n=== EXECUTING WORKFLOW ==="
+        python run_workflow.py
         
         EXIT_CODE=$?
         
         if [ $EXIT_CODE -eq 0 ]; then
             echo "\\n✅ GitHub Actions workflow completed SUCCESSFULLY!"
         else
-            echo "\\n⚠️ Workflow had errors, trying fallback..."
+            echo "\\n⚠️ Workflow had errors"
             
-            # Ultra-simple fallback - just bet resolution
-            echo "\\n=== ULTRA SIMPLE FALLBACK ==="
+            # Ultra simple fallback
+            echo "\\n=== TRYING ULTRA SIMPLE FALLBACK ==="
             python3 -c "
             import os
-            import sys
             sys.path.insert(0, os.getcwd())
-            
-            print('Running minimal bet resolution...')
+            os.environ['DISPLAY'] = ':99'
             
             try:
                 from enhanced_paper_trading import EnhancedPaperTradingSystem
                 system = EnhancedPaperTradingSystem()
-                print(f'✅ System: €{system.bankroll:.2f}')
+                print(f'System: €{system.bankroll:.2f}')
                 
-                # Just resolve bets
+                # Try to resolve bets
                 if hasattr(system, '_resolve_pending'):
+                    print('Resolving bets...')
                     system._resolve_pending()
-                    print('✅ Bets resolved')
+                    print('Done')
                 else:
-                    print('⚠️ Could not resolve bets')
-                    
+                    print('No _resolve_pending method')
             except Exception as e:
-                print(f'❌ Fallback failed: {e}')
+                print(f'Error: {e}')
             "
         fi
         
