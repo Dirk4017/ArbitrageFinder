@@ -20,32 +20,21 @@ jobs:
       with:
         python-version: '3.10'
 
-    # Step 3: Install Chrome WITHOUT problematic dependencies
-    - name: 🌐 Install Chrome directly
+    # Step 3: Install Chrome
+    - name: 🌐 Install Chrome
       run: |
         echo "=== Installing Chrome ==="
-        
-        # Install minimal dependencies first
         sudo apt-get update
-        sudo apt-get install -y \
-          wget \
-          xvfb \
-          libnss3 \
-          libx11-xcb1 \
-          libxcomposite1
+        sudo apt-get install -y wget xvfb
         
-        # Download and install Chrome
+        # Install Chrome with dependencies
         wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+        sudo apt-get install -y ./tmp/chrome.deb || true
+        sudo apt-get install -f -y
         
-        # Install Chrome with force dependencies
-        sudo dpkg -i /tmp/chrome.deb || sudo apt-get install -f -y
-        
-        echo "Chrome version:"
-        google-chrome --version || echo "Chrome installed"
-        
-        # Setup Xvfb
+        # Start Xvfb for headless Chrome
         Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
-        export DISPLAY=:99
+        echo "DISPLAY=:99" >> $GITHUB_ENV
         
         echo "✅ Chrome installed"
 
@@ -66,125 +55,187 @@ jobs:
         pip install rich==12.6.0
         pip install webdriver-manager==4.0.1
 
-    # Step 5: Install R (required for bet resolution)
+    # Step 5: Install R with proper permissions
     - name: 📦 Install R
       run: |
         echo "=== Installing R ==="
         
-        # Install R with minimal dependencies
-        sudo apt-get install -y r-base-core
+        # Install R with minimal setup
+        sudo apt-get install -y r-base r-base-dev
         
-        echo "Rscript location:"
-        which Rscript || echo "Installing Rscript..."
+        # Create user library directory
+        mkdir -p ~/.R/library
         
-        # If Rscript not found, install r-base
-        if ! which Rscript > /dev/null 2>&1; then
-          sudo apt-get install -y r-base
-        fi
+        # Set permissions and install jsonlite to user directory
+        Rscript -e '
+        # Create user library if it doesnt exist
+        dir.create(Sys.getenv("R_LIBS_USER"), showWarnings = FALSE, recursive = TRUE)
         
-        # Verify
-        Rscript --version || echo "R not working but continuing"
+        # Install jsonlite to user directory
+        install.packages(
+          "jsonlite", 
+          repos = "https://cloud.r-project.org",
+          lib = Sys.getenv("R_LIBS_USER"),
+          quiet = TRUE
+        )
         
-        # Try to install jsonlite
-        Rscript -e "tryCatch({install.packages('jsonlite', repos='https://cloud.r-project.org')}, error=function(e) cat('JSONLite install failed:', e$message, '\\n'))"
+        # Verify installation
+        if (require("jsonlite", quietly = TRUE, character.only = TRUE)) {
+          cat("✅ jsonlite installed successfully\n")
+        } else {
+          cat("❌ jsonlite installation failed\n")
+        }
+        '
         
-        echo "✅ R installation attempted"
+        # Add R_LIBS_USER to environment
+        echo "R_LIBS_USER=~/R/x86_64-pc-linux-gnu-library/4.3" >> $GITHUB_ENV
+        echo "R_LIBS_USER=$(Rscript -e 'cat(Sys.getenv(\"R_LIBS_USER\"))')" >> $GITHUB_ENV
+        
+        echo "✅ R installation complete"
 
-    # Step 6: Run the system (skip complex setup)
+    # Step 6: Run the system
     - name: 🎯 Run Enhanced Paper Trading System
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         DISPLAY: ':99'
+        R_LIBS_USER: ${{ env.R_LIBS_USER }}
       run: |
         echo "🚀 Running Enhanced Paper Trading System"
         echo "=========================================="
         echo "Current time: $(date)"
+        echo "DISPLAY: $DISPLAY"
+        echo "R_LIBS_USER: $R_LIBS_USER"
         
-        # Ultra simple runner
-        cat > simple_run.py << 'EOF'
+        # Create a simple test script
+        cat > test_system.py << 'EOF'
         import os
         import sys
         import subprocess
         
-        # Setup
-        os.environ['DISPLAY'] = ':99'
-        sys.path.insert(0, os.getcwd())
-        
         print("=" * 60)
-        print("STARTING ENHANCED PAPER TRADING")
+        print("TESTING SYSTEM COMPONENTS")
         print("=" * 60)
         
-        # Check R first
-        print("\\nChecking R installation...")
+        # Test R installation
+        print("\nTesting R...")
         try:
-            result = subprocess.run(['which', 'Rscript'], capture_output=True, text=True)
-            if result.returncode == 0:
-                print(f"✅ Rscript found: {result.stdout.strip()}")
-            else:
-                print("⚠️ Rscript not found, trying to install...")
-                subprocess.run(['sudo', 'apt-get', 'install', '-y', 'r-base'], check=False)
-        except:
-            print("⚠️ R check failed")
+            result = subprocess.run(
+                ['Rscript', '-e', 'library(jsonlite); cat("✅ R and jsonlite working\\n")'],
+                capture_output=True,
+                text=True
+            )
+            print(result.stdout)
+            if result.stderr:
+                print(f"R stderr: {result.stderr}")
+        except Exception as e:
+            print(f"❌ R test failed: {e}")
         
+        # Test Python imports
+        print("\nTesting Python imports...")
         try:
-            # Import
+            import selenium
+            import supabase
+            import pandas as pd
+            import numpy as np
+            print("✅ All Python imports working")
+        except ImportError as e:
+            print(f"❌ Import error: {e}")
+        
+        # Try to import and run the system
+        print("\nTrying to import enhanced_paper_trading...")
+        try:
+            sys.path.insert(0, os.getcwd())
             from enhanced_paper_trading import EnhancedPaperTradingSystem
             
-            # Initialize
-            print("\\nInitializing system...")
+            print("✅ Import successful")
+            
+            # Initialize system
             system = EnhancedPaperTradingSystem()
-            print(f"✅ System initialized")
-            print(f"Bankroll: €{system.bankroll:.2f}")
+            print(f"✅ System initialized - Bankroll: €{system.bankroll:.2f}")
             
-            # Try scanning
-            print("\\nTrying to scan...")
-            try:
-                system.automated_scanning(max_scans=1)
-                print("✅ Scanning done")
-            except Exception as e:
-                print(f"⚠️ Scanning: {e}")
-            
-            # Try bet resolution
-            print("\\nTrying bet resolution...")
-            try:
-                system._resolve_pending()
-                print("✅ Bet resolution done")
-            except Exception as e:
-                print(f"⚠️ Bet resolution: {e}")
-            
-            # Show status
-            print("\\nFinal status:")
+            # Quick test: check pending bets
             pending = len(system.db.get_pending_bets())
-            print(f"Pending bets: {pending}")
-            print(f"Bankroll: €{system.bankroll:.2f}")
+            print(f"📊 Pending bets: {pending}")
             
-            print("\\n" + "=" * 60)
-            print("✅ WORKFLOW COMPLETED")
-            print("=" * 60)
-            
+            # Simple scan (limited)
+            print("\n📡 Running quick scan...")
+            try:
+                # Try to scan just one page
+                from scanners.unibet_scanner import UnibetScanner
+                scanner = UnibetScanner()
+                print(f"✅ Scanner initialized: {scanner.__class__.__name__}")
+            except Exception as e:
+                print(f"⚠️ Scanner setup: {e}")
+                
         except Exception as e:
-            print(f"\\n❌ ERROR: {e}")
+            print(f"❌ Error: {e}")
             import traceback
             traceback.print_exc()
-            
-            # Try one more time with basic import
-            print("\\n=== TRYING BASIC IMPORT ===")
-            try:
-                import importlib.util
-                spec = importlib.util.spec_from_file_location("ept", "enhanced_paper_trading.py")
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-                
-                system = module.EnhancedPaperTradingSystem()
-                print(f"Basic import worked! Bankroll: €{system.bankroll:.2f}")
-            except:
-                print("Basic import also failed")
         
+        print("\n" + "=" * 60)
+        print("TEST COMPLETE")
+        print("=" * 60)
         EOF
         
-        # Run it
-        echo "\\n=== EXECUTING ==="
-        python simple_run.py
+        # Run the test
+        python test_system.py
         
-        echo "\\n🏁 Workflow execution finished!"
+        # Now run the actual system
+        echo "\n=== RUNNING MAIN SYSTEM ==="
+        
+        cat > run_main.py << 'EOF'
+        import os
+        import sys
+        sys.path.insert(0, os.getcwd())
+        
+        from enhanced_paper_trading import EnhancedPaperTradingSystem
+        
+        def main():
+            print("🚀 Starting Enhanced Paper Trading System")
+            
+            # Initialize
+            system = EnhancedPaperTradingSystem()
+            print(f"💰 Initial bankroll: €{system.bankroll:.2f}")
+            
+            # Resolve pending bets first
+            print("\n📊 Resolving pending bets...")
+            system._resolve_pending()
+            
+            # Run a quick scan
+            print("\n🔍 Scanning for opportunities...")
+            try:
+                system.automated_scanning(max_scans=2)  # Limit to 2 scans for testing
+                print("✅ Scan completed")
+            except Exception as e:
+                print(f"⚠️ Scan error: {e}")
+            
+            # Show final status
+            print("\n📈 Final Status:")
+            print(f"💰 Bankroll: €{system.bankroll:.2f}")
+            pending = len(system.db.get_pending_bets())
+            print(f"⏳ Pending bets: {pending}")
+            
+            # Show recent bets if any
+            if pending > 0:
+                print("\n📋 Recent pending bets:")
+                bets = system.db.get_pending_bets()
+                for bet in bets[:3]:  # Show first 3
+                    print(f"  - {bet['team1']} vs {bet['team2']} ({bet['bet_type']})")
+            
+            print("\n✅ System run completed!")
+        
+        if __name__ == "__main__":
+            try:
+                main()
+            except Exception as e:
+                print(f"❌ Critical error: {e}")
+                import traceback
+                traceback.print_exc()
+                sys.exit(1)
+        EOF
+        
+        # Execute main system
+        python run_main.py
+        
+        echo "\n🏁 Workflow execution completed!"
