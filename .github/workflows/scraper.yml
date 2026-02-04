@@ -58,7 +58,7 @@ jobs:
 
           echo 'options(warn=-1); safe_load <- function(pkg) { tryCatch({ library(pkg, character.only=TRUE, quietly=TRUE); TRUE }, error=function(e) FALSE) }; for(pkg in c("jsonlite","httr","stringr","dplyr","lubridate")) { if(!safe_load(pkg)) { cat("CRITICAL:", pkg, "failed\n", file=stderr()); quit(status=1) } }; nflreadr_ok <- safe_load("nflreadr"); hoopR_ok <- safe_load("hoopR"); if(!nflreadr_ok) { nflreadr <<- list(load_pbp=function(s) data.frame(), load_schedules=function(s) data.frame(), load_player_stats=function(s) data.frame(), available_seasons=function() c(2023,2024), clean_team_abbrs=function(x) x) }; if(!hoopR_ok) { hoopR <<- list(load_nba_pbp=function(s) data.frame(), load_nba_schedule=function(s) data.frame()) }; cat("Packages loaded (nflreadr:", nflreadr_ok, ", hoopR:", hoopR_ok, ")\n", file=stderr())' > /tmp/header.R
 
-          sed 's/^library(nflreadr)/#library(nflreadr)/; s/^library(hoopR)/#library(hoopR)/; s/^library(jsonlite)/#library(jsonlite)/; s/^library(httr)/#library(httr)/; s/^library(stringr)/#library(stringr)/; s/^library(dplyr)/#library/dplyr)/; s/^library(lubridate)/#library(lubridate)/' bet_resolver.R.backup > /tmp/body.R
+          sed 's/^library(nflreadr)/#library(nflreadr)/; s/^library(hoopR)/#library(hoopR)/; s/^library(jsonlite)/#library(jsonlite)/; s/^library(httr)/#library(httr)/; s/^library(stringr)/#library(stringr)/; s/^library(dplyr)/#library(dplyr)/; s/^library(lubridate)/#library(lubridate)/' bet_resolver.R.backup > /tmp/body.R
 
           cat /tmp/header.R /tmp/body.R > bet_resolver.R
           echo "✅ bet_resolver.R patched"
