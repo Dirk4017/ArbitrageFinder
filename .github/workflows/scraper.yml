@@ -2,7 +2,7 @@ name: Daily Sports Bet Scanner
 
 on:
   schedule:
-    - cron: '0 */6 * * *'  # Every 6 hours
+    - cron: '0 */6 * * *'
   workflow_dispatch:
 
 jobs:
@@ -10,408 +10,115 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    # Step 1: Checkout code
     - name: 📥 Checkout code
       uses: actions/checkout@v4
 
-    # Step 2: Setup Python
     - name: 🐍 Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.10'
 
-    # Step 3: Install Chrome with system dependencies for R
     - name: 🌐 Install Chrome & System Dependencies
       run: |
         echo "=== Installing Chrome and system dependencies ==="
         sudo apt-get update
-
-        # Install Chrome and basic dependencies
-        sudo apt-get install -y wget xvfb
-
-        # Install COMPLETE system dependencies for R packages
-        sudo apt-get install -y \
-          libcurl4-openssl-dev \
-          libssl-dev \
-          libxml2-dev \
-          libfontconfig1-dev \
-          libharfbuzz-dev \
-          libfribidi-dev \
-          libfreetype6-dev \
-          libpng-dev \
-          libtiff5-dev \
-          libjpeg-dev \
-          libicu-dev \
-          libgmp3-dev \
-          libmpfr-dev \
-          libudunits2-dev \
-          libgdal-dev \
-          libgeos-dev \
-          libproj-dev \
-          libcairo2-dev \
-          libxt-dev
-
-        # Install Chrome
+        sudo apt-get install -y wget xvfb libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev \
+          libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libicu-dev \
+          libgmp3-dev libmpfr-dev libudunits2-dev libgdal-dev libgeos-dev libproj-dev libcairo2-dev libxt-dev
         wget -q -O /tmp/chrome.deb https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
         sudo apt-get install -y /tmp/chrome.deb || true
         sudo apt-get install -f -y
-
-        # Start Xvfb for headless Chrome
         Xvfb :99 -screen 0 1920x1080x24 > /dev/null 2>&1 &
         echo "DISPLAY=:99" >> $GITHUB_ENV
+        echo "✅ Done"
 
-        echo "✅ Chrome and system dependencies installed"
-
-    # Step 4: Install Python packages
-    - name: 📦 Install Python packages
+    - name: Install Python packages
       run: |
         pip install --upgrade pip
-        pip install selenium==4.15.0
-        pip install python-dotenv==1.0.0
-        pip install requests==2.31.0
-        pip install supabase==1.1.1
-        pip install fuzzywuzzy==0.18.0
-        pip install python-Levenshtein==0.25.1
-        pip install pandas==1.5.0
-        pip install numpy==1.24.0
-        pip install beautifulsoup4==4.11.0
-        pip install lxml==4.9.0
-        pip install rich==12.6.0
-        pip install webdriver-manager==4.0.1
+        pip install selenium==4.15.0 python-dotenv==1.0.0 requests==2.31.0 supabase==1.1.1 fuzzywuzzy==0.18.0 \
+          python-Levenshtein==0.25.1 pandas==1.5.0 numpy==1.24.0 beautifulsoup4==4.11.0 lxml==4.9.0 rich==12.6.0 \
+          webdriver-manager==4.0.1
 
-    # Step 5: Install R with ALL required packages
-    - name: 📦 Install R with ALL required packages
+    - name: 📦 Install R with packages
       run: |
-        echo "=== Installing R with ALL required packages ==="
+        echo "=== Installing R ==="
         sudo apt-get install -y r-base r-base-dev
-        echo "✅ R installed"
 
-        python3 -c '
-import textwrap
-
-script = textwrap.dedent("""
-# Set user library
-user_lib <- Sys.getenv("R_LIBS_USER")
-if (user_lib == "") {
-  user_lib <- paste0(Sys.getenv("HOME"), "/R/x86_64-pc-linux-gnu-library/4.3")
-}
-dir.create(user_lib, showWarnings = FALSE, recursive = TRUE)
-
-# Packages needed for your bet_resolver.R
-all_required_packages <- c(
-  "jsonlite", "httr", "stringr", "dplyr", "lubridate",
-  "nflreadr", "hoopR"
-)
-
-options(repos = c(CRAN = "https://cloud.r-project.org"))
-
-cat("=== INSTALLING R PACKAGES ===\\n")
-for(pkg in all_required_packages) {
-  cat("Installing:", pkg, "... ")
-  tryCatch({
-    install.packages(pkg, lib = user_lib, dependencies = TRUE, quiet = FALSE)
-    cat("✅ Success\\n")
-  }, error = function(e) {
-    cat("❌ Failed:", e$message, "\\n")
-    # For nflreadr, try GitHub
-    if (pkg == "nflreadr") {
-      cat("  Trying GitHub... ")
-      tryCatch({
-        if (!requireNamespace("remotes", quietly = TRUE)) {
-          install.packages("remotes")
-        }
-        remotes::install_github("nflverse/nflreadr", upgrade = "never")
-        cat("✅ GitHub install successful\\n")
-      }, error = function(e2) {
-        cat("❌ GitHub install failed\\n")
-      })
-    }
-  })
-}
-
-cat("\\n=== VERIFYING INSTALLATIONS ===\\n")
-for(pkg in all_required_packages) {
-  if (requireNamespace(pkg, quietly = TRUE, lib.loc = user_lib)) {
-    cat("  ✅", pkg, "installed\\n")
-  } else {
-    cat("  ⚠️", pkg, "not available\\n")
-  }
-}
-
-cat("\\n✅ R INSTALLATION COMPLETE\\n")
-""")
-
-with open("/tmp/install_r.R", "w") as f:
-    f.write(script)
-print("✅ R installation script created")
-'
+        echo 'user_lib <- Sys.getenv("R_LIBS_USER"); if (user_lib == "") user_lib <- paste0(Sys.getenv("HOME"), "/R/x86_64-pc-linux-gnu-library/4.3"); dir.create(user_lib, showWarnings = FALSE, recursive = TRUE); options(repos = c(CRAN = "https://cloud.r-project.org")); cat("Installing packages...\n"); for(pkg in c("jsonlite", "httr", "stringr", "dplyr", "lubridate")) { cat("  ", pkg, "... "); tryCatch({ install.packages(pkg, lib = user_lib, dependencies = TRUE, quiet = TRUE); cat("OK\n") }, error = function(e) cat("FAILED\n")) }; cat("Trying nflreadr... "); tryCatch({ install.packages("nflreadr", lib = user_lib, dependencies = TRUE, quiet = TRUE); cat("OK\n") }, error = function(e) { cat("CRAN failed, trying GitHub... "); tryCatch({ install.packages("remotes", quiet = TRUE); remotes::install_github("nflverse/nflreadr", upgrade = "never", quiet = TRUE); cat("OK\n") }, error = function(e2) cat("FAILED\n")) }); cat("Trying hoopR... "); tryCatch({ install.packages("hoopR", lib = user_lib, dependencies = TRUE, quiet = TRUE); cat("OK\n") }, error = function(e) cat("FAILED\n")); cat("\nVerifying:\n"); for(pkg in c("jsonlite", "httr", "stringr", "dplyr", "lubridate", "nflreadr", "hoopR")) { if (requireNamespace(pkg, quietly = TRUE)) cat("  ✅", pkg, "\n") else cat("  ❌", pkg, "\n") }' > /tmp/install_r.R
 
         Rscript /tmp/install_r.R
+        echo "R_LIBS_USER=~/R/x86_64-pc-linux-gnu-library/4.3" >> $GITHUB_ENV
+        echo "✅ R installation completed"
 
-        # Set R library path
-        R_LIBS_PATH=$(Rscript -e 'cat(ifelse(Sys.getenv("R_LIBS_USER") == "", "~/R/x86_64-pc-linux-gnu-library/4.3", Sys.getenv("R_LIBS_USER")))' 2>/dev/null || echo "~/R/x86_64-pc-linux-gnu-library/4.3")
-        echo "R_LIBS_USER=${R_LIBS_PATH}" >> $GITHUB_ENV
-        echo "✅ R package installation completed"
-
-    # Step 6: Create a simpler patched version of bet_resolver.R
-    - name: 🔧 Create simplified bet_resolver.R
+    - name: 🔧 Patch bet_resolver.R
       run: |
-        echo "=== Creating simplified bet_resolver.R ==="
-        
+        echo "=== Patching bet_resolver.R ==="
         if [ -f "bet_resolver.R" ]; then
-          echo "Found original bet_resolver.R, creating simplified version..."
-          
-          python3 -c '
-import textwrap
+          cp bet_resolver.R bet_resolver.R.backup
 
-# Create a simplified version that works in CI
-simplified_script = textwrap.dedent("""
-#!/usr/bin/env Rscript
-# SIMPLIFIED VERSION FOR GITHUB ACTIONS
+          echo 'options(warn=-1); safe_load <- function(pkg) { tryCatch({ library(pkg, character.only=TRUE, quietly=TRUE); TRUE }, error=function(e) FALSE) }; for(pkg in c("jsonlite","httr","stringr","dplyr","lubridate")) { if(!safe_load(pkg)) { cat("CRITICAL:", pkg, "failed\n", file=stderr()); quit(status=1) } }; nflreadr_ok <- safe_load("nflreadr"); hoopR_ok <- safe_load("hoopR"); if(!nflreadr_ok) { nflreadr <<- list(load_pbp=function(s) data.frame(), load_schedules=function(s) data.frame(), load_player_stats=function(s) data.frame(), available_seasons=function() c(2023,2024), clean_team_abbrs=function(x) x) }; if(!hoopR_ok) { hoopR <<- list(load_nba_pbp=function(s) data.frame(), load_nba_schedule=function(s) data.frame()) }; cat("Packages loaded (nflreadr:", nflreadr_ok, ", hoopR:", hoopR_ok, ")\n", file=stderr())' > /tmp/header.R
 
-# Set up error handling
-options(error = function() {
-  traceback(3)
-  quit(status = 1)
-})
+          sed 's/^library(nflreadr)/#library(nflreadr)/; s/^library(hoopR)/#library(hoopR)/; s/^library(jsonlite)/#library(jsonlite)/; s/^library(httr)/#library(httr)/; s/^library(stringr)/#library(stringr)/; s/^library(dplyr)/#library/dplyr)/; s/^library(lubridate)/#library(lubridate)/' bet_resolver.R.backup > /tmp/body.R
 
-# Redirect ALL output to stderr
-while (sink.number() > 0) sink()
-sink(stderr(), type = "output")
-sink(stderr(), type = "message")
-options(warn = -1)
-
-cat("=== SIMPLIFIED bet_resolver.R STARTED ===\\n", file = stderr())
-
-# Safe package loading
-safe_load <- function(pkg) {
-  tryCatch({
-    library(pkg, character.only = TRUE, quietly = TRUE)
-    cat(paste("✅ Loaded:", pkg, "\\n"), file = stderr())
-    return(TRUE)
-  }, error = function(e) {
-    cat(paste("⚠️ Could not load:", pkg, "-", e$message, "\\n"), file = stderr())
-    return(FALSE)
-  })
-}
-
-# Load critical packages
-critical_packages <- c("jsonlite", "httr", "stringr", "dplyr", "lubridate")
-for (pkg in critical_packages) {
-  if (!safe_load(pkg)) {
-    cat(paste("❌ CRITICAL ERROR: Could not load", pkg, "\\n"), file = stderr())
-    quit(status = 1)
-  }
-}
-
-# Try to load sports packages (optional)
-nflreadr_loaded <- safe_load("nflreadr")
-hoopR_loaded <- safe_load("hoopR")
-
-if (!nflreadr_loaded) {
-  cat("⚠️ nflreadr not available - NFL features disabled\\n", file = stderr())
-  # Create dummy nflreadr
-  nflreadr <- list(
-    load_pbp = function(season) {
-      cat("⚠️ nflreadr::load_pbp() called but nflreadr not installed\\n", file = stderr())
-      return(data.frame())
-    },
-    load_schedules = function(seasons) {
-      cat("⚠️ nflreadr::load_schedules() called but nflreadr not installed\\n", file = stderr())
-      return(data.frame())
-    },
-    load_player_stats = function(seasons) {
-      cat("⚠️ nflreadr::load_player_stats() called but nflreadr not installed\\n", file = stderr())
-      return(data.frame())
-    },
-    available_seasons = function() { return(c(2023, 2024)) },
-    clean_team_abbrs = function(x) { return(x) }
-  )
-  assign("nflreadr", nflreadr, envir = .GlobalEnv)
-}
-
-if (!hoopR_loaded) {
-  cat("⚠️ hoopR not available - NBA features may use ESPN API\\n", file = stderr())
-  # Create dummy hoopR
-  hoopR <- list(
-    load_nba_pbp = function(season) {
-      cat("⚠️ hoopR::load_nba_pbp() called but hoopR not installed\\n", file = stderr())
-      return(data.frame())
-    },
-    load_nba_schedule = function(season) {
-      cat("⚠️ hoopR::load_nba_schedule() called but hoopR not installed\\n", file = stderr())
-      return(data.frame())
-    }
-  )
-  assign("hoopR", hoopR, envir = .GlobalEnv)
-}
-
-cat("✅ All packages loaded (some may be fallbacks)\\n", file = stderr())
-
-# Load the rest of the original script (excluding the library calls)
-# We need to extract the core functions
-original_file = "bet_resolver.R.backup"
-try:
-    with open(original_file, "r") as f:
-        lines = f.readlines()
-    
-    # Find the library loading section
-    lib_start = None
-    lib_end = None
-    for i, line in enumerate(lines):
-        if "library(nflreadr)" in line and lib_start is None:
-            lib_start = i
-        if "library(httr)" in line and lib_start is not None and lib_end is None:
-            # Find the next non-empty, non-comment line
-            for j in range(i+1, len(lines)):
-                if lines[j].strip() and not lines[j].strip().startswith("#"):
-                    lib_end = j
-                    break
-            if lib_end is None:
-                lib_end = i + 1
-    
-    if lib_start is not None and lib_end is not None:
-        # Keep everything except the library loading section
-        new_lines = lines[:lib_start] + lines[lib_end:]
-        
-        # Write the simplified version
-        with open("bet_resolver_simple.R", "w") as f:
-            # Write our header first
-            f.write(simplified_script)
-            # Then write the rest of the original code
-            f.writelines(new_lines)
-        
-        print("✅ Created bet_resolver_simple.R")
-    else:
-        print("⚠️ Could not find library section, using original")
-        import shutil
-        shutil.copy2("bet_resolver.R", "bet_resolver_simple.R")
-        
-except Exception as e:
-    print(f"⚠️ Error creating simplified version: {e}")
-    import shutil
-    shutil.copy2("bet_resolver.R", "bet_resolver_simple.R")
-""")
-
-# Execute the Python script to create the simplified version
-exec(simplified_script)
-'
-
-          # Make it the main resolver
-          mv bet_resolver_simple.R bet_resolver.R
-          echo "✅ Simplified bet_resolver.R created"
-          
+          cat /tmp/header.R /tmp/body.R > bet_resolver.R
+          echo "✅ bet_resolver.R patched"
         else
           echo "⚠️ bet_resolver.R not found"
         fi
 
-    # Step 7: Fix Python code issues
-    - name: 🔧 Fix Python code issues
+    - name: 🔧 Fix Python code
       run: |
-        echo "=== Fixing Python code issues ==="
-
-        if [ -f "enhanced_paper_trading.py" ]; then
-          echo "Checking enhanced_paper_trading.py..."
-          python3 -c "
-import re
-
-with open('enhanced_paper_trading.py', 'r') as f:
-    content = f.read()
-
-# Fix KeyError issue
-old_pattern = r'print\(f\"  - \{bet\[\"team1\"\]\} vs \{bet\[\"team2\"\]\} \(\{bet\[\"bet_type\"\]\}\)\"\)'
-new_text = '''try:
-                    team1 = bet.get(\"team1\", \"Unknown\")
-                    team2 = bet.get(\"team2\", \"Unknown\")
-                    bet_type = bet.get(\"bet_type\", \"Unknown\")
-                    print(f\"  - {team1} vs {team2} ({bet_type})\")
-                except:
-                    print(f\"  - Bet ID: {bet.get(\"id\", \"Unknown\")[:8]}...\")'''
-
-if re.search(old_pattern, content):
-    content = re.sub(old_pattern, new_text, content)
-    with open('enhanced_paper_trading.py', 'w') as f:
-        f.write(content)
-    print('Fixed KeyError issue')
-else:
-    print('No KeyError issue found')
-"
-        fi
-
-        # Create __init__.py files
         for dir in scanners scraper resolvers arbitrage database; do
-          if [ ! -f "$dir/__init__.py" ] && [ -d "$dir" ]; then
-            echo "# Package init" > "$dir/__init__.py"
-            echo "Created $dir/__init__.py"
-          fi
+          mkdir -p "$dir"
+          [ ! -f "$dir/__init__.py" ] && echo "# Package" > "$dir/__init__.py"
         done
+        echo "✅ Done"
 
-        echo "✅ Python fixes applied"
-
-    # Step 8: Run the system
-    - name: 🎯 Run Enhanced Paper Trading System
+    - name: 🎯 Run System
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         DISPLAY: ':99'
-        R_LIBS_USER: ${{ env.R_LIBS_USER }}
+        R_LIBS_USER: ~/R/x86_64-pc-linux-gnu-library/4.3
       run: |
         echo "🚀 Running Enhanced Paper Trading System"
-        echo "=========================================="
 
-        python3 -c '
-import os
-import sys
-import traceback
+        Rscript -e 'cat("R Test: "); for(p in c("jsonlite","httr","dplyr")) if(require(p,quietly=TRUE,character.only=TRUE)) cat(p,"") else cat("!",p); cat("\n")'
 
-print("=" * 60)
-print("ENHANCED PAPER TRADING - PRODUCTION RUN")
-print("=" * 60)
-
-sys.path.insert(0, os.getcwd())
-
-try:
-    from enhanced_paper_trading import EnhancedPaperTradingSystem
-    
-    print("✅ System imported successfully")
-    
-    system = EnhancedPaperTradingSystem()
-    print(f"💰 Initial bankroll: €{system.bankroll:.2f}")
-    
-    pending_bets = system.db.get_pending_bets()
-    print(f"📊 Pending bets: {len(pending_bets)}")
-    
-    if pending_bets:
-        print("\\n📋 Sample pending bets:")
-        for i, bet in enumerate(pending_bets[:3]):
-            player = bet.get("player", "Unknown")
-            sport = bet.get("sport", "Unknown")
-            bet_type = bet.get("bet_type", bet.get("market_type", "Unknown"))
-            print(f"  {i+1}. {player} ({sport}) - {bet_type}")
-        
-        print("\\n🔄 Attempting to resolve bets...")
+        python3 << 'PYEOF'
+        import os, sys, traceback
+        print("=" * 60)
+        print("ENHANCED PAPER TRADING - PRODUCTION RUN")
+        print("=" * 60)
+        sys.path.insert(0, os.getcwd())
         try:
-            resolved = system._resolve_pending()
-            print(f"✅ Resolved {resolved} bets")
+            from enhanced_paper_trading import EnhancedPaperTradingSystem
+            print("✅ System imported")
+            system = EnhancedPaperTradingSystem()
+            print(f"💰 Bankroll: €{system.bankroll:.2f}")
+            pending = system.db.get_pending_bets()
+            print(f"📊 Pending bets: {len(pending)}")
+            if pending:
+                print("\n📋 Sample:")
+                for i, bet in enumerate(pending[:3]):
+                    print(f"  {i+1}. {bet.get('player','?')} ({bet.get('sport','?')})")
+                print("\n🔄 Resolving...")
+                try:
+                    resolved = system._resolve_pending()
+                    print(f"✅ Resolved {resolved}")
+                except Exception as e:
+                    print(f"⚠️ Resolution error: {str(e)[:80]}")
+            print("\n📡 Scanning...")
+            try:
+                system.automated_scanning(max_scans=1)
+                print("✅ Done")
+            except Exception as e:
+                print(f"⚠️ Scanner error: {e}")
+            print(f"\n💰 Final: €{system.bankroll:.2f}")
+            print("✅ COMPLETED")
         except Exception as e:
-            print(f"⚠️ Bet resolution error (may be expected): {str(e)[:100]}...")
-    
-    print("\\n📡 Running scanner...")
-    try:
-        system.automated_scanning(max_scans=1)
-        print("✅ Scanner completed")
-    except Exception as e:
-        print(f"⚠️ Scanner error: {e}")
-    
-    print(f"\\n💰 Final bankroll: €{system.bankroll:.2f}")
-    print(f"📊 Final pending bets: {len(system.db.get_pending_bets())}")
-    
-    print("\\n✅ PRODUCTION RUN COMPLETED SUCCESSFULLY")
-    
-except Exception as e:
-    print(f"❌ System error: {e}")
-    traceback.print_exc()
-    print("\\n⚠️ Workflow continuing despite errors")
-'
+            print(f"❌ Error: {e}")
+            traceback.print_exc()
+        PYEOF
 
         echo "✅ Workflow completed"
