@@ -100,8 +100,6 @@ class EnhancedPaperTradingSystem:
             return False
 
         try:
-            from datetime import datetime
-
             # Parse the game date
             if ' ' in str(game_date):
                 # Has time component
