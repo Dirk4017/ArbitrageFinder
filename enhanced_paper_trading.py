@@ -428,7 +428,6 @@ class EnhancedPaperTradingSystem:
 
         if game_date:
             try:
-                from datetime import datetime
                 game_date_obj = datetime.strptime(game_date, "%Y-%m-%d").date()
 
                 if sport == "nfl":
