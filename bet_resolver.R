@@ -6646,7 +6646,48 @@ fetch_game_result <- function(game_id, sport, season) {
       }
 
     } else if (sport %in% c("nfl", "football")) {
-      result$error <- "NFL not implemented yet"
+      # FIXED: Actually implement NFL using nflreadr
+      debug_cat("  Using nflreadr for NFL game result...\n")
+      
+      # Load NFL schedule for the season
+      schedule <- nflreadr::load_schedules(seasons = season)
+      
+      if (nrow(schedule) == 0) {
+        debug_cat("  No schedule data available for season\n")
+        result$error <- "No schedule data available"
+        return(result)
+      }
+      
+      # Find the specific game
+      game_row <- schedule[schedule$game_id == game_id, ]
+      
+      if (nrow(game_row) == 0) {
+        debug_cat(sprintf("  Game ID %s not found in schedule\n", game_id))
+        result$error <- "Game not found in schedule"
+        return(result)
+      }
+      
+      # Extract game information
+      result$home_team <- game_row$home_team[1]
+      result$away_team <- game_row$away_team[1]
+      result$home_score <- as.numeric(game_row$home_score[1])
+      result$away_score <- as.numeric(game_row$away_score[1])
+      
+      # Check if game has been played
+      if (is.na(result$home_score) || is.na(result$away_score)) {
+        debug_cat("  Game not completed yet\n")
+        result$error <- "Game not completed yet"
+        result$found <- FALSE
+        return(result)
+      }
+      
+      result$total_points <- result$home_score + result$away_score
+      result$found <- TRUE
+      
+      debug_cat(sprintf("  NFL game result: %s %d - %d %s\n",
+                        result$away_team, result$away_score,
+                        result$home_score, result$home_team))
+      
     } else {
       result$error <- paste("Sport not supported:", sport)
     }
@@ -6667,10 +6708,6 @@ fetch_game_result <- function(game_id, sport, season) {
 
   return(result)
 }
-
-# ==============================================
-# UPDATED RESOLVE_BET FUNCTION WITH MARKET ROUTING
-# ==============================================
 
 resolve_bet <- function(player_name, sport, season, market_type, event_string, line_value = NULL, game_date = NULL) {
   debug_cat("\n===============================================================================\n")

@@ -138,27 +138,126 @@ class RStatsResolver:
             self.logger.warning(f"Could not initialize cache: {e}")
             return None
 
+    def _detect_sport_correctly(self, event: str, sport_hint: str = None) -> Dict[str, any]:
+        """
+        Detect the correct sport from event string
+        Returns dict with sport, league, and is_college flag
+        """
+        # College team indicators
+        college_indicators = [
+            'State$', 'University', 'College', 'FL$', 'AL$', 'GA$', 'TX$',
+            'CA$', 'OH$', 'IL$', 'PA$', 'NY$', 'NC$', 'MI$', 'NJ$', 'VA$',
+            'WA$', 'AZ$', 'TN$', 'IN$', 'MA$', 'MO$', 'MN$', 'WI$', 'CO$',
+            'McNeese', 'East Texas A&M', 'UMBC', 'New Hampshire', 'Bethune-Cookman',
+            'Alcorn State', 'Kansas State', 'Oklahoma State', 'TCU', 'North Carolina',
+            'Pittsburgh', 'NC State', 'Miami \(FL\)', 'Boise State', 'UNLV',
+            'Stephen F. Austin', 'Texas A&M-Corpus Christi', 'Coppin State',
+            'South Carolina State', 'Florida Atlantic', 'Gonzaga'
+        ]
+
+        # Known NBA teams for validation
+        nba_teams = [
+            'Hawks', 'Celtics', 'Nets', 'Hornets', 'Bulls', 'Cavaliers', 'Mavericks',
+            'Nuggets', 'Pistons', 'Warriors', 'Rockets', 'Pacers', 'Clippers', 'Lakers',
+            'Grizzlies', 'Heat', 'Bucks', 'Timberwolves', 'Pelicans', 'Knicks',
+            'Thunder', 'Magic', '76ers', 'Suns', 'Trail Blazers', 'Kings', 'Spurs',
+            'Raptors', 'Jazz', 'Wizards'
+        ]
+
+        # Known NFL teams for validation
+        nfl_teams = [
+            'Cardinals', 'Falcons', 'Ravens', 'Bills', 'Panthers', 'Bears', 'Bengals',
+            'Browns', 'Cowboys', 'Broncos', 'Lions', 'Packers', 'Texans', 'Colts',
+            'Jaguars', 'Chiefs', 'Raiders', 'Chargers', 'Rams', 'Dolphins', 'Vikings',
+            'Patriots', 'Saints', 'Giants', 'Jets', 'Eagles', 'Steelers', '49ers',
+            'Seahawks', 'Buccaneers', 'Titans', 'Commanders', 'Football Team'
+        ]
+
+        result = {
+            'original_event': event,
+            'sport_hint': sport_hint,
+            'sport': sport_hint,  # Default to hint
+            'league': None,
+            'is_college': False,
+            'is_nfl': False,
+            'is_nba': False,
+            'confidence': 0.5
+        }
+
+        # Check for college indicators
+        for indicator in college_indicators:
+            if re.search(indicator, event, re.IGNORECASE):
+                result['is_college'] = True
+                if sport_hint == 'basketball':
+                    result['sport'] = 'college_basketball'
+                    result['league'] = 'NCAA'
+                elif sport_hint == 'football':
+                    result['sport'] = 'college_football'
+                    result['league'] = 'NCAA'
+                else:
+                    result['sport'] = 'college'
+                result['confidence'] = 0.9
+                self.logger.info(f"  Detected college game: {indicator} in event")
+                break
+
+        # If not college, check for NBA teams
+        if not result['is_college'] and sport_hint in ['basketball', 'nba']:
+            for team in nba_teams:
+                if re.search(rf'\b{team}\b', event, re.IGNORECASE):
+                    result['is_nba'] = True
+                    result['sport'] = 'nba'
+                    result['league'] = 'NBA'
+                    result['confidence'] = 0.9
+                    self.logger.info(f"  Detected NBA team: {team}")
+                    break
+
+        # Check for NFL teams - This should run regardless of sport_hint
+        for team in nfl_teams:
+            if re.search(rf'\b{team}\b', event, re.IGNORECASE):
+                result['is_nfl'] = True
+                result['sport'] = 'nfl'
+                result['league'] = 'NFL'
+                result['confidence'] = 0.9
+                self.logger.info(f"  Detected NFL team: {team}")
+                break
+
+        # If we detected NFL but the hint was something else, override it
+        if result['is_nfl']:
+            result['sport'] = 'nfl'
+            
+        # If we detected NBA but the hint was something else, override it
+        if result['is_nba'] and not result['is_nfl']:
+            result['sport'] = 'nba'
+
+        return result
+
     def _normalize_event_for_espn(self, event_string: str, sport: str = None) -> str:
         """
         Convert team names in event strings to ESPN format.
-        FIXED VERSION: Prevents duplicate string replacements that cause issues like
-        "New York Knicks" -> "New York New York Knicks New York Knicks"
-
-        Strategy: Apply transformations in order, longest patterns first,
-        and don't re-apply transformations to already-normalized parts.
-
-        IMPORTANT: Only applies NBA mappings for NBA/basketball games.
-        NHL and NFL have different team names that shouldn't be modified.
+        FIXED: Only normalizes NBA team names for NBA games.
+        College games, NFL, and NHL games are NOT normalized.
         """
         if not event_string:
             return event_string
 
+        # First, detect the correct sport from the event
+        sport_info = self._detect_sport_correctly(event_string, sport)
+        
+        # Log what we detected
+        if sport_info['is_college']:
+            self.logger.info(f"  College game detected: {event_string} - skipping normalization")
+            return event_string  # Don't normalize college games
+            
+        if sport_info['is_nfl']:
+            self.logger.info(f"  NFL game detected: {event_string} - skipping NBA normalization")
+            return event_string  # Don't apply NBA normalization to NFL
+            
         # CRITICAL FIX: Only normalize NBA team names for NBA games
-        # NHL and NFL team names should NOT be normalized with NBA mappings
-        sport_lower = (sport or "").lower()
-        if sport_lower not in ("nba", "basketball"):
-            # For NHL, NFL, and other sports, return as-is
+        if not sport_info['is_nba']:
+            # Not an NBA game, return as-is
             return event_string
+
+        self.logger.info(f"  NBA game detected: {event_string} - applying ESPN normalization")
 
         # Define ESPN displayName mappings in ORDER OF PRIORITY (longest first)
         # This prevents overlapping replacements
@@ -245,81 +344,6 @@ class RStatsResolver:
             if before != normalized_event:
                 changes_made.append(f"{city_name} -> {full_team_name}")
                 normalized_teams.add(full_team_name)
-
-        # Third pass: Handle tricky abbreviations and nicknames carefully
-        # We need regex to ensure we don't replace partial words
-        abbreviation_mappings = [
-            (r'\bGSW\b', 'Golden State Warriors'),
-            (r'\bGS Warriors\b', 'Golden State Warriors'),
-            (r'\bG State\b', 'Golden State Warriors'),
-            (r'\bPhilly\b', 'Philadelphia 76ers'),
-            (r'\bPhilly 76ers\b', 'Philadelphia 76ers'),
-            (r'\bSixers\b', 'Philadelphia 76ers'),
-            (r'\bNY\b', 'New York Knicks'),
-            (r'\bNY Knicks\b', 'New York Knicks'),
-            (r'\bCeltics\b', 'Boston Celtics'),
-            (r'\bBOS Celtics\b', 'Boston Celtics'),
-            (r'\bL\.A\. Clippers\b', 'LA Clippers'),
-            (r'\bL\.A Clippers\b', 'LA Clippers'),
-            (r'\bWarriors\b', 'Golden State Warriors'),
-            (r'\bHeat\b', 'Miami Heat'),
-            (r'\bBulls\b', 'Chicago Bulls'),
-            (r'\bRockets\b', 'Houston Rockets'),
-            (r'\bKings\b', 'Sacramento Kings'),
-            (r'\bThunder\b', 'Oklahoma City Thunder'),
-            (r'\bPelicans\b', 'New Orleans Pelicans'),
-            (r'\bTimberwolves\b', 'Minnesota Timberwolves'),
-            (r'\bCavaliers\b', 'Cleveland Cavaliers'),
-            (r'\bMavericks\b', 'Dallas Mavericks'),
-            (r'\bNuggets\b', 'Denver Nuggets'),
-            (r'\bSuns\b', 'Phoenix Suns'),
-            (r'\bBucks\b', 'Milwaukee Bucks'),
-            (r'\bHawks\b', 'Atlanta Hawks'),
-            (r'\bNets\b', 'Brooklyn Nets'),
-            (r'\bHornets\b', 'Charlotte Hornets'),
-            (r'\bPistons\b', 'Detroit Pistons'),
-            (r'\bPacers\b', 'Indiana Pacers'),
-            (r'\bGrizzlies\b', 'Memphis Grizzlies'),
-            (r'\bMagic\b', 'Orlando Magic'),
-            (r'\bTrail Blazers\b', 'Portland Trail Blazers'),
-            (r'\bBlazers\b', 'Portland Trail Blazers'),
-            (r'\bSpurs\b', 'San Antonio Spurs'),
-            (r'\bRaptors\b', 'Toronto Raptors'),
-            (r'\bJazz\b', 'Utah Jazz'),
-            (r'\bWizards\b', 'Washington Wizards'),
-        ]
-
-        # Apply regex replacements carefully
-        for pattern, replacement in abbreviation_mappings:
-            # Check if replacement is already in the string
-            if replacement not in normalized_event:
-                # Use regex to replace whole words only
-                before = normalized_event
-                normalized_event = re.sub(pattern, replacement, normalized_event, flags=re.IGNORECASE)
-                if before != normalized_event:
-                    changes_made.append(pattern.replace('\\b', '') + " -> " + replacement)
-
-        # CRITICAL FIX: Handle "Knicks" carefully - don't replace if already "New York Knicks"
-        if "New York Knicks" not in normalized_event and re.search(r'\bKnicks\b', normalized_event, re.IGNORECASE):
-            before = normalized_event
-            normalized_event = re.sub(r'\bKnicks\b', 'New York Knicks', normalized_event, flags=re.IGNORECASE)
-            if before != normalized_event:
-                changes_made.append("Knicks -> New York Knicks")
-
-        # Also handle case variations of the main ESPN fixes
-        case_fixes = [
-            (r'\bLos Angeles Clippers\b', 'LA Clippers', re.IGNORECASE),
-            (r'\bLA Lakers\b', 'Los Angeles Lakers', re.IGNORECASE),
-            (r'\bL\.A\. Lakers\b', 'Los Angeles Lakers', re.IGNORECASE),
-            (r'\bL\.A Lakers\b', 'Los Angeles Lakers', re.IGNORECASE),
-        ]
-
-        for pattern, replacement, flags in case_fixes:
-            before = normalized_event
-            normalized_event = re.sub(pattern, replacement, normalized_event, flags=flags)
-            if before != normalized_event and f"{pattern} -> {replacement}" not in changes_made:
-                pattern_clean = pattern.replace('\\\\b', '').replace(r'\.', '.')
-                changes_made.append(f"{pattern_clean} -> {replacement}")
 
         # Clean up double spaces that might have been introduced
         normalized_event = re.sub(r'\s+', ' ', normalized_event).strip()
@@ -731,9 +755,57 @@ class RStatsResolver:
         self.logger.info(
             f"ENTERING _call_r_script: player={player_name}, sport={sport}, game_date={game_date}, event={event_string}")
 
-        # NORMALIZE EVENT STRING FOR ESPN (CRITICAL FIX!)
-        # Pass sport so we only normalize NBA team names for NBA games
-        normalized_event = self._normalize_event_for_espn(event_string, sport)
+        # First, detect the correct sport from the event
+        sport_info = self._detect_sport_correctly(event_string, sport)
+        self.logger.info(f"Sport detection result: {sport_info}")
+        
+        # If it's a college game, return early with a specific message
+        if sport_info['is_college']:
+            self.logger.info(f"🎓 College game detected, skipping: {event_string}")
+            return {
+                'success': False,
+                'resolved': False,
+                'error': f"College game not supported: {event_string}",
+                'is_college': True,
+                'league': 'NCAA'
+            }
+            
+        # If it's an NFL game, make sure we're using the correct sport
+        if sport_info['is_nfl']:
+            self.logger.info(f"🏈 NFL game detected: {event_string}")
+            # Use NFL sport
+            r_sport = 'nfl'
+        elif sport_info['is_nba']:
+            self.logger.info(f"🏀 NBA game detected: {event_string}")
+            r_sport = 'nba'
+        else:
+            # Fall back to the original sport hint
+            r_sport = sport
+            self.logger.info(f"❓ Unknown league, using hint: {r_sport}")
+            
+        # Check if game is in the future
+        if game_date:
+            try:
+                game_date_obj = datetime.strptime(game_date, '%Y-%m-%d').date()
+                today = datetime.now().date()
+                if game_date_obj > today:
+                    self.logger.info(f"⏸ Future game detected: {game_date}")
+                    return {
+                        'success': False,
+                        'resolved': False,
+                        'error': f"Game is in the future: {game_date}",
+                        'future_game': True,
+                        'game_date': game_date
+                    }
+            except:
+                pass
+
+        # NORMALIZE EVENT STRING FOR ESPN (only for NBA)
+        normalized_event = event_string
+        if r_sport == 'nba':
+            normalized_event = self._normalize_event_for_espn(event_string, r_sport)
+        else:
+            self.logger.info(f"  Not normalizing event for sport: {r_sport}")
 
         # FIXED: Properly use MarketClassifier to get the FULL market name for R
         market_for_r = market_type
@@ -787,7 +859,7 @@ class RStatsResolver:
         # Create cache key - FIXED: Handle None values
         cache_parts = {
             "player": (player_name or "").lower().strip(),
-            "sport": sport or "",
+            "sport": r_sport,  # Use detected sport
             "season": season,
             "market": (market_for_r or "").lower().strip(),  # Use mapped market for cache
             "event": (normalized_event or "").lower().strip(),  # Use normalized event for cache key
@@ -812,10 +884,10 @@ class RStatsResolver:
             # FIX: Build command as shell string with proper quoting for Windows
             # This ensures arguments with spaces are passed correctly
 
-            # Prepare all arguments as strings (USE NORMALIZED EVENT)
+            # Prepare all arguments as strings (USE NORMALIZED EVENT and DETECTED SPORT)
             args_list = [
                 player_name or "",
-                sport or "",
+                r_sport,  # Use detected sport
                 str(season),
                 market_for_r or "",  # CRITICAL: Use mapped market here
                 normalized_event or "",  # CRITICAL: Use normalized event here
@@ -924,9 +996,9 @@ class RStatsResolver:
 
         # ADD THIS DEBUGGING
         if json_line:
-            self.logger.info(f"Found JSON from R: {json_line}")
+            self.logger.info(f"Found JSON from R: {json_line[:200]}...")
         else:
-            self.logger.info(f"No JSON found in R output. Full output: {all_output}")
+            self.logger.info(f"No JSON found in R output. Full output: {all_output[:500]}")
 
         if not json_line:
             # Check for R errors
