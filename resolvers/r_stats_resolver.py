@@ -194,10 +194,6 @@ class RStatsResolver:
             ("Toronto Raptors", "Toronto Raptors"),
             ("Utah Jazz", "Utah Jazz"),
             ("Washington Wizards", "Washington Wizards"),
-
-            # CITY + TEAM NAME (without "city") - medium specificity
-            # IMPORTANT: These should ONLY apply if the full team name is NOT already present
-            # We'll handle these separately below
         ]
 
         # City-only mappings - apply ONLY if full team name is not already in string
@@ -336,6 +332,333 @@ class RStatsResolver:
 
         return normalized_event
 
+    def _map_market_for_r(self, market_type: str, player_name: str, sport: str = None) -> str:
+        """
+        Map market types to exactly what the R script's classify_market function expects
+        """
+        if not market_type:
+            return ""
+
+        market_lower = market_type.lower()
+        sport_lower = (sport or "").lower()
+
+        self.logger.info(f"DEBUG: Mapping market '{market_type}' for sport '{sport_lower}'")
+
+        # ==================== GAME MARKETS - DON'T MAP! ====================
+        # For game markets, we want to keep the original market_type
+        # because it contains the team and line value that R needs
+        if any(term in market_lower for term in ['moneyline', 'point spread', 'spread', 'total points']):
+            self.logger.info(f"DEBUG: Game market detected - keeping original: '{market_type}'")
+            return market_type
+
+        # ==================== NHL MARKETS ====================
+        if sport_lower in ("nhl", "hockey"):
+            self.logger.info("DEBUG: Using NHL market mapping")
+
+            # Player period stats
+            if re.search(r'player.*1st.*period.*goals', market_lower):
+                return "Player 1st Period Goals"
+            if re.search(r'player.*2nd.*period.*goals', market_lower):
+                return "Player 2nd Period Goals"
+            if re.search(r'player.*3rd.*period.*goals', market_lower):
+                return "Player 3rd Period Goals"
+            if re.search(r'player.*1st.*period.*assists', market_lower):
+                return "Player 1st Period Assists"
+            if re.search(r'player.*2nd.*period.*assists', market_lower):
+                return "Player 2nd Period Assists"
+            if re.search(r'player.*3rd.*period.*assists', market_lower):
+                return "Player 3rd Period Assists"
+            if re.search(r'player.*1st.*period.*points', market_lower):
+                return "Player 1st Period Points"
+            if re.search(r'player.*2nd.*period.*points', market_lower):
+                return "Player 2nd Period Points"
+            if re.search(r'player.*1st.*period.*shots', market_lower):
+                return "Player 1st Period Shots On Goal"
+            if re.search(r'player.*2nd.*period.*shots', market_lower):
+                return "Player 2nd Period Shots On Goal"
+            if re.search(r'player.*3rd.*period.*shots', market_lower):
+                return "Player 3rd Period Shots On Goal"
+            if re.search(r'player.*1st.*period.*saves', market_lower):
+                return "Player 1st Period Saves"
+            if re.search(r'player.*2nd.*period.*saves', market_lower):
+                return "Player 2nd Period Saves"
+            if re.search(r'player.*3rd.*period.*saves', market_lower):
+                return "Player 3rd Period Saves"
+
+            # Period markets
+            if re.search(r'1st.*period.*total.*goals', market_lower):
+                return "1st Period Total Goals"
+            if re.search(r'2nd.*period.*total.*goals', market_lower):
+                return "2nd Period Total Goals"
+            if re.search(r'3rd.*period.*total.*goals', market_lower):
+                return "3rd Period Total Goals"
+            if re.search(r'1st.*period.*moneyline', market_lower):
+                return "1st Period Moneyline"
+            if re.search(r'2nd.*period.*moneyline', market_lower):
+                return "2nd Period Moneyline"
+            if re.search(r'3rd.*period.*moneyline', market_lower):
+                return "3rd Period Moneyline"
+            if re.search(r'1st.*period.*puck.*line', market_lower):
+                return "1st Period Puck Line"
+            if re.search(r'2nd.*period.*puck.*line', market_lower):
+                return "2nd Period Puck Line"
+            if re.search(r'3rd.*period.*puck.*line', market_lower):
+                return "3rd Period Puck Line"
+            if re.search(r'1st.*period.*both.*teams.*score', market_lower):
+                return "1st Period Both Teams To Score"
+            if re.search(r'2nd.*period.*both.*teams.*score', market_lower):
+                return "2nd Period Both Teams To Score"
+            if re.search(r'3rd.*period.*both.*teams.*score', market_lower):
+                return "3rd Period Both Teams To Score"
+
+            # Player stats
+            if re.search(r'player.*goals', market_lower) and not re.search(r'against', market_lower):
+                return "Player Goals"
+            if re.search(r'player.*assists', market_lower):
+                return "Player Assists"
+            if re.search(r'player.*points', market_lower):
+                return "Player Points"
+            if re.search(r'player.*shots.*on.*goal', market_lower):
+                return "Player Shots On Goal"
+            if re.search(r'player.*saves', market_lower):
+                return "Player Saves"
+            if re.search(r'player.*goals.*against', market_lower):
+                return "Player Goals Against"
+            if re.search(r'player.*hits', market_lower):
+                return "Player Hits"
+            if re.search(r'player.*blocked.*shots', market_lower):
+                return "Player Blocked Shots"
+            if re.search(r'player.*faceoffs.*won', market_lower):
+                return "Player Faceoffs Won"
+            if re.search(r'player.*plus.*minus', market_lower):
+                return "Player Plus/Minus"
+
+            # Scorer markets
+            if re.search(r'player.*first.*goal', market_lower):
+                return "Player First Goal"
+            if re.search(r'player.*last.*goal', market_lower):
+                return "Player Last Goal"
+            if re.search(r'team.*player.*first.*goal', market_lower):
+                return "Team Player First Goal"
+
+            # Team markets
+            if re.search(r'team.*total.*goals', market_lower):
+                return "Team Total Goals"
+            if re.search(r'team.*period.*total.*goals', market_lower):
+                if '1st' in market_lower:
+                    return "Team 1st Period Total Goals"
+                if '2nd' in market_lower:
+                    return "Team 2nd Period Total Goals"
+                if '3rd' in market_lower:
+                    return "Team 3rd Period Total Goals"
+
+            # Game markets
+            if re.search(r'moneyline', market_lower):
+                if re.search(r'3.?way', market_lower):
+                    return "Moneyline 3-way"
+                return "Moneyline"
+            if re.search(r'puck.*line', market_lower):
+                return "Puck Line"
+            if re.search(r'total.*goals', market_lower):
+                return "Total Goals"
+            if re.search(r'both.*teams.*score', market_lower):
+                return "Both Teams To Score"
+
+            # Regulation markets
+            if re.search(r'regulation', market_lower):
+                if re.search(r'moneyline', market_lower):
+                    return "Regulation Moneyline"
+                if re.search(r'puck.*line', market_lower):
+                    return "Regulation Puck Line"
+                if re.search(r'total.*goals', market_lower):
+                    return "Regulation Total Goals"
+                if re.search(r'both.*teams.*score', market_lower):
+                    return "Regulation Both Teams To Score"
+                if re.search(r'team.*to.*score.*first', market_lower):
+                    return "Regulation Team To Score First"
+                if re.search(r'team.*to.*score.*last', market_lower):
+                    return "Regulation Team To Score Last"
+
+            # If no NHL-specific match, return as-is
+            return market_type
+
+        # ==================== MLB MARKETS ====================
+        if sport_lower in ("mlb", "baseball"):
+            self.logger.info("DEBUG: Using MLB market mapping")
+
+            # Player stats
+            if re.search(r'player.*hits', market_lower):
+                return "player hits"
+            if re.search(r'player.*runs', market_lower):
+                return "player runs"
+            if re.search(r'player.*rbi', market_lower):
+                return "player rbi"
+            if re.search(r'player.*home.*runs', market_lower) or re.search(r'player.*hr', market_lower):
+                return "player home runs"
+            if re.search(r'player.*stolen.*bases', market_lower) or re.search(r'player.*sb', market_lower):
+                return "player stolen bases"
+            if re.search(r'player.*walks', market_lower) or re.search(r'player.*bb', market_lower):
+                return "player walks"
+            if re.search(r'player.*strikeouts', market_lower) or re.search(r'player.*so', market_lower) or re.search(r'player.*k', market_lower):
+                return "player strikeouts"
+            if re.search(r'player.*total.*bases', market_lower):
+                return "player total bases"
+            if re.search(r'player.*extra.*base.*hits', market_lower):
+                return "player extra base hits"
+            if re.search(r'player.*hit.*by.*pitch', market_lower):
+                return "player hit by pitch"
+            if re.search(r'player.*sacrifice.*flies', market_lower):
+                return "player sacrifice flies"
+
+            return market_type
+
+        # ==================== WNBA MARKETS ====================
+        if sport_lower in ("wnba", "womens basketball"):
+            self.logger.info("DEBUG: Using WNBA market mapping")
+            # WNBA uses same mapping as NBA
+            return self._map_nba_markets(market_lower, player_name, sport)
+
+        # ==================== NCAAF MARKETS ====================
+        if sport_lower in ("ncaaf", "college football", "cfb"):
+            self.logger.info("DEBUG: Using NCAAF market mapping")
+
+            if re.search(r'player.*passing.*yards', market_lower):
+                return "player passing yards"
+            if re.search(r'player.*passing.*touchdowns', market_lower):
+                return "player passing touchdowns"
+            if re.search(r'player.*rushing.*yards', market_lower):
+                return "player rushing yards"
+            if re.search(r'player.*rushing.*touchdowns', market_lower):
+                return "player rushing touchdowns"
+            if re.search(r'player.*receiving.*yards', market_lower):
+                return "player receiving yards"
+            if re.search(r'player.*receiving.*touchdowns', market_lower):
+                return "player receiving touchdowns"
+            if re.search(r'player.*receptions', market_lower):
+                return "player receptions"
+            if re.search(r'player.*longest.*reception', market_lower):
+                return "player longest reception"
+            if re.search(r'player.*longest.*rush', market_lower):
+                return "player longest rush"
+
+            return market_type
+
+        # ==================== NCAAB/NCAAW MARKETS ====================
+        if sport_lower in ("ncaab", "college basketball", "ncaaw", "womens college basketball"):
+            self.logger.info("DEBUG: Using NCAAB/NCAAW market mapping")
+            # College basketball uses same mapping as NBA
+            return self._map_nba_markets(market_lower, player_name, sport)
+
+        # ==================== NBA/NFL MARKETS ====================
+        return self._map_nba_markets(market_lower, player_name, sport)
+
+    def _map_nba_markets(self, market_lower: str, player_name: str, sport: str = None) -> str:
+        """Helper method for NBA-style market mapping"""
+        # Player combo markets
+        if re.search(r'points.*\+.*assists|points.*assists', market_lower) and not re.search(r'rebounds', market_lower):
+            return "player points + assists"
+        if re.search(r'rebounds.*\+.*assists|rebounds.*assists', market_lower):
+            return "player rebounds + assists"
+        if re.search(r'points.*rebounds.*assists|pra', market_lower):
+            return "player points + rebounds + assists"
+        if re.search(r'points.*\+.*rebounds|points.*rebounds', market_lower):
+            return "player points + rebounds"
+        if re.search(r'blocks.*\+.*steals|blocks.*steals', market_lower):
+            return "player blocks + steals"
+
+        # Player special markets
+        if re.search(r'double.*double', market_lower):
+            return "player double double"
+        if re.search(r'triple.*double', market_lower):
+            return "player triple double"
+        if re.search(r'to.*have.*most.*points', market_lower):
+            return "player to have most points"
+        if re.search(r'to.*have.*most.*rebounds', market_lower):
+            return "player to have most rebounds"
+        if re.search(r'to.*have.*most.*assists', market_lower):
+            return "player to have most assists"
+
+        # Player threes
+        if re.search(r'threes|3.*point|3pt|three.*point', market_lower):
+            return "player threes"
+
+        # Period totals
+        if re.search(r'1st.*half.*total.*points', market_lower):
+            return "1st half total points"
+        if re.search(r'2nd.*half.*total.*points', market_lower):
+            return "2nd half total points"
+        if re.search(r'1st.*quarter.*total.*points', market_lower):
+            return "1st quarter total points"
+
+        # First/last scorer markets
+        if re.search(r'first.*basket', market_lower):
+            return "player first basket"
+        if re.search(r'first.*field.*goal', market_lower):
+            return "player first field goal"
+        if re.search(r'first.*touchdown.*scorer', market_lower):
+            return "player first touchdown scorer"
+        if re.search(r'last.*touchdown.*scorer', market_lower):
+            return "player last touchdown scorer"
+
+        # Team props
+        if re.search(r'team.*to.*score.*first', market_lower):
+            return "team to score first"
+        if re.search(r'both.*teams.*to.*score', market_lower):
+            return "both teams to score"
+
+        # Player period stats
+        if re.search(r'player.*1st.*half.*points', market_lower):
+            return "player 1st half points"
+        if re.search(r'player.*1st.*half.*rebounds', market_lower):
+            return "player 1st half rebounds"
+        if re.search(r'player.*1st.*half.*assists', market_lower):
+            return "player 1st half assists"
+
+        # Player stats (NFL)
+        if re.search(r'passing.*yards', market_lower):
+            return "player passing yards"
+        if re.search(r'passing.*touchdowns', market_lower):
+            return "player passing touchdowns"
+        if re.search(r'rushing.*yards', market_lower):
+            return "player rushing yards"
+        if re.search(r'rushing.*touchdowns', market_lower):
+            return "player rushing touchdowns"
+        if re.search(r'receiving.*yards', market_lower):
+            return "player receiving yards"
+        if re.search(r'receiving.*touchdowns', market_lower):
+            return "player receiving touchdowns"
+        if re.search(r'receptions', market_lower):
+            return "player receptions"
+        if re.search(r'touchdowns', market_lower) and not re.search(r'passing|rushing|receiving', market_lower):
+            return "player touchdowns"
+        if re.search(r'interceptions', market_lower):
+            return "player interceptions"
+
+        # Player stats (NBA)
+        if re.search(r'points', market_lower) and not re.search(r'total.*points', market_lower):
+            return "player points"
+        if re.search(r'assists', market_lower):
+            return "player assists"
+        if re.search(r'rebounds', market_lower):
+            return "player rebounds"
+        if re.search(r'steals', market_lower):
+            return "player steals"
+        if re.search(r'blocks', market_lower):
+            return "player blocks"
+        if re.search(r'turnovers', market_lower):
+            return "player turnovers"
+
+        # If we get here, try to use the player name to extract just the stat part
+        if player_name and player_name.lower() in market_lower:
+            # Remove player name from market type
+            cleaned = re.sub(re.escape(player_name), '', market_lower, flags=re.IGNORECASE).strip()
+            if cleaned:
+                self.logger.info(f"DEBUG: Removed player name, got: '{cleaned}'")
+                # Try mapping again with the cleaned string
+                return self._map_market_for_r(cleaned, "", sport)
+
+        return market_lower
+
     def resolve_player_stat(self, player_name: str, sport: str, season: int,
                             market_type: str, event_string: str, line_value: Optional[float] = None,
                             game_date: Optional[str] = None, direction: Optional[str] = None,
@@ -378,9 +701,18 @@ class RStatsResolver:
                             game_date: Optional[str] = None) -> Dict:
         """
         Resolve game markets (totals, spreads, moneylines)
+
+        The 'team' parameter may contain the full player string with line value,
+        e.g., "Gonzaga -5.5" for a point spread bet.
         """
+        self.logger.info(
+            f"DEBUG: resolve_game_market - team='{team}', market_type='{market_type}', line_value={line_value}")
+
+        # For game markets, we pass the team string as player_name
+        # The R script's resolve_game_market function expects the team in the 'team' parameter
+        # and the line_value separately
         return self._call_r_script(
-            player_name=team or "",
+            player_name=team or "",  # This will be something like "Gonzaga -5.5"
             sport=sport,
             season=season,
             market_type=market_type,
@@ -403,30 +735,61 @@ class RStatsResolver:
         # Pass sport so we only normalize NBA team names for NBA games
         normalized_event = self._normalize_event_for_espn(event_string, sport)
 
-        # Use MarketClassifier to get the FULL market name for R
-        if self.market_classifier and market_type:
+        # FIXED: Properly use MarketClassifier to get the FULL market name for R
+        market_for_r = market_type
+        if self.market_classifier:
             try:
+                # First, clean player name - remove Over/Under and line values
+                clean_player = player_name
+                if player_name:
+                    import re
+                    clean_player = re.sub(r'\s+(Over|Under|O|U)\s+\d+\.?\d*', '', clean_player, flags=re.IGNORECASE)
+                    clean_player = re.sub(r'\s+\d+\.?\d*', '', clean_player)
+                    clean_player = clean_player.strip()
+
                 # Classify the market
-                classification = self.market_classifier.classify(market_type, player_name)
+                classification = self.market_classifier.classify(market_type, clean_player)
 
                 # Get the full market name for R to parse
                 market_for_r = self.market_classifier.get_market_for_r_script(classification)
 
                 self.logger.info(f"DEBUG: Original market_type: '{market_type}'")
+                self.logger.info(f"DEBUG: Clean player: '{clean_player}'")
                 self.logger.info(f"DEBUG: Classified as: {classification.category}.{classification.subcategory}")
                 self.logger.info(f"DEBUG: Market for R: '{market_for_r}'")
 
-                # Update market_type to the full market name for R
-                market_type = market_for_r
             except Exception as e:
-                self.logger.warning(f"Failed to classify market: {e}, using original market_type")
+                self.logger.warning(f"Failed to classify market: {e}, using mapped market_type")
+                # Fallback to comprehensive mapping based on R script's expectations
+                market_for_r = self._map_market_for_r(market_type, player_name, sport)
+                self.logger.info(f"DEBUG: Mapped market for R: '{market_for_r}'")
+
+                # ========== ADDED SECTION: For game markets, preserve original ==========
+                # CRITICAL: For game markets, ensure we preserve the original market type
+                if any(term in market_type.lower() for term in ['moneyline', 'point spread', 'spread', 'total points']):
+                    # Keep the original market type for game markets
+                    self.logger.info(f"DEBUG: Game market detected - preserving original: '{market_type}'")
+                    market_for_r = market_type
+                # ========== END ADDED SECTION ==========
+        else:
+            # Fallback to comprehensive mapping
+            market_for_r = self._map_market_for_r(market_type, player_name, sport)
+            self.logger.info(f"DEBUG: Mapped market for R: '{market_for_r}'")
+
+            # ========== ADDED SECTION: For game markets, preserve original ==========
+            # CRITICAL: For game markets, ensure we preserve the original market type
+            if any(term in market_type.lower() for term in ['moneyline', 'point spread', 'spread', 'total points']):
+                # Keep the original market type for game markets
+                self.logger.info(f"DEBUG: Game market detected - preserving original: '{market_type}'")
+                market_for_r = market_type
+            # ========== END ADDED SECTION ==========
 
         # Create cache key - FIXED: Handle None values
         cache_parts = {
             "player": (player_name or "").lower().strip(),
             "sport": sport or "",
             "season": season,
-            "market": (market_type or "").lower().strip(),
+            "market": (market_for_r or "").lower().strip(),  # Use mapped market for cache
             "event": (normalized_event or "").lower().strip(),  # Use normalized event for cache key
             "line": line_value,
             "game_date": game_date or "",
@@ -454,7 +817,7 @@ class RStatsResolver:
                 player_name or "",
                 sport or "",
                 str(season),
-                market_type or "",
+                market_for_r or "",  # CRITICAL: Use mapped market here
                 normalized_event or "",  # CRITICAL: Use normalized event here
                 str(line_value) if line_value is not None else "NULL",
                 game_date if game_date else "NULL",

@@ -9,7 +9,7 @@ import logging
 import json
 import re
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple, Any  # <-- ADD THIS!
+from typing import Dict, List, Optional, Tuple, Any
 
 # Add the current directory to Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -100,8 +100,6 @@ class EnhancedPaperTradingSystem:
             return False
 
         try:
-            from datetime import datetime
-
             # Parse the game date
             if ' ' in str(game_date):
                 # Has time component
@@ -136,27 +134,115 @@ class EnhancedPaperTradingSystem:
         event_lower = event.lower()
         sport_lower = sport.lower()
 
-        # College football indicators
-        college_keywords = [
-            'oregon', 'texas tech', 'ncaa', 'college',
-            'clemson', 'alabama', 'georgia', 'michigan', 'ohio state',
-            'usc', 'stanford', 'florida state', 'lsu', 'oklahoma',
-            'notre dame', 'pen state', 'tennessee', 'utah',
-            'wisconsin', 'iowa', 'michigan state', 'penn state',
-            'texas a&m', 'auburn', 'florida', 'miami',
-            # Add more as needed
+        # If sport is already identified as college, return True
+        if sport_lower in ['ncaaf', 'ncaab', 'ncaaw', 'college football', 'college basketball']:
+            return True
+
+        # List of NFL team names that contain words that might look like college teams
+        nfl_teams = [
+            'kansas city chiefs', 'new england patriots', 'new york jets',
+            'new york giants', 'los angeles rams', 'los angeles chargers',
+            'san francisco 49ers', 'tampa bay buccaneers', 'jacksonville jaguars',
+            'carolina panthers', 'arizona cardinals', 'seattle seahawks',
+            'buffalo bills', 'miami dolphins', 'pittsburgh steelers',
+            'cleveland browns', 'cincinnati bengals', 'baltimore ravens',
+            'tennessee titans', 'indianapolis colts', 'houston texans',
+            'denver broncos', 'las vegas raiders', 'kansas city chiefs',
+            'dallas cowboys', 'philadelphia eagles', 'washington commanders',
+            'chicago bears', 'detroit lions', 'green bay packers',
+            'minnesota vikings', 'atlanta falcons', 'new orleans saints',
+            'carolina panthers'
         ]
 
-        # Check if this looks like college football
+        # Check if this is an NFL team first (these are NEVER college)
+        for team in nfl_teams:
+            if team in event_lower:
+                return False
+
+        # College football indicators - but only if we're not sure it's NFL
         if sport_lower in ['football', 'nfl', 'cfb']:
-            for keyword in college_keywords:
-                if keyword in event_lower:
+            # First, check for specific college team names
+            college_teams = [
+                'alabama crimson tide', 'clemson tigers', 'ohio state buckeyes',
+                'georgia bulldogs', 'lsu tigers', 'oklahoma sooners',
+                'notre dame fighting irish', 'texas longhorns', 'texas a&m aggies',
+                'florida gators', 'florida state seminoles', 'miami hurricanes',
+                'michigan wolverines', 'usc trojans', 'oregon ducks',
+                'penn state nittany lions', 'wisconsin badgers', 'iowa hawkeyes',
+                'auburn tigers', 'tennessee volunteers', 'utah utes',
+                'baylor bears', 'oklahoma state cowboys', 'kansas state wildcats',
+                'kansas jayhawks', 'iowa state cyclones', 'west virginia mountaineers',
+                'kentucky wildcats', 'south carolina gamecocks', 'missouri tigers',
+                'arkansas razorbacks', 'ole miss rebels', 'mississippi state bulldogs',
+                'vanderbilt commodores', 'wake forest demon deacons', 'nc state wolfpack',
+                'duke blue devils', 'north carolina tar heels', 'virginia cavaliers',
+                'virginia tech hokies', 'clemson tigers', 'georgia tech yellow jackets',
+                'florida state seminoles', 'miami hurricanes', 'louisville cardinals',
+                'notre dame fighting irish', 'syracuse orange', 'boston college eagles',
+                'pittsburgh panthers', 'villanova wildcats', 'marquette golden eagles',
+                'creighton bluejays', 'providence friars', 'seton hall pirates',
+                'st john\'s red storm', 'georgetown hoyas', 'depaul blue demons',
+                'butler bulldogs', 'xavier musketeers', 'uconn huskies',
+                'cincinnati bearcats', 'houston cougars', 'byu cougars',
+                'ucf knights', 'south florida bulls', 'temple owls',
+                'memphis tigers', 'tulsa golden hurricane', 'smu mustangs',
+                'tulane green wave', 'east carolina pirates', 'colorado buffaloes',
+                'utah utes', 'arizona wildcats', 'arizona state sun devils',
+                'ucla bruins', 'usc trojans', 'oregon ducks', 'oregon state beavers',
+                'washington huskies', 'washington state cougars', 'california golden bears',
+                'stanford cardinal', 'colorado state rams', 'wyoming cowboys',
+                'utah state aggies', 'nevada wolf pack', 'unlv rebels',
+                'fresno state bulldogs', 'san jose state spartans', 'boise state broncos',
+                'air force falcons', 'new mexico lobos', 'san diego state aztecs',
+                'st mary\'s gaels', 'san francisco dons', 'pepperdine waves',
+                'portland pilots', 'loyola marymount lions', 'pacific tigers',
+                'san diego toreros', 'gonzaga bulldogs', 'santa clara broncos',
+                'charleston cougars', 'campbell fighting camels', 'mcneese state cowboys',
+                'east texas a&m lions', 'bethune-cookman wildcats', 'alcorn state braves',
+                'florida atlantic owls', 'florida international panthers', 'charlotte 49ers',
+                'north texas mean green', 'rice owls', 'southern miss golden eagles',
+                'ul Monroe warhawks', 'ul Lafayette ragin\' cajuns', 'troy trojans',
+                'south alabama jaguars', 'georgia southern eagles', 'georgia state panthers',
+                'appalachian state mountaineers', 'coastal carolina chanticleers',
+                'arkansas state red wolves', 'texas state bobcats', 'louisiana tech bulldogs'
+            ]
+
+            for team in college_teams:
+                if team in event_lower:
                     return True
+
+            # Also check for standalone college names (but be careful with NFL teams)
+            college_keywords = [
+                'oregon', 'texas tech', 'clemson', 'alabama', 'georgia',
+                'ohio state', 'michigan', 'usc', 'stanford', 'florida state',
+                'lsu', 'oklahoma', 'notre dame', 'penn state', 'tennessee',
+                'wisconsin', 'iowa', 'michigan state', 'auburn', 'florida',
+                'duke', 'north carolina', 'kansas', 'kentucky', 'ucla',
+                'gonzaga', 'south carolina', 'uconn', 'louisville', 'baylor',
+                'byu', 'cincinnati', 'houston', 'ucf', 'memphis',
+                'boise state', 'san diego state', 'colorado state', 'utah state',
+                'fresno state', 'unlv', 'wyoming', 'air force', 'new mexico'
+            ]
+
+            for keyword in college_keywords:
+                # Make sure it's a whole word and not part of an NFL team name
+                if f" {keyword} " in f" {event_lower} " or event_lower.startswith(
+                        f"{keyword} ") or event_lower.endswith(f" {keyword}"):
+                    # Double-check it's not an NFL team
+                    is_nfl = False
+                    for nfl_team in nfl_teams:
+                        if keyword in nfl_team:
+                            is_nfl = True
+                            break
+                    if not is_nfl:
+                        return True
 
         # Check for NCAA/FBS/FCS indicators
         if any(college_marker in event_lower for college_marker in
-               ['ncaa', 'fbs', 'fcs', 'college', 'cfb', 'pac-12', 'big ten', 'sec', 'acc', 'big 12']):
-            return True
+               ['ncaa', 'fbs', 'fcs', 'cfb', 'pac-12', 'big ten', 'sec', 'acc', 'big 12', 'big east', 'ivy league']):
+            # But make sure it's not an NFL game with these terms in the description
+            if not any(nfl_team in event_lower for nfl_team in nfl_teams):
+                return True
 
         return False
 
@@ -165,11 +251,89 @@ class EnhancedPaperTradingSystem:
         try:
             # Check for college games
             event = opportunity.get('event', '')
-            sport = opportunity.get('sport', 'unknown')
+            sport = opportunity.get('sport', 'unknown').lower()
 
-            if self._is_college_game(event, sport):
-                logger.warning(f"Skipping college game: {event}")
-                return False
+            # ========== DETECT COLLEGE SPORTS FIRST ==========
+            # College basketball indicators
+            college_basketball_keywords = [
+                'tcu', 'oklahoma state', 'kansas state', 'houston',
+                'miami (fl)', 'nc state', 'unc', 'north carolina',
+                'duke', 'gonzaga', 'santa clara', 'baylor', 'kansas',
+                'byu', 'st john\'s', 'providence', 'villanova',
+                'umbc', 'new hampshire', 'unlv', 'boise state',
+                'iowa state', 'florida atlantic', 'south florida',
+                'charleston', 'campbell', 'mcneese state', 'east texas a&m',
+                'bethune-cookman', 'alcorn state', 'pittsburgh', 'north carolina',
+                'florida atlantic', 'south florida', 'oklahoma state', 'iowa state',
+                'gonzaga', 'santa clara', 'st mary\'s', 'san francisco',
+                'pepperdine', 'portland', 'loyola marymount', 'pacific',
+                'byu', 'san diego', 'kansas state', 'oklahoma state',
+                'texas tech', 'west virginia', 'kansas', 'iowa state',
+                'baylor', 'tcu', 'oklahoma', 'texas', 'kentucky',
+                'florida', 'vanderbilt', 'tennessee', 'south carolina',
+                'georgia', 'missouri', 'arkansas', 'lsu', 'auburn',
+                'alabama', 'ole miss', 'mississippi state', 'texas a&m',
+                'wake forest', 'nc state', 'duke', 'north carolina',
+                'virginia', 'virginia tech', 'clemson', 'georgia tech',
+                'florida state', 'miami', 'louisville', 'notre dame',
+                'syracuse', 'boston college', 'pittsburgh', 'villanova',
+                'marquette', 'creighton', 'providence', 'seton hall',
+                'st john\'s', 'georgetown', 'depaul', 'butler',
+                'xavier', 'uconn', 'cincinnati', 'memphis', 'wichita state',
+                'temple', 'smu', 'tulane', 'tulsa', 'east carolina',
+                'ucf', 'south florida', 'colorado', 'utah', 'arizona',
+                'arizona state', 'ucla', 'usc', 'oregon', 'oregon state',
+                'washington', 'washington state', 'california', 'stanford',
+                'colorado state', 'wyoming', 'utah state', 'nevada',
+                'unlv', 'fresno state', 'san jose state', 'boise state',
+                'air force', 'new mexico', 'san diego state',
+            ]
+
+            # NBA team names that should NEVER be flagged as college
+            nba_team_names = [
+                'warriors', 'kings', 'rockets', 'grizzlies', 'lakers', 'clippers',
+                'celtics', 'heat', 'bulls', 'knicks', 'mavericks', 'nuggets',
+                'suns', 'bucks', '76ers', 'sixers', 'nets', 'raptors', 'hawks',
+                'wizards', 'hornets', 'pistons', 'pacers', 'cavaliers', 'magic',
+                'timberwolves', 'wolves', 'thunder', 'spurs', 'jazz', 'pelicans'
+            ]
+
+            event_lower = event.lower()
+
+            # FIRST: Check if this is clearly an NBA game (should never be college)
+            is_nba_game = any(team in event_lower for team in nba_team_names)
+
+            # Check if it's a college basketball game (only if not NBA)
+            is_college_basketball = False
+            if not is_nba_game:
+                is_college_basketball = any(keyword in event_lower for keyword in college_basketball_keywords)
+
+            # Determine the correct sport BEFORE doing anything else
+            if is_college_basketball:
+                normalized_sport = 'ncaab'
+                print(f" COLLEGE BASKETBALL GAME: {event} -> {normalized_sport}")
+                logger.info(f" COLLEGE BASKETBALL GAME: {event} -> {normalized_sport}")
+            elif is_nba_game:
+                normalized_sport = 'nba'
+                logger.info(f" NBA GAME DETECTED: {event} -> {normalized_sport}")
+            else:
+                # Map other professional sports
+                sport_mapping = {
+                    'basketball': 'nba',  # Default basketball to NBA
+                    'football': 'nfl',
+                    'hockey': 'nhl',
+                    'baseball': 'mlb',
+                    'nba': 'nba',
+                    'nfl': 'nfl',
+                    'nhl': 'nhl',
+                    'mlb': 'mlb',
+                    'wnba': 'wnba',
+                }
+                normalized_sport = sport_mapping.get(sport, sport)
+                logger.info(f"Professional sport detected: {event} -> {normalized_sport}")
+
+            # CRITICAL: Update the opportunity with the normalized sport
+            opportunity['sport'] = normalized_sport
 
             # 1. Classify the market FIRST
             classification = self.market_classifier.classify(
@@ -178,6 +342,9 @@ class EnhancedPaperTradingSystem:
             )
 
             logger.info(f"Market classified as: {classification.category}")
+            logger.info(f"  Subcategory: {classification.subcategory}")
+            logger.info(f"  Stat Type: {classification.stat_type}")
+            logger.info(f"  Direction: {classification.direction}, Line: {classification.line_value}")
 
             # 2. Get Kelly stake based on classification
             pending_bets = self.db.get_pending_bets()
@@ -187,12 +354,30 @@ class EnhancedPaperTradingSystem:
                 logger.warning(f"Could not parse odds: {opportunity.get('odds')}")
                 return False
 
+            # Convert classification to dictionary for stake calculation
+            if hasattr(self.market_classifier, 'to_dict'):
+                classification_dict = self.market_classifier.to_dict(classification)
+            else:
+                classification_dict = {
+                    'category': classification.category,
+                    'subcategory': classification.subcategory,
+                    'clean_player': classification.clean_player,
+                    'clean_team': classification.clean_team,
+                    'direction': classification.direction,
+                    'line_value': classification.line_value,
+                    'period': classification.period,
+                    'stat_type': classification.stat_type,
+                    'original_player': classification.original_player,
+                    'original_market': classification.original_market,
+                    'confidence': classification.confidence
+                }
+
             stake = self.arbitrage_system.calculate_stake(
                 ev=opportunity['ev'],
                 bankroll=self.bankroll,
                 pending_bets=pending_bets,
                 odds=decimal_odds,
-                market_classification=classification  # Pass classification for better risk assessment
+                market_classification=classification_dict
             )
 
             if stake <= 0:
@@ -202,7 +387,7 @@ class EnhancedPaperTradingSystem:
             # 3. Prepare bet data with classification info
             bet_data = {
                 'event': opportunity['event'],
-                'sport': opportunity.get('sport', 'unknown'),
+                'sport': normalized_sport,  # Use normalized sport (ncaab, ncaaf, etc.)
                 'market': opportunity['market'],
                 'player': opportunity['player'],
                 'odds': decimal_odds,
@@ -211,7 +396,7 @@ class EnhancedPaperTradingSystem:
                 'ev': opportunity['ev'],
                 'sportsbook': opportunity.get('sportsbook', 'Unknown'),
                 'game_date': opportunity.get('game_date'),
-                'market_category': classification.category,  # Store for resolution
+                'market_category': classification.category,
                 'market_subcategory': classification.subcategory,
                 'market_stat_type': classification.stat_type,
                 'market_line_value': classification.line_value,
@@ -228,8 +413,9 @@ class EnhancedPaperTradingSystem:
             # 5. Update bankroll
             self.bankroll -= stake
 
-            logger.info(f"Bet placed: {opportunity['player']} - {opportunity['market']}")
+            logger.info(f" Bet placed: {opportunity['player']} - {opportunity['market']}")
             logger.info(f"  Stake: €{stake:.2f}, Classification: {classification.category}")
+            logger.info(f"  Sport SAVED AS: {normalized_sport}, Stat Type: {classification.stat_type}")
 
             return True
 
@@ -302,42 +488,139 @@ class EnhancedPaperTradingSystem:
                     original_market=bet.get('market', '')
                 )
 
-            # Route to appropriate resolver
+            # Route to appropriate resolver based on classification
             resolution_type = self.market_classifier.get_resolution_type(classification)
 
-            if resolution_type == 'player_stat':
+            # Log the resolution type for debugging
+            logger.info(f"Resolving bet {bet_id} as {resolution_type} for sport {sport}")
+
+            if resolution_type.startswith('player_') and resolution_type != 'player_stat':
+                # Player stat markets (including MLB, NBA, NFL, etc.)
                 return self._resolve_player_stat(bet, classification)
-            elif resolution_type == 'scorer':
+            elif resolution_type in ['first_goal_scorer', 'last_goal_scorer',
+                                     'first_touchdown_scorer', 'last_touchdown_scorer',
+                                     'first_basket_scorer', 'first_field_goal']:
                 return self._resolve_scorer(bet, classification)
-            elif resolution_type == 'game':
+            elif resolution_type in ['moneyline', 'point_spread', 'total_points']:
                 return self._resolve_game_market(bet, classification)
             else:
                 # Fallback to idempotent resolver
+                logger.info(f"Using fallback resolver for {resolution_type}")
                 return self.idempotent_resolver.resolve_bet_safe(bet_id)
 
         except Exception as e:
             logger.error(f"Intelligent resolution failed: {e}")
             return {'success': False, 'error': str(e), 'resolved': False}
 
+    def _is_void_error(self, error_msg: str) -> bool:
+        """Check if an error message indicates a void bet (player didn't play)"""
+        if not error_msg:
+            return False
+        error_lower = error_msg.lower()
+        void_phrases = [
+            'no player stats',
+            'player not found',
+            'no stats',
+        ]
+        return any(phrase in error_lower for phrase in void_phrases)
+
+    def _void_bet(self, bet: Dict, reason: str = 'player_did_not_play') -> Dict:
+        """Void a bet - refund stake and update database"""
+        stake = float(bet.get('stake', 0))
+        self.db.update_bet_result(bet['id'], None, 0, status='void', void_reason=reason)
+        self.bankroll += stake  # Return stake to bankroll
+        logger.info(f"Bet {bet['id']} voided: {reason} - Stake returned: €{stake:.2f}")
+        return {
+            'success': True,
+            'resolved': True,
+            'won': None,
+            'void': True,
+            'void_reason': reason,
+            'profit': 0,
+            'stake_returned': stake,
+            'error': None,
+            'message': f"VOID - {reason} - Stake returned: €{stake:.2f}",
+        }
+
     def _resolve_player_stat(self, bet: Dict, classification: MarketClassification) -> Dict:
-        """Resolve player stat markets"""
-        # Prepare parameters for R
+        """Resolve player stat markets for all sports"""
+
+        # ========== FORMAT MARKET TYPE FOR R SCRIPT ==========
+        sport = bet.get('sport', '').lower()
+        market_type = classification.subcategory
+        stat_type = classification.stat_type
+
+        # Format based on sport and stat type
+        if sport in ['nba', 'basketball', 'wnba', 'ncaab', 'ncaaw']:
+            if stat_type == 'points':
+                market_type = "Player Points"
+            elif stat_type == 'rebounds':
+                market_type = "Player Rebounds"
+            elif stat_type == 'assists':
+                market_type = "Player Assists"
+            elif stat_type == 'three_pointers_made':
+                market_type = "threes"
+            elif 'points_assists' in classification.subcategory:
+                market_type = "Points + Assists"
+            elif 'points_rebounds' in classification.subcategory:
+                market_type = "Points + Rebounds"
+            elif 'rebounds_assists' in classification.subcategory:
+                market_type = "Rebounds + Assists"
+            elif 'points_rebounds_assists' in classification.subcategory:
+                market_type = "Points + Rebounds + Assists"
+
+        elif sport in ['nfl', 'football']:
+            if stat_type == 'passing_yards':
+                market_type = "Player Passing Yards"
+            elif stat_type == 'receiving_yards':
+                market_type = "Player Receiving Yards"
+            elif stat_type == 'rushing_yards':
+                market_type = "Player Rushing Yards"
+            elif stat_type == 'receptions':
+                market_type = "Player Receptions"
+            elif stat_type == 'touchdowns':
+                market_type = "Player Touchdowns"
+
+        elif sport in ['mlb', 'baseball']:
+            if stat_type == 'hits':
+                market_type = "Player Hits"
+            elif stat_type == 'home_runs':
+                market_type = "Player Home Runs"
+            elif stat_type == 'rbi':
+                market_type = "Player RBI"
+
+        elif sport in ['nhl', 'hockey']:
+            if stat_type == 'goals':
+                market_type = "Player Goals"
+            elif stat_type == 'assists':
+                market_type = "Player Assists"
+            elif stat_type == 'shots':
+                market_type = "Player Shots On Goal"
+            elif stat_type == 'saves':
+                market_type = "Player Saves"
+
+        # Prepare parameters for R with formatted market_type
         params = {
             'player_name': classification.clean_player,
-            'sport': bet.get('sport', '').lower(),
+            'sport': sport,
             'season': self._extract_season(bet),
-            'market_type': classification.subcategory,
+            'market_type': market_type,  # Now properly formatted!
             'event_string': bet.get('event', ''),
             'line_value': classification.line_value,
             'game_date': bet.get('game_date', ''),
             'direction': classification.direction,
-            'stat_type': classification.stat_type
+            'stat_type': stat_type
         }
+
+        logger.info(f"Calling R resolver for player stat: {params}")
 
         # Call R script
         r_result = self.r_resolver.resolve_player_stat(**params)
 
         if not r_result.get('success'):
+            error_msg = r_result.get('error', '')
+            if self._is_void_error(error_msg):
+                return self._void_bet(bet)
             return r_result
 
         # Process result
@@ -352,7 +635,8 @@ class EnhancedPaperTradingSystem:
             'resolved': True,
             'won': won,
             'profit': profit,
-            'classification': classification.category
+            'classification': classification.category,
+            'actual_value': r_result.get('actual_value') or r_result.get('data', {}).get('actual_value')
         }
 
     def _resolve_scorer(self, bet: Dict, classification: MarketClassification) -> Dict:
@@ -366,10 +650,15 @@ class EnhancedPaperTradingSystem:
             'game_date': bet.get('game_date', '')
         }
 
+        logger.info(f"Calling R resolver for scorer: {params}")
+
         # Call scorer-specific R script
         r_result = self.r_resolver.resolve_scorer(**params)
 
         if not r_result.get('success'):
+            error_msg = r_result.get('error', '')
+            if self._is_void_error(error_msg):
+                return self._void_bet(bet)
             return r_result
 
         # Process scorer result
@@ -400,10 +689,15 @@ class EnhancedPaperTradingSystem:
             'game_date': bet.get('game_date', '')
         }
 
+        logger.info(f"Calling R resolver for game market: {params}")
+
         # Call game market R script
         r_result = self.r_resolver.resolve_game_market(**params)
 
         if not r_result.get('success'):
+            error_msg = r_result.get('error', '')
+            if self._is_void_error(error_msg):
+                return self._void_bet(bet)
             return r_result
 
         # Process game result
@@ -421,51 +715,88 @@ class EnhancedPaperTradingSystem:
             'classification': classification.category
         }
 
-
     def _extract_season(self, bet: Dict) -> int:
-        """Extract season from bet"""
-        # Use your existing logic from RStatsResolver._extract_season_hint
+        """Extract season from bet for all sports"""
         game_date = bet.get('game_date')
         sport = bet.get('sport', '').lower()
 
-        if game_date:
-            try:
-                from datetime import datetime
-                game_date_obj = datetime.strptime(game_date, "%Y-%m-%d").date()
+        if not game_date:
+            current_year = datetime.now().year
+            # Handle sports that span calendar years
+            if sport in ["nfl", "ncaaf"] and datetime.now().month <= 2:
+                return current_year - 1
+            elif sport in ["nba", "nhl", "ncaab", "ncaaw"] and datetime.now().month <= 6:
+                return current_year - 1
+            return current_year
 
-                if sport == "nfl":
-                    # NFL season: Games in Jan-Feb belong to previous year
-                    if game_date_obj.month <= 2:
-                        return game_date_obj.year - 1
-                    else:
-                        return game_date_obj.year
-                elif sport == "nba":
-                    # NBA season: Games Oct-June, spanning years
-                    if game_date_obj.month >= 10:
-                        return game_date_obj.year
-                    else:
-                        return game_date_obj.year - 1
-            except:
-                pass
+        try:
+            game_date_obj = datetime.strptime(game_date, "%Y-%m-%d").date()
+            game_year = game_date_obj.year
+            game_month = game_date_obj.month
 
-        # Fallback to current season
-        current_year = datetime.now().year
-        if sport == "nfl" and datetime.now().month <= 2:
-            return current_year - 1
-        return current_year
+            # NFL/NCAAF: Season runs Sep-Feb (playoffs in Jan-Feb belong to previous year)
+            if sport in ["nfl", "ncaaf"]:
+                if game_month >= 9:
+                    return game_year
+                elif game_month <= 2:
+                    return game_year - 1
+                else:
+                    return game_year - 1
 
+            # NBA/NHL/NCAAB/NCAAW: Season runs Oct-Jun
+            elif sport in ["nba", "nhl", "ncaab", "ncaaw"]:
+                if game_month >= 10:
+                    return game_year
+                else:
+                    return game_year - 1
+
+            # MLB/WNBA: Season runs within calendar year
+            elif sport in ["mlb", "wnba"]:
+                return game_year
+
+            # Default: use game year
+            else:
+                return game_year
+
+        except Exception as e:
+            logger.warning(f"Could not parse game date '{game_date}': {e}")
+            current_year = datetime.now().year
+            if sport in ["nfl", "ncaaf"] and datetime.now().month <= 2:
+                return current_year - 1
+            elif sport in ["nba", "nhl", "ncaab", "ncaaw"] and datetime.now().month <= 6:
+                return current_year - 1
+            return current_year
 
     def _process_player_stat_result(self, r_result: Dict, bet: Dict,
                                     classification: MarketClassification) -> Tuple[bool, float]:
         """Process player stat result from R"""
-        # Your existing logic from _resolve_comprehensive_market
         stake = float(bet.get('stake', 0))
         odds = float(bet.get('odds', 0))
 
-        actual_value = r_result.get('data', {}).get('actual_value', 0)
+        # Try to get actual value from various possible locations in result
+        actual_value = None
+
+        # Check direct fields
+        if 'actual_value' in r_result:
+            actual_value = r_result['actual_value']
+        elif 'data' in r_result and isinstance(r_result['data'], dict):
+            if 'actual_value' in r_result['data']:
+                actual_value = r_result['data']['actual_value']
+            elif 'value' in r_result['data']:
+                actual_value = r_result['data']['value']
+            elif 'stats' in r_result['data'] and classification.stat_type:
+                stats = r_result['data']['stats']
+                if isinstance(stats, dict) and classification.stat_type in stats:
+                    actual_value = stats[classification.stat_type]
+
+        if actual_value is None:
+            logger.warning(f"Could not extract actual value from R result")
+            actual_value = 0
+
         line_value = classification.line_value
         direction = classification.direction
 
+        # Determine if bet won
         if direction == 'over':
             if line_value is not None:
                 won = actual_value > line_value
@@ -477,10 +808,14 @@ class EnhancedPaperTradingSystem:
             else:
                 won = actual_value < 0
         else:
-            # Boolean market
-            won = actual_value > (line_value or 0.5)
+            # Boolean market (like double double)
+            if line_value is not None:
+                won = actual_value > line_value
+            else:
+                won = actual_value > 0.5
 
         profit = stake * (odds - 1) if won else -stake
+        logger.info(f"Player stat result: actual={actual_value}, line={line_value}, direction={direction}, won={won}")
         return won, profit
 
     def _process_scorer_result(self, r_result: Dict, bet: Dict,
@@ -490,10 +825,19 @@ class EnhancedPaperTradingSystem:
         odds = float(bet.get('odds', 0))
 
         # Check if player was the scorer
-        player_scored = r_result.get('data', {}).get('player_scored', False)
-        won = player_scored
+        player_scored = False
 
+        if 'player_scored' in r_result:
+            player_scored = r_result['player_scored']
+        elif 'data' in r_result and isinstance(r_result['data'], dict):
+            if 'player_scored' in r_result['data']:
+                player_scored = r_result['data']['player_scored']
+            elif 'won' in r_result['data']:
+                player_scored = r_result['data']['won']
+
+        won = player_scored
         profit = stake * (odds - 1) if won else -stake
+        logger.info(f"Scorer result: player_scored={player_scored}, won={won}")
         return won, profit
 
     def _process_game_result(self, r_result: Dict, bet: Dict,
@@ -502,34 +846,30 @@ class EnhancedPaperTradingSystem:
         stake = float(bet.get('stake', 0))
         odds = float(bet.get('odds', 0))
 
-        # Your existing logic from _resolve_game_market
         data = r_result.get('data', {})
 
-        if classification.subcategory == 'moneyline':
-            team_won = data.get('team_won', False)
-            won = team_won
-        elif classification.subcategory == 'total':
-            total = data.get('total_points', 0)
-            line_value = classification.line_value
-            direction = classification.direction
+        # Try to get win status from various possible fields
+        won = False
 
-            # FIXED: Check line_value before comparison
-            if line_value is not None:
-                if direction == 'over':
-                    won = total > line_value
-                elif direction == 'under':
-                    won = total < line_value
-                else:
-                    won = False
-            else:
-                won = False  # Can't resolve without line value
-        elif classification.subcategory == 'spread':
-            spread_result = data.get('spread_result', False)
-            won = spread_result
-        else:
-            won = False
+        if 'won' in r_result:
+            won = r_result['won']
+        elif 'bet_won' in r_result:
+            won = r_result['bet_won']
+        elif 'data' in r_result and isinstance(r_result['data'], dict):
+            if 'won' in r_result['data']:
+                won = r_result['data']['won']
+            elif 'bet_won' in r_result['data']:
+                won = r_result['data']['bet_won']
+            elif 'winner' in r_result['data']:
+                # Check if our team won
+                winner = r_result['data']['winner']
+                if winner == 'home' and classification.clean_team == data.get('home_team'):
+                    won = True
+                elif winner == 'away' and classification.clean_team == data.get('away_team'):
+                    won = True
 
         profit = stake * (odds - 1) if won else -stake
+        logger.info(f"Game result: won={won}")
         return won, profit
 
     def automated_scanning(self, max_scans: int = 2):
@@ -611,8 +951,7 @@ class EnhancedPaperTradingSystem:
                 self._test_classifier()
             elif choice == '7':
                 self._debug_menu()
-            # In the menu options, add something like:
-            elif choice == "8":  # Or whatever number is available
+            elif choice == "8":
                 print("\n=== FIXING MISSING BET CATEGORIES ===")
                 updated = self.db.update_existing_bet_categories()
                 print(f"✓ Updated {updated} bets with missing categories")
@@ -634,13 +973,16 @@ class EnhancedPaperTradingSystem:
 
             if self._is_college_game(event, sport):
                 print(f"\n{opp['player']} - {opp['market']}")
-                print(f"  ⚠️ Skipping college game: {event}")
+                print(f"Skipping college game: {event}")
                 continue
 
             # Classify and show info
             classification = self.market_classifier.classify(opp['market'], opp['player'])
             print(f"\n{opp['player']} - {opp['market']}")
             print(f"  Classified as: {classification.category}.{classification.subcategory}")
+            print(f"  Sport: {sport}")
+            print(f"  Stat Type: {classification.stat_type}")
+            print(f"  Direction: {classification.direction}, Line: {classification.line_value}")
 
             # Ask user if they want to place bet
             place = input("  Place bet? (y/N): ").strip().lower()
@@ -672,9 +1014,10 @@ class EnhancedPaperTradingSystem:
             market = bet.get('market', 'Unknown')
             category = bet.get('market_category', 'N/A')
             sport = bet.get('sport', 'Unknown')
+            stat_type = bet.get('market_stat_type', 'N/A')
 
             print(f"{status} - {player}")
-            print(f"  Market: {market} | Sport: {sport} | Category: {category}")
+            print(f"  Market: {market} | Sport: {sport} | Category: {category} | Stat: {stat_type}")
             if bet['status'] != 'pending':
                 print(f"  Profit: €{bet['profit']:.2f}")
             print()
@@ -692,6 +1035,7 @@ class EnhancedPaperTradingSystem:
         resolved_count = 0
         future_count = 0
         college_count = 0
+        void_count = 0  # Added void count
         error_count = 0
 
         for bet in pending_bets:
@@ -699,9 +1043,10 @@ class EnhancedPaperTradingSystem:
             market = bet.get('market', 'Unknown')
             game_date = bet.get('game_date', 'Unknown')
             sport = bet.get('sport', 'Unknown')
+            stat_type = bet.get('market_stat_type', 'N/A')
 
             print(f"\n  Bet: {player} - {market}")
-            print(f"    Game: {game_date} | Sport: {sport}")
+            print(f"    Game: {game_date} | Sport: {sport} | Stat: {stat_type}")
 
             result = self.resolve_bet_intelligently(bet['id'])
 
@@ -709,10 +1054,16 @@ class EnhancedPaperTradingSystem:
                 error_msg = result.get('error', 'Unknown error')
                 print(f"    ✗ Error: {error_msg}")
                 error_count += 1
+            elif result.get('void'):
+                void_reason = result.get('void_reason', 'Unknown')
+                stake_returned = result.get('stake_returned', 0)
+                print(f"    ⚠️ VOID: {void_reason} - Stake returned: €{stake_returned:.2f}")
+                void_count += 1
             elif result.get('resolved'):
                 status = "WON" if result.get('won') else "LOST"
                 profit = result.get('profit', 0)
-                print(f"    ✓ {status}: €{profit:.2f}")
+                actual = result.get('actual_value', 'N/A')
+                print(f"    ✓ {status}: €{profit:.2f} (Actual: {actual})")
                 resolved_count += 1
             elif result.get('skip_reason') == 'future_game':
                 message = result.get('message', 'Game in future')
@@ -730,12 +1081,13 @@ class EnhancedPaperTradingSystem:
 
         print(f"\nSummary:")
         print(f"  Resolved: {resolved_count}")
+        print(f"  Voided: {void_count}")
         print(f"  Future games (skipped): {future_count}")
         print(f"  College games (skipped): {college_count}")
         print(f"  Errors/unresolved: {error_count}")
 
-        if resolved_count == 0 and (future_count > 0 or college_count > 0):
-            print("\nNote: Most bets are for future or college games. They will not be resolved.")
+        if resolved_count == 0 and (future_count > 0 or college_count > 0 or void_count > 0):
+            print("\nNote: Most bets are for future, college, or voided games. They will not be resolved.")
 
     def _test_classifier(self):
         """Test the market classifier"""
@@ -743,9 +1095,28 @@ class EnhancedPaperTradingSystem:
         print("=" * 40)
 
         test_cases = [
+            # NFL
             ("Jeremy Ruckert Last Touchdown Scorer", "Player Last Touchdown Scorer"),
             ("Patrick Mahomes Over 275.5 Passing Yards", "Player Passing Yards Over"),
+
+            # NBA
             ("LeBron James Over 25.5 Points", "Player Points Over"),
+
+            # MLB
+            ("Aaron Judge Over 1.5 Hits", "Player Hits Over"),
+            ("Shohei Ohtani Over 0.5 Home Runs", "Player Home Runs Over"),
+
+            # WNBA
+            ("A'ja Wilson Over 20.5 Points", "Player Points Over"),
+
+            # NCAAF
+            ("Caleb Williams Over 275.5 Passing Yards", "Player Passing Yards Over"),
+
+            # NCAAB
+            ("Zach Edey Over 22.5 Points", "Player Points Over"),
+            ("Zach Edey Double Double", "Player Double Double"),
+
+            # Game markets
             ("Chiefs Moneyline", "Moneyline"),
             ("Dolphins @ Jets Over 45.5", "Total Points Over"),
         ]
@@ -757,6 +1128,8 @@ class EnhancedPaperTradingSystem:
             print(f"  Subcategory: {classification.subcategory}")
             print(f"  Direction: {classification.direction}")
             print(f"  Line: {classification.line_value}")
+            print(f"  Stat Type: {classification.stat_type}")
+            print(f"  Resolution Type: {self.market_classifier.get_resolution_type(classification)}")
 
     def _debug_menu(self):
         """Debug tools menu"""
@@ -783,16 +1156,60 @@ class EnhancedPaperTradingSystem:
 
     def _test_r_resolver(self):
         """Test R resolver directly"""
-        # Use your existing debug_test_r_script method
         print("\nTesting R resolver...")
-        # You can adapt your existing debug methods here
+
+        bet_id = input("Enter bet ID to test (or leave empty for sample): ").strip()
+
+        if bet_id:
+            result = self.resolve_bet_intelligently(bet_id)
+            print(f"Result: {json.dumps(result, indent=2, default=str)}")
+        else:
+            # Test with a sample MLB bet
+            print("\nTesting sample MLB bet...")
+            sample_result = self.r_resolver.resolve_player_stat(
+                player_name="Aaron Judge",
+                sport="mlb",
+                season=2025,
+                market_type="player home runs over",
+                event_string="New York Yankees @ Boston Red Sox",
+                line_value=0.5,
+                game_date="2025-10-01",
+                direction="over",
+                stat_type="home_runs"
+            )
+            print(f"Sample result: {json.dumps(sample_result, indent=2, default=str)}")
 
     def _check_r_packages(self):
         """Check R packages"""
-        # Use your existing check_r_packages method
         print("\nChecking R packages...")
+
+        # This would call R to check if required packages are installed
+        # For now, just print a message
+        print("R packages required: nflreadr, hoopR, jsonlite, stringr, dplyr, lubridate, httr")
+        print("Your R script should handle package installation automatically.")
 
     def _test_exact_pending(self):
         """Test exact pending bet"""
-        # Use your existing test_exact_pending_bet method
         print("\nTesting exact pending bet...")
+
+        bet_id = input("Enter bet ID: ").strip()
+        if not bet_id:
+            print("No bet ID provided")
+            return
+
+        # Get bet details
+        bet = self.db.get_bet(bet_id)
+        if not bet:
+            print(f"Bet {bet_id} not found")
+            return
+
+        print(f"\nBet details:")
+        print(f"  Player: {bet.get('player')}")
+        print(f"  Market: {bet.get('market')}")
+        print(f"  Sport: {bet.get('sport')}")
+        print(f"  Game Date: {bet.get('game_date')}")
+
+        # Test resolution
+        print("\nAttempting resolution...")
+        result = self.resolve_bet_intelligently(bet_id)
+        print(f"\nResult: {json.dumps(result, indent=2, default=str)}")

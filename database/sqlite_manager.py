@@ -68,6 +68,19 @@ class DatabaseManager:
             ''')
 
             conn.commit()
+
+            # Add columns that may be missing from older databases
+            for col_def in [
+                ("void_reason", "TEXT NULL"),
+                ("won", "INTEGER NULL"),
+            ]:
+                try:
+                    conn.execute(f"ALTER TABLE bets ADD COLUMN {col_def[0]} {col_def[1]}")
+                    conn.commit()
+                    logger.info(f"Added missing column: {col_def[0]}")
+                except sqlite3.OperationalError:
+                    pass  # Column already exists
+
             logger.info("SQLite Database initialized successfully")
 
         except Exception as e:
@@ -220,24 +233,47 @@ class DatabaseManager:
             'market_period': bet.get('market_period')
         }
 
-    def update_bet_result(self, bet_id: int, won: bool, profit: float):
-        """Update bet result"""
+    def update_bet_result(self, bet_id: int, won: Optional[bool], profit: float,
+                          status: str = 'complete', void_reason: Optional[str] = None):
+        """Update bet result - supports win, loss, or void"""
         conn = self.get_connection()
         try:
-            conn.execute('''
-                UPDATE bets 
-                SET status = ?, result = ?, profit = ?, resolved_at = ?, resolution_state = ?
-                WHERE id = ?
-            ''', (
-                'won' if won else 'lost',
-                'win' if won else 'loss',
-                profit,
-                datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'complete',
-                bet_id
-            ))
+            if status == 'void':
+                conn.execute('''
+                    UPDATE bets 
+                    SET status = ?, result = ?, profit = ?, void_reason = ?, 
+                        resolved_at = ?, resolution_state = ?, won = ?
+                    WHERE id = ?
+                ''', (
+                    'void',
+                    'void',
+                    profit,  # Should be 0
+                    void_reason,
+                    datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'void',
+                    None,  # won is NULL for void bets
+                    bet_id
+                ))
+            else:
+                conn.execute('''
+                    UPDATE bets 
+                    SET status = ?, result = ?, profit = ?, resolved_at = ?, 
+                        resolution_state = ?, won = ?
+                    WHERE id = ?
+                ''', (
+                    'won' if won else 'lost',
+                    'win' if won else 'loss',
+                    profit,
+                    datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                    'complete',
+                    won,
+                    bet_id
+                ))
             conn.commit()
-            logger.info(f"Bet {bet_id} updated: {'won' if won else 'lost'}")
+            if status == 'void':
+                logger.info(f"Bet {bet_id} voided: {void_reason}")
+            else:
+                logger.info(f"Bet {bet_id} updated: {'won' if won else 'lost'}")
         except Exception as e:
             logger.error(f"Error updating bet {bet_id}: {e}")
             raise

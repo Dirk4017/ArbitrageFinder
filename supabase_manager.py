@@ -116,21 +116,48 @@ class SupabaseManager:
             'market_period': bet.get('market_period')
         }
 
-    def update_bet_result(self, bet_id: str, won: bool, profit: float):
-        """Update bet result in Supabase"""
-        update_data = {
-            'status': 'won' if won else 'lost',
-            'result': 'win' if won else 'loss',
-            'profit': float(profit),
-            'resolved_at': datetime.now().isoformat(),
-            'resolution_state': 'complete'
-        }
+    def update_bet_result(self, bet_id: str, won: Optional[bool], profit: float,
+                          status: str = 'complete', void_reason: Optional[str] = None):
+        """Update bet result in Supabase - supports win, loss, or void"""
+        if status == 'void':
+            update_data = {
+                'status': 'void',
+                'result': 'void',
+                'profit': float(profit),  # Should be 0
+                'void_reason': void_reason,
+                'resolved_at': datetime.now().isoformat(),
+                'resolution_state': 'void',
+                'won': None
+            }
+        else:
+            update_data = {
+                'status': 'won' if won else 'lost',
+                'result': 'win' if won else 'loss',
+                'profit': float(profit),
+                'resolved_at': datetime.now().isoformat(),
+                'resolution_state': 'complete',
+                'won': won
+            }
 
         try:
             response = self.supabase.table('bets').update(update_data).eq('id', bet_id).execute()
-            logger.info(f"Bet {bet_id} updated: {'won' if won else 'lost'} (€{profit:.2f})")
+            if status == 'void':
+                logger.info(f"Bet {bet_id} voided: {void_reason} (€{profit:.2f})")
+            else:
+                logger.info(f"Bet {bet_id} updated: {'won' if won else 'lost'} (€{profit:.2f})")
         except Exception as e:
             logger.error(f"Error updating bet: {e}")
+
+    def update_bet_sport(self, bet_id: str, new_sport: str) -> bool:
+        """Update the sport for a specific bet"""
+        try:
+            update_data = {'sport': new_sport}
+            response = self.supabase.table('bets').update(update_data).eq('id', bet_id).execute()
+            logger.info(f"✅ Updated bet {bet_id} sport from 'basketball' to '{new_sport}'")
+            return True
+        except Exception as e:
+            logger.error(f"❌ Error updating bet sport: {e}")
+            return False
 
     def update_existing_bet_categories(self):
         """Update market classification for all existing bets"""
