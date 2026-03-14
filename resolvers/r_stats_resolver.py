@@ -142,6 +142,7 @@ class RStatsResolver:
         """
         Detect the correct sport from event string
         Returns dict with sport, league, and is_college flag
+        FIXED: Added NHL detection and improved college detection
         """
         # College team indicators
         college_indicators = [
@@ -152,7 +153,8 @@ class RStatsResolver:
             'Alcorn State', 'Kansas State', 'Oklahoma State', 'TCU', 'North Carolina',
             'Pittsburgh', 'NC State', 'Miami \(FL\)', 'Boise State', 'UNLV',
             'Stephen F. Austin', 'Texas A&M-Corpus Christi', 'Coppin State',
-            'South Carolina State', 'Florida Atlantic', 'Gonzaga'
+            'South Carolina State', 'Florida Atlantic', 'Gonzaga', 'LSU', 'Auburn',
+            'BYU', 'Cincinnati', 'Drake', 'Belmont', 'UConn', 'St\. John\'s'
         ]
 
         # Known NBA teams for validation
@@ -173,6 +175,16 @@ class RStatsResolver:
             'Seahawks', 'Buccaneers', 'Titans', 'Commanders', 'Football Team'
         ]
 
+        # FIX: Added NHL teams
+        nhl_teams = [
+            'Blackhawks', 'Stars', 'Blues', 'Hurricanes', 'Avalanche', 'Kraken',
+            'Maple Leafs', 'Sabres', 'Bruins', 'Capitals', 'Canadiens', 'Senators',
+            'Red Wings', 'Lightning', 'Panthers', 'Rangers', 'Islanders', 'Devils',
+            'Flyers', 'Penguins', 'Blue Jackets', 'Predators', 'Jets', 'Wild',
+            'Flames', 'Oilers', 'Canucks', 'Sharks', 'Ducks', 'Kings', 'Coyotes',
+            'Golden Knights'
+        ]
+
         result = {
             'original_event': event,
             'sport_hint': sport_hint,
@@ -181,27 +193,49 @@ class RStatsResolver:
             'is_college': False,
             'is_nfl': False,
             'is_nba': False,
+            'is_nhl': False,  # FIX: Added NHL flag
             'confidence': 0.5
         }
 
-        # Check for college indicators
+        # Check for college indicators FIRST (highest priority)
         for indicator in college_indicators:
             if re.search(indicator, event, re.IGNORECASE):
                 result['is_college'] = True
-                if sport_hint == 'basketball':
+                if sport_hint == 'basketball' or 'basketball' in event.lower():
                     result['sport'] = 'college_basketball'
                     result['league'] = 'NCAA'
-                elif sport_hint == 'football':
+                elif sport_hint == 'football' or 'football' in event.lower():
                     result['sport'] = 'college_football'
                     result['league'] = 'NCAA'
                 else:
                     result['sport'] = 'college'
                 result['confidence'] = 0.9
                 self.logger.info(f"  Detected college game: {indicator} in event")
+                return result  # Return immediately - college takes precedence
+
+        # FIX: Check for NHL teams
+        for team in nhl_teams:
+            if re.search(rf'\b{team}\b', event, re.IGNORECASE):
+                result['is_nhl'] = True
+                result['sport'] = 'nhl'
+                result['league'] = 'NHL'
+                result['confidence'] = 0.9
+                self.logger.info(f"  Detected NHL team: {team}")
                 break
 
-        # If not college, check for NBA teams
-        if not result['is_college'] and sport_hint in ['basketball', 'nba']:
+        # Check for NFL teams (if not already NHL)
+        if not result['is_nhl']:
+            for team in nfl_teams:
+                if re.search(rf'\b{team}\b', event, re.IGNORECASE):
+                    result['is_nfl'] = True
+                    result['sport'] = 'nfl'
+                    result['league'] = 'NFL'
+                    result['confidence'] = 0.9
+                    self.logger.info(f"  Detected NFL team: {team}")
+                    break
+
+        # Check for NBA teams (if not already NFL or NHL)
+        if not result['is_nfl'] and not result['is_nhl'] and sport_hint in ['basketball', 'nba']:
             for team in nba_teams:
                 if re.search(rf'\b{team}\b', event, re.IGNORECASE):
                     result['is_nba'] = True
@@ -211,22 +245,12 @@ class RStatsResolver:
                     self.logger.info(f"  Detected NBA team: {team}")
                     break
 
-        # Check for NFL teams - This should run regardless of sport_hint
-        for team in nfl_teams:
-            if re.search(rf'\b{team}\b', event, re.IGNORECASE):
-                result['is_nfl'] = True
-                result['sport'] = 'nfl'
-                result['league'] = 'NFL'
-                result['confidence'] = 0.9
-                self.logger.info(f"  Detected NFL team: {team}")
-                break
-
-        # If we detected NFL but the hint was something else, override it
-        if result['is_nfl']:
+        # Override based on detection results
+        if result['is_nhl']:
+            result['sport'] = 'nhl'
+        elif result['is_nfl']:
             result['sport'] = 'nfl'
-            
-        # If we detected NBA but the hint was something else, override it
-        if result['is_nba'] and not result['is_nfl']:
+        elif result['is_nba']:
             result['sport'] = 'nba'
 
         return result
@@ -242,16 +266,20 @@ class RStatsResolver:
 
         # First, detect the correct sport from the event
         sport_info = self._detect_sport_correctly(event_string, sport)
-        
+
         # Log what we detected
         if sport_info['is_college']:
             self.logger.info(f"  College game detected: {event_string} - skipping normalization")
             return event_string  # Don't normalize college games
-            
+
         if sport_info['is_nfl']:
             self.logger.info(f"  NFL game detected: {event_string} - skipping NBA normalization")
             return event_string  # Don't apply NBA normalization to NFL
-            
+
+        if sport_info['is_nhl']:
+            self.logger.info(f"  NHL game detected: {event_string} - skipping NBA normalization")
+            return event_string  # Don't apply NBA normalization to NHL
+
         # CRITICAL FIX: Only normalize NBA team names for NBA games
         if not sport_info['is_nba']:
             # Not an NBA game, return as-is
@@ -355,6 +383,28 @@ class RStatsResolver:
             self.logger.info(f"  Changes: {', '.join(changes_made)}")
 
         return normalized_event
+
+    def _clean_player_name_for_json(self, player_name: str, sport: str = None) -> str:
+        """
+        FIX: Clean player names for JSON serialization, especially for NFL players with apostrophes
+        """
+        if not player_name:
+            return ""
+
+        # Remove any existing escape artifacts
+        cleaned = player_name.replace('"', '').replace("'", "")
+
+        # Remove "Over/Under" and line values
+        import re
+        cleaned = re.sub(r'\s+(Over|Under|O|U)\s+\d+\.?\d*', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(r'\s+\d+\.?\d*', '', cleaned)
+
+        # Special handling for NFL players with apostrophes
+        if sport == 'nfl' or 'nfl' in str(sport).lower():
+            # Remove apostrophes entirely (Ja'Marr Chase -> JaMarr Chase)
+            cleaned = cleaned.replace("'", "")
+
+        return cleaned.strip()
 
     def _map_market_for_r(self, market_type: str, player_name: str, sport: str = None) -> str:
         """
@@ -523,7 +573,8 @@ class RStatsResolver:
                 return "player stolen bases"
             if re.search(r'player.*walks', market_lower) or re.search(r'player.*bb', market_lower):
                 return "player walks"
-            if re.search(r'player.*strikeouts', market_lower) or re.search(r'player.*so', market_lower) or re.search(r'player.*k', market_lower):
+            if re.search(r'player.*strikeouts', market_lower) or re.search(r'player.*so', market_lower) or re.search(
+                    r'player.*k', market_lower):
                 return "player strikeouts"
             if re.search(r'player.*total.*bases', market_lower):
                 return "player total bases"
@@ -751,14 +802,14 @@ class RStatsResolver:
                        market_type: str, event_string: str, line_value: Optional[float],
                        game_date: Optional[str], direction: Optional[str],
                        stat_type: Optional[str]) -> Dict:
-        """Call R script with parameters - FIXED for Windows argument parsing"""
+        """Call R script with parameters - FIXED for Windows argument parsing and player name cleaning"""
         self.logger.info(
             f"ENTERING _call_r_script: player={player_name}, sport={sport}, game_date={game_date}, event={event_string}")
 
         # First, detect the correct sport from the event
         sport_info = self._detect_sport_correctly(event_string, sport)
         self.logger.info(f"Sport detection result: {sport_info}")
-        
+
         # If it's a college game, return early with a specific message
         if sport_info['is_college']:
             self.logger.info(f"🎓 College game detected, skipping: {event_string}")
@@ -769,20 +820,22 @@ class RStatsResolver:
                 'is_college': True,
                 'league': 'NCAA'
             }
-            
+
         # If it's an NFL game, make sure we're using the correct sport
         if sport_info['is_nfl']:
             self.logger.info(f"🏈 NFL game detected: {event_string}")
-            # Use NFL sport
             r_sport = 'nfl'
         elif sport_info['is_nba']:
             self.logger.info(f"🏀 NBA game detected: {event_string}")
             r_sport = 'nba'
+        elif sport_info['is_nhl']:
+            self.logger.info(f"🏒 NHL game detected: {event_string}")
+            r_sport = 'nhl'
         else:
             # Fall back to the original sport hint
             r_sport = sport
             self.logger.info(f"❓ Unknown league, using hint: {r_sport}")
-            
+
         # Check if game is in the future
         if game_date:
             try:
@@ -800,6 +853,10 @@ class RStatsResolver:
             except:
                 pass
 
+        # FIX: Clean player name for JSON (especially for NFL players with apostrophes)
+        clean_player = self._clean_player_name_for_json(player_name, r_sport)
+        self.logger.info(f"Cleaned player name: '{player_name}' -> '{clean_player}'")
+
         # NORMALIZE EVENT STRING FOR ESPN (only for NBA)
         normalized_event = event_string
         if r_sport == 'nba':
@@ -812,21 +869,22 @@ class RStatsResolver:
         if self.market_classifier:
             try:
                 # First, clean player name - remove Over/Under and line values
-                clean_player = player_name
+                clean_player_for_classifier = player_name
                 if player_name:
                     import re
-                    clean_player = re.sub(r'\s+(Over|Under|O|U)\s+\d+\.?\d*', '', clean_player, flags=re.IGNORECASE)
-                    clean_player = re.sub(r'\s+\d+\.?\d*', '', clean_player)
-                    clean_player = clean_player.strip()
+                    clean_player_for_classifier = re.sub(r'\s+(Over|Under|O|U)\s+\d+\.?\d*', '', player_name,
+                                                         flags=re.IGNORECASE)
+                    clean_player_for_classifier = re.sub(r'\s+\d+\.?\d*', '', clean_player_for_classifier)
+                    clean_player_for_classifier = clean_player_for_classifier.strip()
 
                 # Classify the market
-                classification = self.market_classifier.classify(market_type, clean_player)
+                classification = self.market_classifier.classify(market_type, clean_player_for_classifier)
 
                 # Get the full market name for R to parse
                 market_for_r = self.market_classifier.get_market_for_r_script(classification)
 
                 self.logger.info(f"DEBUG: Original market_type: '{market_type}'")
-                self.logger.info(f"DEBUG: Clean player: '{clean_player}'")
+                self.logger.info(f"DEBUG: Clean player: '{clean_player_for_classifier}'")
                 self.logger.info(f"DEBUG: Classified as: {classification.category}.{classification.subcategory}")
                 self.logger.info(f"DEBUG: Market for R: '{market_for_r}'")
 
@@ -836,29 +894,25 @@ class RStatsResolver:
                 market_for_r = self._map_market_for_r(market_type, player_name, sport)
                 self.logger.info(f"DEBUG: Mapped market for R: '{market_for_r}'")
 
-                # ========== ADDED SECTION: For game markets, preserve original ==========
                 # CRITICAL: For game markets, ensure we preserve the original market type
                 if any(term in market_type.lower() for term in ['moneyline', 'point spread', 'spread', 'total points']):
                     # Keep the original market type for game markets
                     self.logger.info(f"DEBUG: Game market detected - preserving original: '{market_type}'")
                     market_for_r = market_type
-                # ========== END ADDED SECTION ==========
         else:
             # Fallback to comprehensive mapping
             market_for_r = self._map_market_for_r(market_type, player_name, sport)
             self.logger.info(f"DEBUG: Mapped market for R: '{market_for_r}'")
 
-            # ========== ADDED SECTION: For game markets, preserve original ==========
             # CRITICAL: For game markets, ensure we preserve the original market type
             if any(term in market_type.lower() for term in ['moneyline', 'point spread', 'spread', 'total points']):
                 # Keep the original market type for game markets
                 self.logger.info(f"DEBUG: Game market detected - preserving original: '{market_type}'")
                 market_for_r = market_type
-            # ========== END ADDED SECTION ==========
 
         # Create cache key - FIXED: Handle None values
         cache_parts = {
-            "player": (player_name or "").lower().strip(),
+            "player": (clean_player or "").lower().strip(),
             "sport": r_sport,  # Use detected sport
             "season": season,
             "market": (market_for_r or "").lower().strip(),  # Use mapped market for cache
@@ -884,9 +938,9 @@ class RStatsResolver:
             # FIX: Build command as shell string with proper quoting for Windows
             # This ensures arguments with spaces are passed correctly
 
-            # Prepare all arguments as strings (USE NORMALIZED EVENT and DETECTED SPORT)
+            # Prepare all arguments as strings (USE CLEAN PLAYER, NORMALIZED EVENT and DETECTED SPORT)
             args_list = [
-                player_name or "",
+                clean_player or "",  # Use cleaned player name
                 r_sport,  # Use detected sport
                 str(season),
                 market_for_r or "",  # CRITICAL: Use mapped market here
