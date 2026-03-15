@@ -142,7 +142,7 @@ class RStatsResolver:
         """
         Detect the correct sport from event string
         Returns dict with sport, league, and is_college flag
-        FIXED: Added NHL detection and improved college detection
+        FIXED: NBA detection now runs BEFORE NHL to fix "Kings" conflict
         """
         # College team indicators
         college_indicators = [
@@ -175,7 +175,7 @@ class RStatsResolver:
             'Seahawks', 'Buccaneers', 'Titans', 'Commanders', 'Football Team'
         ]
 
-        # FIX: Added NHL teams
+        # NHL teams
         nhl_teams = [
             'Blackhawks', 'Stars', 'Blues', 'Hurricanes', 'Avalanche', 'Kraken',
             'Maple Leafs', 'Sabres', 'Bruins', 'Capitals', 'Canadiens', 'Senators',
@@ -193,11 +193,11 @@ class RStatsResolver:
             'is_college': False,
             'is_nfl': False,
             'is_nba': False,
-            'is_nhl': False,  # FIX: Added NHL flag
+            'is_nhl': False,
             'confidence': 0.5
         }
 
-        # Check for college indicators FIRST (highest priority)
+        # ========== STEP 1: Check for college indicators FIRST (highest priority) ==========
         for indicator in college_indicators:
             if re.search(indicator, event, re.IGNORECASE):
                 result['is_college'] = True
@@ -213,29 +213,20 @@ class RStatsResolver:
                 self.logger.info(f"  Detected college game: {indicator} in event")
                 return result  # Return immediately - college takes precedence
 
-        # FIX: Check for NHL teams
-        for team in nhl_teams:
+        # ========== STEP 2: Check for NFL teams ==========
+        for team in nfl_teams:
             if re.search(rf'\b{team}\b', event, re.IGNORECASE):
-                result['is_nhl'] = True
-                result['sport'] = 'nhl'
-                result['league'] = 'NHL'
+                result['is_nfl'] = True
+                result['sport'] = 'nfl'
+                result['league'] = 'NFL'
                 result['confidence'] = 0.9
-                self.logger.info(f"  Detected NHL team: {team}")
+                self.logger.info(f"  Detected NFL team: {team}")
+                # Don't return yet - could be NBA/NHL if team name overlaps
                 break
 
-        # Check for NFL teams (if not already NHL)
-        if not result['is_nhl']:
-            for team in nfl_teams:
-                if re.search(rf'\b{team}\b', event, re.IGNORECASE):
-                    result['is_nfl'] = True
-                    result['sport'] = 'nfl'
-                    result['league'] = 'NFL'
-                    result['confidence'] = 0.9
-                    self.logger.info(f"  Detected NFL team: {team}")
-                    break
-
-        # Check for NBA teams (if not already NFL or NHL)
-        if not result['is_nfl'] and not result['is_nhl'] and sport_hint in ['basketball', 'nba']:
+        # ========== STEP 3: Check for NBA teams (BEFORE NHL to fix "Kings" conflict) ==========
+        # Only check if we haven't already identified as NFL
+        if not result['is_nfl'] and sport_hint in ['basketball', 'nba']:
             for team in nba_teams:
                 if re.search(rf'\b{team}\b', event, re.IGNORECASE):
                     result['is_nba'] = True
@@ -243,15 +234,40 @@ class RStatsResolver:
                     result['league'] = 'NBA'
                     result['confidence'] = 0.9
                     self.logger.info(f"  Detected NBA team: {team}")
-                    break
+                    # Return immediately - NBA detected, no need to check NHL
+                    return result
 
-        # Override based on detection results
-        if result['is_nhl']:
-            result['sport'] = 'nhl'
-        elif result['is_nfl']:
+        # ========== STEP 4: Check for NHL teams (only if not NBA and not NFL) ==========
+        if not result['is_nba'] and not result['is_nfl']:
+            for team in nhl_teams:
+                if re.search(rf'\b{team}\b', event, re.IGNORECASE):
+                    result['is_nhl'] = True
+                    result['sport'] = 'nhl'
+                    result['league'] = 'NHL'
+                    result['confidence'] = 0.9
+                    self.logger.info(f"  Detected NHL team: {team}")
+                    # Return immediately - NHL detected
+                    return result
+
+        # ========== STEP 5: Handle any remaining cases ==========
+        # If we detected NFL earlier but didn't return, set it now
+        if result['is_nfl']:
             result['sport'] = 'nfl'
-        elif result['is_nba']:
+            return result
+
+        # If we still have no detection, use the hint
+        if sport_hint in ['nba', 'basketball']:
             result['sport'] = 'nba'
+            result['league'] = 'NBA'
+            result['confidence'] = 0.5
+        elif sport_hint in ['nfl', 'football']:
+            result['sport'] = 'nfl'
+            result['league'] = 'NFL'
+            result['confidence'] = 0.5
+        elif sport_hint in ['nhl', 'hockey']:
+            result['sport'] = 'nhl'
+            result['league'] = 'NHL'
+            result['confidence'] = 0.5
 
         return result
 

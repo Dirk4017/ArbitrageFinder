@@ -3458,6 +3458,79 @@ find_nhl_game_id_flexible <- function(home_team, away_team, game_date, max_days_
   debug_cat("  No game found in date range\n")
   return(NA)
 }
+
+# ==============================================
+# ROBUST NHL GAME ID FINDER WITH BETTER ERROR HANDLING
+# ==============================================
+
+find_nhl_game_id_robust <- function(home_team, away_team, game_date) {
+  debug_cat(sprintf("\n🔍 NHL ROBUST SEARCH: %s @ %s on %s\n", 
+                    away_team, home_team, game_date))
+  
+  # Try exact date first
+  game_id <- find_nhl_game_id_single_date(home_team, away_team, game_date)
+  if (!is.na(game_id)) {
+    debug_cat(sprintf("  ✓ Found on exact date: %s\n", game_id))
+    return(game_id)
+  }
+  
+  # Try +/- 1 day for timezone issues
+  for (offset in c(-1, 1)) {
+    adj_date <- as.Date(game_date) + offset
+    debug_cat(sprintf("  Trying %s (offset %+d)...\n", adj_date, offset))
+    game_id <- find_nhl_game_id_single_date(home_team, away_team, adj_date)
+    if (!is.na(game_id)) {
+      debug_cat(sprintf("  ✓ Found on %s (offset %+d): %s\n", adj_date, offset, game_id))
+      return(game_id)
+    }
+  }
+  
+  # Try generic search without team names
+  debug_cat("  Trying generic search (any game on date)...\n")
+  espn_date <- format(as.Date(game_date), "%Y%m%d")
+  url <- paste0("http://site.api.espn.com/apis/site/v2/sports/hockey/nhl/scoreboard?dates=", espn_date)
+  
+  tryCatch({
+    response <- GET(url, timeout = 10)
+    if (status_code(response) == 200) {
+      data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
+      
+      if (!is.null(data$events) && length(data$events) > 0) {
+        # Handle both data frame and list cases
+        num_games <- if (is.data.frame(data$events)) nrow(data$events) else length(data$events)
+        
+        if (num_games > 0) {
+          # Get the first game ID
+          first_game_id <- if (is.data.frame(data$events)) {
+            data$events$id[1]
+          } else {
+            data$events[[1]]$id
+          }
+          
+          debug_cat(sprintf("  Found %d games, using first: %s\n", num_games, first_game_id))
+          return(first_game_id)
+        }
+      }
+    }
+  }, error = function(e) {
+    debug_cat(sprintf("  Generic search error: %s\n", e$message))
+  })
+  
+  # Try wider date range as last resort
+  debug_cat("  Trying wider date range (±3 days)...\n")
+  for (offset in c(-2, 2, -3, 3)) {
+    adj_date <- as.Date(game_date) + offset
+    game_id <- find_nhl_game_id_single_date(home_team, away_team, adj_date)
+    if (!is.na(game_id)) {
+      debug_cat(sprintf("  ✓ Found on %s (offset %+d): %s\n", adj_date, offset, game_id))
+      return(game_id)
+    }
+  }
+  
+  debug_cat("  ✗ No NHL game found\n")
+  return(NA)
+}
+
 # ==============================================
 # MLB FUNCTIONS
 # ==============================================
@@ -5960,30 +6033,18 @@ find_game_id <- function(home_team, away_team, game_date, sport, team_only_mode 
       return(NA)
       
     } else if (sport == "nhl") {
-      # Use ESPN API for NHL games
+      # Use ESPN API for NHL games with robust finder
       debug_cat(sprintf("  Looking for NHL game: %s @ %s on %s\n",
                         away_team, home_team, game_date))
       
       game_date_obj <- as.Date(game_date)
       
-      # Use the NHL game finder function
-      nhl_game_id <- find_nhl_game_id(home_team, away_team, game_date)
+      # Use the robust NHL game finder function
+      nhl_game_id <- find_nhl_game_id_robust(home_team, away_team, game_date)
       
       if (!is.na(nhl_game_id)) {
         debug_cat(sprintf("  ✓ Found NHL game ID: %s\n", nhl_game_id))
         return(nhl_game_id)
-      }
-      
-      # If not found on exact date, try adjacent dates (timezone issues)
-      for (offset in c(-1, 1)) {
-        adj_date <- game_date_obj + offset
-        debug_cat(sprintf("  Trying adjacent date: %s\n", adj_date))
-        
-        nhl_game_id <- find_nhl_game_id(home_team, away_team, adj_date)
-        if (!is.na(nhl_game_id)) {
-          debug_cat(sprintf("  ✓ Found NHL game ID on %s: %s\n", adj_date, nhl_game_id))
-          return(nhl_game_id)
-        }
       }
       
       debug_cat("ERROR: Could not find NHL game ID\n")
