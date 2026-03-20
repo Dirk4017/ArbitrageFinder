@@ -1890,6 +1890,92 @@ check_nba_game_status <- function(game_id) {
 }
 
 # ==============================================
+# CHECK NHL GAME STATUS (DEDICATED FUNCTION)
+# ==============================================
+
+check_nhl_game_status <- function(game_id) {
+  debug_cat(sprintf("  Checking NHL game status for ID: %s\n", game_id))
+  
+  tryCatch({
+    url <- paste0("https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=", game_id)
+    debug_cat(sprintf("    URL: %s\n", url))
+    response <- GET(url, timeout = 10)
+    
+    if (status_code(response) == 200) {
+      data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
+      
+      if (!is.null(data$header) && !is.null(data$header$competitions) &&
+          nrow(data$header$competitions) > 0) {
+        
+        competition <- data$header$competitions[1, ]
+        
+        # Get teams
+        home_team <- "Unknown"
+        away_team <- "Unknown"
+        if (!is.null(competition$competitors)) {
+          teams <- competition$competitors[[1]]
+          for (i in 1:nrow(teams)) {
+            if (teams$homeAway[i] == "home") home_team <- teams$team$displayName[i] %||% "Unknown"
+            if (teams$homeAway[i] == "away") away_team <- teams$team$displayName[i] %||% "Unknown"
+          }
+        }
+        
+        # Get game status
+        status <- "Unknown"
+        status_type <- "Unknown"
+        completed <- FALSE
+        
+        if (!is.null(competition$status) && is.data.frame(competition$status)) {
+          if ("type" %in% colnames(competition$status) &&
+              is.data.frame(competition$status$type) &&
+              nrow(competition$status$type) > 0) {
+            
+            type_info <- competition$status$type[1, ]
+            status_type <- type_info$name %||% "Unknown"
+            status <- type_info$description %||% "Unknown"
+            completed <- as.logical(type_info$completed %||% FALSE)
+          }
+        }
+        
+        # Get scores if available
+        home_score <- 0
+        away_score <- 0
+        if (!is.null(competition$competitors)) {
+          teams <- competition$competitors[[1]]
+          for (i in 1:nrow(teams)) {
+            if (teams$homeAway[i] == "home") {
+              home_score <- as.numeric(teams$score[i] %||% 0)
+            } else if (teams$homeAway[i] == "away") {
+              away_score <- as.numeric(teams$score[i] %||% 0)
+            }
+          }
+        }
+        
+        debug_cat(sprintf("    Game: %s @ %s\n", away_team, home_team))
+        debug_cat(sprintf("    Score: %d - %d\n", away_score, home_score))
+        debug_cat(sprintf("    Status: %s (type: %s, completed: %s)\n", status, status_type, completed))
+        
+        return(list(
+          exists = TRUE,
+          home_team = home_team,
+          away_team = away_team,
+          home_score = home_score,
+          away_score = away_score,
+          status = status,
+          status_type = status_type,
+          completed = completed,
+          error = NULL
+        ))
+      }
+    }
+    return(list(exists = FALSE, error = "Game not found"))
+  }, error = function(e) {
+    debug_cat(sprintf("    Error: %s\n", e$message))
+    return(list(exists = FALSE, error = paste("Error:", e$message)))
+  })
+}
+
+# ==============================================
 # DIRECT GAME ID LOOKUP BY VERIFICATION
 # ==============================================
 
