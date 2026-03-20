@@ -332,8 +332,38 @@ class EnhancedPaperTradingSystem:
                 normalized_sport = sport_mapping.get(sport, sport)
                 logger.info(f"Professional sport detected: {event} -> {normalized_sport}")
 
-            # CRITICAL: Update the opportunity with the normalized sport
+            # ========== FIX: SEASON ADJUSTMENT FOR EARLY 2026 GAMES ==========
+            # This is the critical fix for NFL/NBA/NHL games in Jan-Mar 2026
+            game_date = opportunity.get('game_date')
+            current_date = datetime.now()
+            current_year = current_date.year
+            current_month = current_date.month
+
+            # Determine the correct season based on sport and date
+            if normalized_sport in ['nfl', 'ncaaf']:
+                # NFL season: Sep-Feb, so games in Jan/Feb/Mar 2026 belong to 2025 season
+                if current_year == 2026 and current_month <= 4:
+                    correct_season = 2025
+                else:
+                    correct_season = current_year
+                logger.info(
+                    f"🏈 NFL season adjustment: Using {correct_season} (current: {current_year}-{current_month})")
+            elif normalized_sport in ['nba', 'nhl', 'ncaab', 'ncaaw']:
+                # NBA/NHL season: Oct-Jun, so games in Jan-Jun 2026 belong to 2025 season
+                if current_year == 2026 and current_month <= 6:
+                    correct_season = 2025
+                else:
+                    correct_season = current_year
+                logger.info(
+                    f"🏀/🏒 {normalized_sport.upper()} season adjustment: Using {correct_season} (current: {current_year}-{current_month})")
+            else:
+                # For other sports, use the existing extraction logic
+                correct_season = self._extract_season({'sport': normalized_sport, 'game_date': game_date})
+
+            # CRITICAL: Update the opportunity with the normalized sport and correct season
             opportunity['sport'] = normalized_sport
+            opportunity['season'] = correct_season
+            # ========== END SEASON FIX ==========
 
             # 1. Classify the market FIRST
             classification = self.market_classifier.classify(
@@ -396,6 +426,7 @@ class EnhancedPaperTradingSystem:
                 'ev': opportunity['ev'],
                 'sportsbook': opportunity.get('sportsbook', 'Unknown'),
                 'game_date': opportunity.get('game_date'),
+                'season': correct_season,  # Add the corrected season to the bet data
                 'market_category': classification.category,
                 'market_subcategory': classification.subcategory,
                 'market_stat_type': classification.stat_type,
@@ -415,7 +446,8 @@ class EnhancedPaperTradingSystem:
 
             logger.info(f" Bet placed: {opportunity['player']} - {opportunity['market']}")
             logger.info(f"  Stake: €{stake:.2f}, Classification: {classification.category}")
-            logger.info(f"  Sport SAVED AS: {normalized_sport}, Stat Type: {classification.stat_type}")
+            logger.info(
+                f"  Sport SAVED AS: {normalized_sport}, Season: {correct_season}, Stat Type: {classification.stat_type}")
 
             return True
 
@@ -720,14 +752,27 @@ class EnhancedPaperTradingSystem:
         game_date = bet.get('game_date')
         sport = bet.get('sport', '').lower()
 
+        # If no game date, use current date logic
         if not game_date:
-            current_year = datetime.now().year
-            # Handle sports that span calendar years
-            if sport in ["nfl", "ncaaf"] and datetime.now().month <= 2:
-                return current_year - 1
-            elif sport in ["nba", "nhl", "ncaab", "ncaaw"] and datetime.now().month <= 6:
-                return current_year - 1
-            return current_year
+            current_date = datetime.now()
+            current_year = current_date.year
+            current_month = current_date.month
+
+            # For sports that span calendar years
+            if sport in ["nfl", "ncaaf"]:
+                # NFL season runs Sep-Feb, so Jan-Feb 2026 belong to 2025 season
+                if current_month <= 2:
+                    return current_year - 1
+                else:
+                    return current_year
+            elif sport in ["nba", "nhl", "ncaab", "ncaaw"]:
+                # NBA/NHL run Oct-Jun, so Jan-Jun 2026 belong to 2025 season
+                if current_month <= 6:
+                    return current_year - 1
+                else:
+                    return current_year
+            else:
+                return current_year
 
         try:
             game_date_obj = datetime.strptime(game_date, "%Y-%m-%d").date()
@@ -754,16 +799,18 @@ class EnhancedPaperTradingSystem:
             elif sport in ["mlb", "wnba"]:
                 return game_year
 
-            # Default: use game year
             else:
                 return game_year
 
         except Exception as e:
             logger.warning(f"Could not parse game date '{game_date}': {e}")
             current_year = datetime.now().year
-            if sport in ["nfl", "ncaaf"] and datetime.now().month <= 2:
+            current_month = datetime.now().month
+
+            # Fallback logic
+            if sport in ["nfl", "ncaaf"] and current_month <= 2:
                 return current_year - 1
-            elif sport in ["nba", "nhl", "ncaab", "ncaaw"] and datetime.now().month <= 6:
+            elif sport in ["nba", "nhl", "ncaab", "ncaaw"] and current_month <= 6:
                 return current_year - 1
             return current_year
 
