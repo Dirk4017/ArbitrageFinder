@@ -365,6 +365,38 @@ class EnhancedPaperTradingSystem:
             opportunity['season'] = correct_season
             # ========== END SEASON FIX ==========
 
+            # ========== ADD DATE EXTRACTION FOR NFL BETS ==========
+            # Extract game date from event string if missing
+            if not opportunity.get('game_date') and event:
+                import re
+                # Look for date pattern like YYYY-MM-DD
+                date_match = re.search(r'(\d{4}-\d{2}-\d{2})', event)
+                if date_match:
+                    extracted_date = date_match.group(1)
+                    opportunity['game_date'] = extracted_date
+                    logger.info(f"📅 Extracted game date from event: {extracted_date}")
+                else:
+                    # Try alternative format: Month Day, Year (e.g., "Mar 20, 2026")
+                    date_match2 = re.search(r'([A-Za-z]{3}\s+\d{1,2},\s+\d{4})', event)
+                    if date_match2:
+                        try:
+                            extracted_date = date_match2.group(1)
+                            parsed_date = datetime.strptime(extracted_date, '%b %d, %Y')
+                            opportunity['game_date'] = parsed_date.strftime('%Y-%m-%d')
+                            logger.info(f"📅 Extracted game date from event: {opportunity['game_date']}")
+                        except:
+                            pass
+
+                    # For NFL with no date, try to infer from schedule
+                    if normalized_sport == 'nfl' and not opportunity.get('game_date'):
+                        # NFL games are typically on Sundays. Use the current or most recent Sunday
+                        today = datetime.now()
+                        days_to_sunday = (today.weekday() - 6) % 7
+                        last_sunday = today - timedelta(days=days_to_sunday)
+                        opportunity['game_date'] = last_sunday.strftime('%Y-%m-%d')
+                        logger.info(f"📅 NFL bet without date, using last Sunday: {opportunity['game_date']}")
+            # ========== END DATE EXTRACTION ==========
+
             # 1. Classify the market FIRST
             classification = self.market_classifier.classify(
                 market=opportunity['market'],
@@ -448,6 +480,7 @@ class EnhancedPaperTradingSystem:
             logger.info(f"  Stake: €{stake:.2f}, Classification: {classification.category}")
             logger.info(
                 f"  Sport SAVED AS: {normalized_sport}, Season: {correct_season}, Stat Type: {classification.stat_type}")
+            logger.info(f"  Game Date: {opportunity.get('game_date')}")
 
             return True
 

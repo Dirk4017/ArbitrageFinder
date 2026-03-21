@@ -2971,105 +2971,137 @@ get_espn_nhl_games <- function(game_date) {
 }
 
 # Get NHL game period data from ESPN
+# Get NHL game period data from ESPN - FIXED VERSION
 get_espn_nhl_period_data <- function(game_id) {
+  debug_cat(sprintf("  Calling ESPN NHL summary API for game: %s\n", game_id))
+  
   tryCatch({
     url <- paste0("https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=", game_id)
-    debug_cat(sprintf("  Calling ESPN NHL summary API: %s\n", url))
+    debug_cat(sprintf("  URL: %s\n", url))
     response <- GET(url, timeout = 10)
-
-    if (status_code(response) == 200) {
-      data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
-
-      result <- list(
+    
+    if (status_code(response) != 200) {
+      debug_cat(sprintf("  ESPN NHL API returned status: %d\n", status_code(response)))
+      return(list(success = FALSE, error = paste("API returned status", status_code(response))))
+    }
+    
+    data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
+    
+    # ========== SAFETY CHECK - Handle empty data ==========
+    if (is.null(data) || length(data) == 0) {
+      debug_cat("  ⚠️ ESPN returned empty data for NHL game\n")
+      return(list(
         success = TRUE,
         periods = list(),
-        game_data = list()
-      )
-
-      # Get period scores from boxscore
-      if (!is.null(data$boxscore) && !is.null(data$boxscore$teams)) {
-        teams_data <- data$boxscore$teams
-
-        # Extract period-by-period scoring
-        if (is.data.frame(teams_data)) {
-          for (i in 1:nrow(teams_data)) {
-            team_info <- teams_data[i, ]
-            if (!is.null(team_info$homeAway)) {
-              if (team_info$homeAway == "home") {
-                result$game_data$home_team <- team_info$team$displayName %||% team_info$team.displayName
-                result$game_data$home_score <- as.numeric(team_info$score %||% 0)
-              } else {
-                result$game_data$away_team <- team_info$team$displayName %||% team_info$team.displayName
-                result$game_data$away_score <- as.numeric(team_info$score %||% 0)
-              }
+        game_data = list(
+          home_team = "Unknown",
+          away_team = "Unknown",
+          home_score = 0,
+          away_score = 0,
+          status = "Unknown"
+        )
+      ))
+    }
+    
+    # DEBUG: Log the structure to help debug
+    debug_cat(sprintf("  DEBUG: Response structure - names: %s\n", paste(names(data), collapse=", ")))
+    # ========== END SAFETY CHECK ==========
+    
+    result <- list(
+      success = TRUE,
+      periods = list(),
+      game_data = list()
+    )
+    
+    # Get period scores from boxscore
+    if (!is.null(data$boxscore) && !is.null(data$boxscore$teams)) {
+      teams_data <- data$boxscore$teams
+      
+      # Extract period-by-period scoring
+      if (is.data.frame(teams_data)) {
+        for (i in 1:nrow(teams_data)) {
+          team_info <- teams_data[i, ]
+          if (!is.null(team_info$homeAway)) {
+            if (team_info$homeAway == "home") {
+              result$game_data$home_team <- team_info$team$displayName %||% team_info$team.displayName
+              result$game_data$home_score <- as.numeric(team_info$score %||% 0)
+            } else {
+              result$game_data$away_team <- team_info$team$displayName %||% team_info$team.displayName
+              result$game_data$away_score <- as.numeric(team_info$score %||% 0)
             }
           }
         }
       }
-
-      # Try to get period-level data from linescores
-      if (!is.null(data$header) && !is.null(data$header$competitions)) {
-        comps <- data$header$competitions
-        if (is.data.frame(comps) && nrow(comps) > 0) {
-          if (!is.null(comps$competitors) && length(comps$competitors) > 0) {
-            competitors <- comps$competitors[[1]]
-
-            if (is.data.frame(competitors)) {
-              for (i in 1:nrow(competitors)) {
-                comp <- competitors[i, ]
-                side <- comp$homeAway
-
-                # Extract linescores (period scores)
-                if (!is.null(comp$linescores) && is.list(comp$linescores)) {
-                  linescores <- comp$linescores[[1]]
-                  if (is.data.frame(linescores)) {
-                    for (p in 1:nrow(linescores)) {
-                      if (is.null(result$periods[[p]])) {
-                        result$periods[[p]] <- list(period = p, home_score = 0, away_score = 0)
-                      }
-                      if (side == "home") {
-                        result$periods[[p]]$home_score <- as.numeric(linescores$value[p] %||% 0)
-                      } else {
-                        result$periods[[p]]$away_score <- as.numeric(linescores$value[p] %||% 0)
-                      }
+    }
+    
+    # Try to get period-level data from linescores
+    if (!is.null(data$header) && !is.null(data$header$competitions)) {
+      comps <- data$header$competitions
+      if (is.data.frame(comps) && nrow(comps) > 0) {
+        # Add safety check for competitors
+        if (!is.null(comps$competitors) && length(comps$competitors) > 0) {
+          competitors <- comps$competitors[[1]]
+          
+          # Add safety check - ensure competitors is a data frame
+          if (is.data.frame(competitors)) {
+            for (i in 1:nrow(competitors)) {
+              comp <- competitors[i, ]
+              side <- comp$homeAway %||% "unknown"
+              
+              # Extract linescores (period scores) - add safety check
+              if (!is.null(comp$linescores) && is.list(comp$linescores) && length(comp$linescores) > 0) {
+                linescores <- comp$linescores[[1]]
+                if (is.data.frame(linescores)) {
+                  for (p in 1:nrow(linescores)) {
+                    if (is.null(result$periods[[p]])) {
+                      result$periods[[p]] <- list(period = p, home_score = 0, away_score = 0)
+                    }
+                    if (side == "home") {
+                      result$periods[[p]]$home_score <- as.numeric(linescores$value[p] %||% 0)
+                    } else if (side == "away") {
+                      result$periods[[p]]$away_score <- as.numeric(linescores$value[p] %||% 0)
                     }
                   }
                 }
-
-                # Get team names and final scores
-                if (side == "home") {
-                  result$game_data$home_team <- comp$team$displayName %||% comp$team.displayName
-                  result$game_data$home_score <- as.numeric(comp$score %||% 0)
-                } else {
-                  result$game_data$away_team <- comp$team$displayName %||% comp$team.displayName
-                  result$game_data$away_score <- as.numeric(comp$score %||% 0)
-                }
+              }
+              
+              # Get team names and final scores - add safety check
+              if (side == "home") {
+                result$game_data$home_team <- comp$team$displayName %||% comp$team.displayName %||% result$game_data$home_team
+                result$game_data$home_score <- as.numeric(comp$score %||% result$game_data$home_score)
+              } else if (side == "away") {
+                result$game_data$away_team <- comp$team$displayName %||% comp$team.displayName %||% result$game_data$away_team
+                result$game_data$away_score <- as.numeric(comp$score %||% result$game_data$away_score)
               }
             }
           }
-
-          # Check game status for OT
-          if (!is.null(comps$status) && is.list(comps$status)) {
-            status_info <- comps$status[[1]]
-            if (!is.null(status_info$type$description)) {
-              result$game_data$status <- status_info$type$description
-              result$game_data$went_to_ot <- grepl("OT|Overtime|SO|Shootout", result$game_data$status, ignore.case = TRUE)
-            }
+        }
+        
+        # Check game status for OT - add safety check
+        if (!is.null(comps$status) && is.list(comps$status) && length(comps$status) > 0) {
+          status_info <- comps$status[[1]]
+          if (!is.null(status_info$type$description)) {
+            result$game_data$status <- status_info$type$description
+            result$game_data$went_to_ot <- grepl("OT|Overtime|SO|Shootout", result$game_data$status, ignore.case = TRUE)
           }
         }
       }
-
-      # Get plays for period-specific events
-      if (!is.null(data$plays)) {
-        result$plays <- data$plays
-      }
-
-      return(result)
     }
-
-    return(list(success = FALSE, error = "Failed to fetch ESPN NHL data"))
-
+    
+    # Get plays for period-specific events - add safety check
+    if (!is.null(data$plays)) {
+      result$plays <- data$plays
+    }
+    
+    debug_cat(sprintf("  NHL data extracted: %s %d - %d %s\n",
+                      result$game_data$away_team %||% "Unknown", result$game_data$away_score %||% 0,
+                      result$game_data$home_score %||% 0, result$game_data$home_team %||% "Unknown"))
+    debug_cat(sprintf("  Periods found: %d\n", length(result$periods)))
+    
+    return(result)
+    
   }, error = function(e) {
+    debug_cat(sprintf("  ERROR in get_espn_nhl_period_data: %s\n", e$message))
     return(list(success = FALSE, error = paste("Error:", e$message)))
   })
 }
