@@ -499,6 +499,44 @@ class EnhancedPaperTradingSystem:
             if not bet:
                 return {'success': False, 'error': 'Bet not found', 'resolved': False}
 
+            # ========== ADD NFL SEASON DETECTION ==========
+            sport = bet.get('sport', '').lower()
+            game_date = bet.get('game_date')
+
+            if sport == 'nfl' and game_date:
+                try:
+                    game_date_obj = datetime.strptime(game_date, '%Y-%m-%d')
+                    game_month = game_date_obj.month
+
+                    # NFL Season Calendar:
+                    # - Regular Season: September (9) through December (12)
+                    # - Playoffs & Super Bowl: January (1) through February (2)
+                    # - Off-season: March (3) through August (8)
+
+                    if 3 <= game_month <= 8:
+                        # Game is in NFL off-season - no games exist
+                        logger.info(f"NFL off-season detected: {game_date} - voiding bet")
+                        return {
+                            'success': True,
+                            'resolved': False,
+                            'void': True,
+                            'void_reason': 'nfl_offseason',
+                            'message': f'Game date {game_date} is in NFL off-season (March-August). No games played.',
+                            'skip_reason': 'season_ended'
+                        }
+                    elif game_month in [1, 2]:
+                        # Playoffs/Super Bowl - these are valid
+                        # If season is 2026 but date is Jan/Feb, log a warning
+                        if bet.get('season') == 2026:
+                            logger.info(f"NFL playoff game in {game_date} using 2025 season")
+                    else:
+                        # Sept-Dec: Regular season - valid
+                        pass
+
+                except Exception as e:
+                    logger.warning(f"Error checking NFL season: {e}")
+            # ========== END NFL SEASON CHECK ==========
+
             # Check for college games
             event = bet.get('event', '')
             sport = bet.get('sport', '')
@@ -576,7 +614,7 @@ class EnhancedPaperTradingSystem:
         except Exception as e:
             logger.error(f"Intelligent resolution failed: {e}")
             return {'success': False, 'error': str(e), 'resolved': False}
-
+        
     def _is_void_error(self, error_msg: str) -> bool:
         """Check if an error message indicates a void bet (player didn't play)"""
         if not error_msg:

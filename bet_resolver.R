@@ -2715,19 +2715,23 @@ find_nba_game_id_timezone_simple <- function(game_date, away_team_search, home_t
 # FLEXIBLE NBA GAME ID SEARCH WITH WIDE DATE RANGE
 # ==============================================
 
+# ==============================================
+# FLEXIBLE NBA GAME ID SEARCH WITH WIDE DATE RANGE
+# ==============================================
+
 find_nba_game_id_flexible <- function(game_date, away_team_search, home_team_search, max_days_range = 14) {
   debug_cat(sprintf("🔄 Flexible NBA game search for %s @ %s around %s (±%d days)\n",
                     away_team_search, home_team_search, game_date, max_days_range))
-
+  
   base_date <- as.Date(game_date)
-
+  
   # Try dates in order: exact, -1, +1, -2, +2, etc.
   # But prioritize closer dates first
   date_offsets <- c(0)
   for (i in 1:max_days_range) {
     date_offsets <- c(date_offsets, -i, i)
   }
-
+  
   # Clean search terms
   clean_team_name <- function(name) {
     if (is.null(name) || is.na(name)) return("")
@@ -2735,32 +2739,32 @@ find_nba_game_id_flexible <- function(game_date, away_team_search, home_team_sea
     name <- gsub("[^a-z0-9]", "", name)
     name
   }
-
+  
   home_search_clean <- clean_team_name(home_team_search)
   away_search_clean <- clean_team_name(away_team_search)
-
+  
   debug_cat(sprintf("  Cleaned search terms: home='%s', away='%s'\n",
                     home_search_clean, away_search_clean))
-
+  
   # First, try to find ANY game with these teams in the range
   all_matches <- list()
-
+  
   for (offset in date_offsets) {
     current_date <- base_date + offset
     debug_cat(sprintf("  Checking date %s (offset: %+d)... ", current_date, offset))
-
+    
     game_id <- find_nba_game_id_single_date(current_date, away_team_search, home_team_search)
-
+    
     if (!is.na(game_id)) {
       debug_cat(sprintf("✓ FOUND! Game ID: %s\n", game_id))
-
+      
       # Get game details to verify
       game_status <- check_nba_game_status(game_id)
-
+      
       if (game_status$exists) {
         # Store match with priority based on date closeness
         priority_score <- 100 - abs(offset) * 5  # Higher score for closer dates
-
+        
         all_matches[[length(all_matches) + 1]] <- list(
           game_id = game_id,
           actual_date = as.character(current_date),
@@ -2774,22 +2778,74 @@ find_nba_game_id_flexible <- function(game_date, away_team_search, home_team_sea
     } else {
       debug_cat("no game\n")
     }
-
+    
     # Small delay to avoid rate limiting
     if (abs(offset) %% 3 == 0) {
       Sys.sleep(0.05)
     }
   }
-
+  
+  # ========== ADDED: Team-name-only search fallback ==========
+  if (length(all_matches) == 0) {
+    debug_cat("  Trying team-name-only search (no date match)...\n")
+    
+    # Get the correct season
+    season_year <- detect_correct_season("nba", game_date)
+    debug_cat(sprintf("  Using NBA season: %s\n", season_year))
+    
+    # Load NBA schedule
+    schedule <- tryCatch({
+      hoopR::load_nba_schedule(season = season_year)
+    }, error = function(e) {
+      debug_cat(sprintf("  Error loading NBA schedule: %s\n", e$message))
+      NULL
+    })
+    
+    if (!is.null(schedule) && nrow(schedule) > 0) {
+      schedule$game_date <- as.Date(schedule$game_date)
+      
+      # Find all games with these teams (order doesn't matter)
+      team_matches <- schedule[
+        (grepl(home_search_clean, tolower(schedule$home_team_name)) | 
+           grepl(away_search_clean, tolower(schedule$away_team_name))) &
+          (grepl(home_search_clean, tolower(schedule$away_team_name)) | 
+             grepl(away_search_clean, tolower(schedule$home_team_name))), 
+      ]
+      
+      if (nrow(team_matches) > 0) {
+        debug_cat(sprintf("  Found %d potential team matches\n", nrow(team_matches)))
+        
+        # Calculate date difference and find closest
+        team_matches$date_diff <- abs(as.Date(team_matches$game_date) - base_date)
+        best_match <- team_matches[order(team_matches$date_diff), ][1, ]
+        
+        debug_cat(sprintf("  ✓ Found team match! Game ID: %s on %s (diff: %d days)\n", 
+                          best_match$game_id, best_match$game_date, best_match$date_diff))
+        
+        return(list(
+          game_id = best_match$game_id,
+          actual_date = as.character(best_match$game_date),
+          searched_date = as.character(base_date),
+          days_off = as.numeric(difftime(as.Date(best_match$game_date), base_date, units = "days")),
+          note = "Found via team-name-only search",
+          all_matches_found = 1
+        ))
+      } else {
+        debug_cat("  No team matches found in schedule\n")
+      }
+    }
+  }
+  # ========== END ADDED SECTION ==========
+  
   if (length(all_matches) > 0) {
     # Sort matches by priority (closest date first)
     all_matches <- all_matches[order(sapply(all_matches, function(x) x$priority), decreasing = TRUE)]
-
+    
     best_match <- all_matches[[1]]
     debug_cat(sprintf("  Selected best match: Game ID %s on %s (offset: %+d days)\n",
                       best_match$game_id, best_match$actual_date, best_match$offset))
     debug_cat(sprintf("    Teams: %s @ %s\n", best_match$away_team, best_match$home_team))
-
+    
     return(list(
       game_id = best_match$game_id,
       actual_date = best_match$actual_date,
@@ -2799,13 +2855,13 @@ find_nba_game_id_flexible <- function(game_date, away_team_search, home_team_sea
       all_matches_found = length(all_matches)
     ))
   }
-
+  
   debug_cat(sprintf("  No game found in %d-day range\n", max_days_range * 2))
-
+  
   # Try direct verification as last resort
   debug_cat("  Trying direct verification as last resort...\n")
   verified_id <- find_nba_game_id_by_verification(base_date, away_team_search, home_team_search)
-
+  
   if (!is.na(verified_id)) {
     debug_cat(sprintf("  ✓ Found via direct verification: %s\n", verified_id))
     return(list(
@@ -2817,16 +2873,16 @@ find_nba_game_id_flexible <- function(game_date, away_team_search, home_team_sea
       all_matches_found = 1
     ))
   }
-
+  
   # Show all games in the date range for debugging
   debug_cat("  Showing all games found in date range for debugging:\n")
   start_date <- base_date - max_days_range
   end_date <- base_date + max_days_range
-
+  
   for (offset in -max_days_range:max_days_range) {
     current_date <- base_date + offset
     games <- get_all_nba_games_on_date(current_date)
-
+    
     if (length(games) > 0) {
       debug_cat(sprintf("    Games on %s:\n", current_date))
       for (game in games) {
@@ -2835,7 +2891,7 @@ find_nba_game_id_flexible <- function(game_date, away_team_search, home_team_sea
       }
     }
   }
-
+  
   return(NULL)
 }
 
@@ -3316,32 +3372,32 @@ get_espn_nhl_player_period_stats <- function(game_id, player_name, period = NULL
   })
 }
 
-# Resolve NHL period markets
+# Resolve NHL period markets - FIXED with safety checks
 resolve_nhl_period_market <- function(game_id, market_info, market_lower, line_value = NULL) {
   debug_cat(sprintf("  Resolving NHL period market: %s\n", market_info$type))
-
+  
   tryCatch({
     period_data <- get_espn_nhl_period_data(game_id)
-
+    
     if (!period_data$success) {
       return(list(success = FALSE, error = period_data$error))
     }
-
+    
     result <- list(success = TRUE)
-
+    
     # Handle different period market types
     if (market_info$type == "period_total_goals") {
       period_num <- as.numeric(gsub("[^0-9]", "", market_info$period))
-
+      
       if (period_num <= length(period_data$periods)) {
         period <- period_data$periods[[period_num]]
-        total_goals <- period$home_score + period$away_score
-
+        total_goals <- (period$home_score %||% 0) + (period$away_score %||% 0)
+        
         result$period <- period_num
         result$total_goals <- total_goals
-        result$home_score <- period$home_score
-        result$away_score <- period$away_score
-
+        result$home_score <- period$home_score %||% 0
+        result$away_score <- period$away_score %||% 0
+        
         if (!is.null(line_value)) {
           line_val_num <- as.numeric(line_value)
           if (grepl("over", market_lower)) {
@@ -3351,45 +3407,68 @@ resolve_nhl_period_market <- function(game_id, market_info, market_lower, line_v
           }
           result$line_value <- line_val_num
         }
+      } else {
+        # SAFETY FALLBACK - return empty result instead of crashing
+        debug_cat(sprintf("  ⚠️ Period %d not available (only %d periods)\n", 
+                          period_num, length(period_data$periods)))
+        result$period <- period_num
+        result$total_goals <- 0
+        result$error <- "Period data not available"
       }
-
+      
     } else if (market_info$type == "period_both_teams_score") {
       period_num <- as.numeric(gsub("[^0-9]", "", market_info$period))
-
+      
       if (period_num <= length(period_data$periods)) {
         period <- period_data$periods[[period_num]]
-        both_scored <- (period$home_score > 0 && period$away_score > 0)
-
+        both_scored <- ((period$home_score %||% 0) > 0 && (period$away_score %||% 0) > 0)
+        
         result$period <- period_num
         result$both_teams_scored <- both_scored
-        result$home_score <- period$home_score
-        result$away_score <- period$away_score
+        result$home_score <- period$home_score %||% 0
+        result$away_score <- period$away_score %||% 0
         result$bet_won <- both_scored  # Assuming "Yes" bet
+      } else {
+        debug_cat(sprintf("  ⚠️ Period %d not available\n", period_num))
+        result$period <- period_num
+        result$both_teams_scored <- FALSE
+        result$error <- "Period data not available"
       }
-
+      
     } else if (market_info$type == "period_moneyline") {
       period_num <- as.numeric(gsub("[^0-9]", "", market_info$period))
-
+      
       if (period_num <= length(period_data$periods)) {
         period <- period_data$periods[[period_num]]
-
+        
         result$period <- period_num
-        result$home_score <- period$home_score
-        result$away_score <- period$away_score
-
-        if (period$home_score > period$away_score) {
+        result$home_score <- period$home_score %||% 0
+        result$away_score <- period$away_score %||% 0
+        
+        if (result$home_score > result$away_score) {
           result$winner <- "home"
-        } else if (period$away_score > period$home_score) {
+        } else if (result$away_score > result$home_score) {
           result$winner <- "away"
         } else {
           result$winner <- "tie"
+          # For 3-way moneyline, a tie (draw) is a valid outcome
+          if (!is.null(market_info$bet_type) && market_info$bet_type == "3way") {
+            result$bet_won <- TRUE  # Draw bet wins
+            debug_cat(sprintf("  ✓ 3-way moneyline DRAW! Bet won.\n"))
+          }
         }
+      } else {
+        debug_cat(sprintf("  ⚠️ Period %d not available\n", period_num))
+        result$period <- period_num
+        result$winner <- "unknown"
+        result$error <- "Period data not available"
       }
     }
-
+    
     return(result)
-
+    
   }, error = function(e) {
+    debug_cat(sprintf("  ERROR in resolve_nhl_period_market: %s\n", e$message))
     return(list(success = FALSE, error = paste("Error:", e$message)))
   })
 }

@@ -402,22 +402,23 @@ class RStatsResolver:
 
     def _clean_player_name_for_json(self, player_name: str, sport: str = None) -> str:
         """
-        FIX: Clean player names for JSON serialization, especially for NFL players with apostrophes
+        Clean player names for JSON serialization
+        FIXED: Keep apostrophes for NFL players!
         """
         if not player_name:
             return ""
 
         # Remove any existing escape artifacts
-        cleaned = player_name.replace('"', '').replace("'", "")
+        cleaned = player_name.replace('"', '')
 
         # Remove "Over/Under" and line values
         import re
         cleaned = re.sub(r'\s+(Over|Under|O|U)\s+\d+\.?\d*', '', cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(r'\s+\d+\.?\d*', '', cleaned)
 
-        # Special handling for NFL players with apostrophes
-        if sport == 'nfl' or 'nfl' in str(sport).lower():
-            # Remove apostrophes entirely (Ja'Marr Chase -> JaMarr Chase)
+        # FIXED: DO NOT remove apostrophes for NFL players!
+        # Keep the apostrophe so "Ja'Marr Chase" stays "Ja'Marr Chase"
+        if sport not in ['nfl', 'football']:
             cleaned = cleaned.replace("'", "")
 
         return cleaned.strip()
