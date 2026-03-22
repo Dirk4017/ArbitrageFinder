@@ -2806,10 +2806,10 @@ find_nba_game_id_flexible <- function(game_date, away_team_search, home_team_sea
       
       # Find all games with these teams (order doesn't matter)
       team_matches <- schedule[
-        (grepl(home_search_clean, tolower(schedule$home_team_name)) | 
-           grepl(away_search_clean, tolower(schedule$away_team_name))) &
-          (grepl(home_search_clean, tolower(schedule$away_team_name)) | 
-             grepl(away_search_clean, tolower(schedule$home_team_name))), 
+        (grepl(home_search_clean, tolower(schedule$home_team_name)) &
+           grepl(away_search_clean, tolower(schedule$away_team_name))) |
+          (grepl(home_search_clean, tolower(schedule$away_team_name)) &
+             grepl(away_search_clean, tolower(schedule$home_team_name))),
       ]
       
       if (nrow(team_matches) > 0) {
@@ -7549,9 +7549,13 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
           # Sum only regulation periods (first 3)
           reg_home_score <- 0
           reg_away_score <- 0
-          for (p in 1:min(3, length(period_data$periods))) {
-            reg_home_score <- reg_home_score + period_data$periods[[p]]$home_score
-            reg_away_score <- reg_away_score + period_data$periods[[p]]$away_score
+          num_periods <- length(period_data$periods)
+
+          if (num_periods > 0) {
+            for (p in 1:min(3, num_periods)) {
+              reg_home_score <- reg_home_score + (period_data$periods[[p]]$home_score %||% 0)
+              reg_away_score <- reg_away_score + (period_data$periods[[p]]$away_score %||% 0)
+            }
           }
           
           result$regulation_home_score <- reg_home_score
