@@ -2805,11 +2805,15 @@ find_nba_game_id_flexible <- function(game_date, away_team_search, home_team_sea
       schedule$game_date <- as.Date(schedule$game_date)
       
       # Find all games with these teams (order doesn't matter)
+      # Clean the schedule names the same way we cleaned the search terms (remove spaces/punctuation)
+      schedule_home_clean <- gsub("[^a-z0-9]", "", tolower(schedule$home_team_name))
+      schedule_away_clean <- gsub("[^a-z0-9]", "", tolower(schedule$away_team_name))
+
       team_matches <- schedule[
-        (grepl(home_search_clean, tolower(schedule$home_team_name)) &
-           grepl(away_search_clean, tolower(schedule$away_team_name))) |
-          (grepl(home_search_clean, tolower(schedule$away_team_name)) &
-             grepl(away_search_clean, tolower(schedule$home_team_name))),
+        (grepl(home_search_clean, schedule_home_clean) &
+           grepl(away_search_clean, schedule_away_clean)) |
+          (grepl(home_search_clean, schedule_away_clean) &
+             grepl(away_search_clean, schedule_home_clean)),
       ]
       
       if (nrow(team_matches) > 0) {
@@ -3109,7 +3113,7 @@ get_espn_nhl_period_data <- function(game_id) {
                 linescores <- comp$linescores[[1]]
                 if (is.data.frame(linescores)) {
                   for (p in 1:nrow(linescores)) {
-                    if (is.null(result$periods[[p]])) {
+                    if (length(result$periods) < p || is.null(result$periods[[p]])) {
                       result$periods[[p]] <- list(period = p, home_score = 0, away_score = 0)
                     }
                     if (side == "home") {
@@ -6177,15 +6181,21 @@ find_game_id <- function(home_team, away_team, game_date, sport, team_only_mode 
         
         if (nrow(schedule) > 0) {
           schedule$game_date <- as.Date(schedule$game_date)
+
+          home_clean <- gsub("[^a-z0-9]", "", tolower(home_team))
+          away_clean <- gsub("[^a-z0-9]", "", tolower(away_team))
+
           game <- schedule %>%
             filter(game_date == game_date_obj) %>%
+            mutate(
+              home_name_clean = gsub("[^a-z0-9]", "", tolower(home_team_name)),
+              away_name_clean = gsub("[^a-z0-9]", "", tolower(away_team_name))
+            ) %>%
             filter(
-              (grepl(home_team, home_team_name, ignore.case = TRUE) &
-                 grepl(away_team, away_team_name, ignore.case = TRUE)) |
-                (grepl(home_team, away_team_name, ignore.case = TRUE) &
-                   grepl(away_team, home_team_name, ignore.case = TRUE))
+              (grepl(home_clean, home_name_clean) & grepl(away_clean, away_name_clean)) |
+              (grepl(home_clean, away_name_clean) & grepl(away_clean, home_name_clean))
             )
-          
+
           if (nrow(game) > 0 && !is.null(game$game_id)) {
             debug_cat(sprintf("  Found NBA game ID via hoopR: %s\n", game$game_id[1]))
             return(game$game_id[1])
