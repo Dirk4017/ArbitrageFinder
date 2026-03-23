@@ -516,14 +516,7 @@ class EnhancedPaperTradingSystem:
                     if 3 <= game_month <= 8:
                         # Game is in NFL off-season - no games exist
                         logger.info(f"NFL off-season detected: {game_date} - voiding bet")
-                        return {
-                            'success': True,
-                            'resolved': False,
-                            'void': True,
-                            'void_reason': 'nfl_offseason',
-                            'message': f'Game date {game_date} is in NFL off-season (March-August). No games played.',
-                            'skip_reason': 'season_ended'
-                        }
+                        return self._void_bet(bet, reason='nfl_offseason')
                     elif game_month in [1, 2]:
                         # Playoffs/Super Bowl - these are valid
                         # If season is 2026 but date is Jan/Feb, log a warning
