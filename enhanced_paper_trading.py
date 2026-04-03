@@ -253,40 +253,15 @@ class EnhancedPaperTradingSystem:
             event = opportunity.get('event', '')
             sport = opportunity.get('sport', 'unknown').lower()
 
-            # ========== DETECT COLLEGE SPORTS FIRST ==========
-            # College basketball indicators
-            college_basketball_keywords = [
-                'tcu', 'oklahoma state', 'kansas state', 'houston',
-                'miami (fl)', 'nc state', 'unc', 'north carolina',
-                'duke', 'gonzaga', 'santa clara', 'baylor', 'kansas',
-                'byu', 'st john\'s', 'providence', 'villanova',
-                'umbc', 'new hampshire', 'unlv', 'boise state',
-                'iowa state', 'florida atlantic', 'south florida',
-                'charleston', 'campbell', 'mcneese state', 'east texas a&m',
-                'bethune-cookman', 'alcorn state', 'pittsburgh', 'north carolina',
-                'florida atlantic', 'south florida', 'oklahoma state', 'iowa state',
-                'gonzaga', 'santa clara', 'st mary\'s', 'san francisco',
-                'pepperdine', 'portland', 'loyola marymount', 'pacific',
-                'byu', 'san diego', 'kansas state', 'oklahoma state',
-                'texas tech', 'west virginia', 'kansas', 'iowa state',
-                'baylor', 'tcu', 'oklahoma', 'texas', 'kentucky',
-                'florida', 'vanderbilt', 'tennessee', 'south carolina',
-                'georgia', 'missouri', 'arkansas', 'lsu', 'auburn',
-                'alabama', 'ole miss', 'mississippi state', 'texas a&m',
-                'wake forest', 'nc state', 'duke', 'north carolina',
-                'virginia', 'virginia tech', 'clemson', 'georgia tech',
-                'florida state', 'miami', 'louisville', 'notre dame',
-                'syracuse', 'boston college', 'pittsburgh', 'villanova',
-                'marquette', 'creighton', 'providence', 'seton hall',
-                'st john\'s', 'georgetown', 'depaul', 'butler',
-                'xavier', 'uconn', 'cincinnati', 'memphis', 'wichita state',
-                'temple', 'smu', 'tulane', 'tulsa', 'east carolina',
-                'ucf', 'south florida', 'colorado', 'utah', 'arizona',
-                'arizona state', 'ucla', 'usc', 'oregon', 'oregon state',
-                'washington', 'washington state', 'california', 'stanford',
-                'colorado state', 'wyoming', 'utah state', 'nevada',
-                'unlv', 'fresno state', 'san jose state', 'boise state',
-                'air force', 'new mexico', 'san diego state',
+            # ========== DETECT PROFESSIONAL SPORTS FIRST ==========
+            # MLB team names that should NEVER be flagged as college
+            mlb_team_names = [
+                'mets', 'yankees', 'red sox', 'dodgers', 'giants', 'cubs',
+                'rays', 'phillies', 'braves', 'cardinals', 'blue jays', 'astros',
+                'mariners', 'padres', 'rockies', 'tigers', 'royals', 'twins',
+                'guardians', 'white sox', 'angels', 'rangers', 'athletics',
+                'marlins', 'nationals', 'pirates', 'reds', 'brewers', 'orioles',
+                'diamondbacks'
             ]
 
             # NBA team names that should NEVER be flagged as college
@@ -298,39 +273,106 @@ class EnhancedPaperTradingSystem:
                 'timberwolves', 'wolves', 'thunder', 'spurs', 'jazz', 'pelicans'
             ]
 
+            # NFL team names that should NEVER be flagged as college
+            nfl_team_names = [
+                'chiefs', 'ravens', '49ers', 'lions', 'bills', 'packers', 'cowboys',
+                'eagles', 'dolphins', 'texans', 'bengals', 'steelers', 'rams',
+                'browns', 'seahawks', 'saints', 'jets', 'falcons', 'raiders',
+                'cardinals', 'commanders', 'broncos', 'vikings', 'buccaneers',
+                'colts', 'bears', 'panthers', 'titans', 'giants', 'patriots',
+                'chargers', 'jaguars'
+            ]
+
+            # NHL team names that should NEVER be flagged as college
+            nhl_team_names = [
+                'blackhawks', 'stars', 'blues', 'hurricanes', 'avalanche', 'kraken',
+                'maple leafs', 'sabres', 'bruins', 'capitals', 'canadiens', 'senators',
+                'red wings', 'lightning', 'panthers', 'rangers', 'islanders', 'devils',
+                'flyers', 'penguins', 'blue jackets', 'predators', 'jets', 'wild',
+                'flames', 'oilers', 'canucks', 'sharks', 'ducks', 'kings', 'coyotes',
+                'golden knights'
+            ]
+
             event_lower = event.lower()
 
-            # FIRST: Check if this is clearly an NBA game (should never be college)
+            # FIRST: Check if this is a professional game (MLB, NBA, NFL, NHL)
+            is_mlb_game = any(team in event_lower for team in mlb_team_names)
             is_nba_game = any(team in event_lower for team in nba_team_names)
+            is_nfl_game = any(team in event_lower for team in nfl_team_names)
+            is_nhl_game = any(team in event_lower for team in nhl_team_names)
 
-            # Check if it's a college basketball game (only if not NBA)
-            is_college_basketball = False
-            if not is_nba_game:
-                is_college_basketball = any(keyword in event_lower for keyword in college_basketball_keywords)
-
-            # Determine the correct sport BEFORE doing anything else
-            if is_college_basketball:
-                normalized_sport = 'ncaab'
-                print(f" COLLEGE BASKETBALL GAME: {event} -> {normalized_sport}")
-                logger.info(f" COLLEGE BASKETBALL GAME: {event} -> {normalized_sport}")
+            # Determine the correct sport - professional sports take priority
+            if is_mlb_game:
+                normalized_sport = 'mlb'
+                logger.info(f"⚾ MLB GAME DETECTED: {event} -> {normalized_sport}")
             elif is_nba_game:
                 normalized_sport = 'nba'
-                logger.info(f" NBA GAME DETECTED: {event} -> {normalized_sport}")
+                logger.info(f"🏀 NBA GAME DETECTED: {event} -> {normalized_sport}")
+            elif is_nfl_game:
+                normalized_sport = 'nfl'
+                logger.info(f"🏈 NFL GAME DETECTED: {event} -> {normalized_sport}")
+            elif is_nhl_game:
+                normalized_sport = 'nhl'
+                logger.info(f"🏒 NHL GAME DETECTED: {event} -> {normalized_sport}")
             else:
-                # Map other professional sports
-                sport_mapping = {
-                    'basketball': 'nba',  # Default basketball to NBA
-                    'football': 'nfl',
-                    'hockey': 'nhl',
-                    'baseball': 'mlb',
-                    'nba': 'nba',
-                    'nfl': 'nfl',
-                    'nhl': 'nhl',
-                    'mlb': 'mlb',
-                    'wnba': 'wnba',
-                }
-                normalized_sport = sport_mapping.get(sport, sport)
-                logger.info(f"Professional sport detected: {event} -> {normalized_sport}")
+                # ========== ONLY CHECK FOR COLLEGE IF NOT A PROFESSIONAL SPORT ==========
+                # College basketball indicators
+                college_basketball_keywords = [
+                    'tcu', 'oklahoma state', 'kansas state', 'houston',
+                    'miami (fl)', 'nc state', 'unc', 'north carolina',
+                    'duke', 'gonzaga', 'santa clara', 'baylor', 'kansas',
+                    'byu', 'st john\'s', 'providence', 'villanova',
+                    'umbc', 'new hampshire', 'unlv', 'boise state',
+                    'iowa state', 'florida atlantic', 'south florida',
+                    'charleston', 'campbell', 'mcneese state', 'east texas a&m',
+                    'bethune-cookman', 'alcorn state', 'pittsburgh', 'north carolina',
+                    'florida atlantic', 'south florida', 'oklahoma state', 'iowa state',
+                    'gonzaga', 'santa clara', 'st mary\'s', 'san francisco',
+                    'pepperdine', 'portland', 'loyola marymount', 'pacific',
+                    'byu', 'san diego', 'kansas state', 'oklahoma state',
+                    'texas tech', 'west virginia', 'kansas', 'iowa state',
+                    'baylor', 'tcu', 'oklahoma', 'texas', 'kentucky',
+                    'florida', 'vanderbilt', 'tennessee', 'south carolina',
+                    'georgia', 'missouri', 'arkansas', 'lsu', 'auburn',
+                    'alabama', 'ole miss', 'mississippi state', 'texas a&m',
+                    'wake forest', 'nc state', 'duke', 'north carolina',
+                    'virginia', 'virginia tech', 'clemson', 'georgia tech',
+                    'florida state', 'miami', 'louisville', 'notre dame',
+                    'syracuse', 'boston college', 'pittsburgh', 'villanova',
+                    'marquette', 'creighton', 'providence', 'seton hall',
+                    'st john\'s', 'georgetown', 'depaul', 'butler',
+                    'xavier', 'uconn', 'cincinnati', 'memphis', 'wichita state',
+                    'temple', 'smu', 'tulane', 'tulsa', 'east carolina',
+                    'ucf', 'south florida', 'colorado', 'utah', 'arizona',
+                    'arizona state', 'ucla', 'usc', 'oregon', 'oregon state',
+                    'washington', 'washington state', 'california', 'stanford',
+                    'colorado state', 'wyoming', 'utah state', 'nevada',
+                    'unlv', 'fresno state', 'san jose state', 'boise state',
+                    'air force', 'new mexico', 'san diego state',
+                ]
+
+                # Check if it's a college basketball game
+                is_college_basketball = any(keyword in event_lower for keyword in college_basketball_keywords)
+
+                if is_college_basketball:
+                    normalized_sport = 'ncaab'
+                    print(f"🎓 COLLEGE BASKETBALL GAME: {event} -> {normalized_sport}")
+                    logger.info(f"🎓 COLLEGE BASKETBALL GAME: {event} -> {normalized_sport}")
+                else:
+                    # Map other professional sports (fallback)
+                    sport_mapping = {
+                        'basketball': 'nba',
+                        'football': 'nfl',
+                        'hockey': 'nhl',
+                        'baseball': 'mlb',
+                        'nba': 'nba',
+                        'nfl': 'nfl',
+                        'nhl': 'nhl',
+                        'mlb': 'mlb',
+                        'wnba': 'wnba',
+                    }
+                    normalized_sport = sport_mapping.get(sport, sport)
+                    logger.info(f"Professional sport detected (fallback): {event} -> {normalized_sport}")
 
             # ========== FIX: SEASON ADJUSTMENT FOR EARLY 2026 GAMES ==========
             # This is the critical fix for NFL/NBA/NHL games in Jan-Mar 2026
@@ -365,7 +407,7 @@ class EnhancedPaperTradingSystem:
             opportunity['season'] = correct_season
             # ========== END SEASON FIX ==========
 
-            # ========== ADD DATE EXTRACTION FOR NFL BETS ==========
+            # ========== ADD DATE EXTRACTION FOR BETS ==========
             # Extract game date from event string if missing
             if not opportunity.get('game_date') and event:
                 import re
@@ -449,7 +491,7 @@ class EnhancedPaperTradingSystem:
             # 3. Prepare bet data with classification info
             bet_data = {
                 'event': opportunity['event'],
-                'sport': normalized_sport,  # Use normalized sport (ncaab, ncaaf, etc.)
+                'sport': normalized_sport,
                 'market': opportunity['market'],
                 'player': opportunity['player'],
                 'odds': decimal_odds,
@@ -458,7 +500,7 @@ class EnhancedPaperTradingSystem:
                 'ev': opportunity['ev'],
                 'sportsbook': opportunity.get('sportsbook', 'Unknown'),
                 'game_date': opportunity.get('game_date'),
-                'season': correct_season,  # Add the corrected season to the bet data
+                'season': correct_season,
                 'market_category': classification.category,
                 'market_subcategory': classification.subcategory,
                 'market_stat_type': classification.stat_type,
@@ -476,7 +518,7 @@ class EnhancedPaperTradingSystem:
             # 5. Update bankroll
             self.bankroll -= stake
 
-            logger.info(f" Bet placed: {opportunity['player']} - {opportunity['market']}")
+            logger.info(f"✅ Bet placed: {opportunity['player']} - {opportunity['market']}")
             logger.info(f"  Stake: €{stake:.2f}, Classification: {classification.category}")
             logger.info(
                 f"  Sport SAVED AS: {normalized_sport}, Season: {correct_season}, Stat Type: {classification.stat_type}")
