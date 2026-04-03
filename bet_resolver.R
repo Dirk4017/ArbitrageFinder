@@ -1304,6 +1304,8 @@ classify_market <- function(market_type, sport = NULL) {
     return(list(type = "player_prop", stat = extract_stat_from_market(market_lower)))
   } else if (grepl("player", market_lower)) {
     return(list(type = "player_stat", stat = extract_stat_from_market(market_lower)))
+  } else if (extract_stat_from_market(market_lower) != "unknown") {
+    return(list(type = "player_stat", stat = extract_stat_from_market(market_lower)))
   } else if (grepl("moneyline", market_lower)) {
     return(list(type = "game_market", market = "moneyline"))
   } else if (grepl("point.*spread|spread", market_lower)) {
@@ -2536,13 +2538,13 @@ find_nba_game_id_single_date <- function(game_date, away_team_search, home_team_
 
                     # FIXED: Check for flattened column names
                     if ("homeAway" %in% colnames(competitor)) {
-                      if (competitor$homeAway == "home") {
+                      if (!is.na(competitor$homeAway) && competitor$homeAway == "home") {
                         if ("team.displayName" %in% colnames(competitor)) {
                           home_team <- competitor$team.displayName
                         } else if ("team.name" %in% colnames(competitor)) {
                           home_team <- competitor$team.name
                         }
-                      } else if (competitor$homeAway == "away") {
+                      } else if (!is.na(competitor$homeAway) && competitor$homeAway == "away") {
                         if ("team.displayName" %in% colnames(competitor)) {
                           away_team <- competitor$team.displayName
                         } else if ("team.name" %in% colnames(competitor)) {
@@ -2612,13 +2614,13 @@ find_nba_game_id_single_date <- function(game_date, away_team_search, home_team_
                   competitor <- competitors_df[j, ]
 
                   if (!is.null(competitor$homeAway)) {
-                    if (competitor$homeAway == "home") {
+                    if (!is.na(competitor$homeAway) && competitor$homeAway == "home") {
                       if (!is.null(competitor$team.displayName)) {
                         home_team <- competitor$team.displayName
                       } else if (!is.null(competitor$team.name)) {
                         home_team <- competitor$team.name
                       }
-                    } else if (competitor$homeAway == "away") {
+                    } else if (!is.na(competitor$homeAway) && competitor$homeAway == "away") {
                       if (!is.null(competitor$team.displayName)) {
                         away_team <- competitor$team.displayName
                       } else if (!is.null(competitor$team.name)) {
@@ -2806,8 +2808,8 @@ find_nba_game_id_flexible <- function(game_date, away_team_search, home_team_sea
       
       # Find all games with these teams (order doesn't matter)
       # Clean the schedule names the same way we cleaned the search terms (remove spaces/punctuation)
-      schedule_home_clean <- gsub("[^a-z0-9]", "", tolower(schedule$home_team_name))
-      schedule_away_clean <- gsub("[^a-z0-9]", "", tolower(schedule$away_team_name))
+      schedule_home_clean <- gsub("[^a-z0-9]", "", tolower(schedule$home_name))
+      schedule_away_clean <- gsub("[^a-z0-9]", "", tolower(schedule$away_name))
 
       team_matches <- schedule[
         (grepl(home_search_clean, schedule_home_clean) &
@@ -2943,14 +2945,14 @@ get_all_nba_games_on_date <- function(game_date) {
 
             # FIXED: Check for flattened column names
             if ("homeAway" %in% colnames(competitor)) {
-              if (competitor$homeAway == "home") {
+              if (!is.na(competitor$homeAway) && competitor$homeAway == "home") {
                 if ("team.displayName" %in% colnames(competitor)) {
                   home_team <- competitor$team.displayName
                 }
                 if ("score" %in% colnames(competitor)) {
                   home_score <- competitor$score
                 }
-              } else if (competitor$homeAway == "away") {
+              } else if (!is.na(competitor$homeAway) && competitor$homeAway == "away") {
                 if ("team.displayName" %in% colnames(competitor)) {
                   away_team <- competitor$team.displayName
                 }
