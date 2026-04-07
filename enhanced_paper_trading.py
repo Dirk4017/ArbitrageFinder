@@ -649,7 +649,7 @@ class EnhancedPaperTradingSystem:
         except Exception as e:
             logger.error(f"Intelligent resolution failed: {e}")
             return {'success': False, 'error': str(e), 'resolved': False}
-        
+
     def _is_void_error(self, error_msg: str) -> bool:
         """Check if an error message indicates a void bet (player didn't play)"""
         if not error_msg:
@@ -816,6 +816,42 @@ class EnhancedPaperTradingSystem:
 
     def _resolve_game_market(self, bet: Dict, classification: MarketClassification) -> Dict:
         """Resolve game markets (totals, spreads, moneylines)"""
+
+        # FIX: For moneyline bets, extract team from event if clean_team is empty
+        team_name = classification.clean_team
+        market_type = classification.subcategory.lower()
+
+        if not team_name and market_type == 'moneyline':
+            event = bet.get('event', '')
+            import re
+            # Remove date from event string
+            event_clean = re.sub(r'\s+\d{4}-\d{2}-\d{2}$', '', event)
+
+            if " @ " in event_clean:
+                parts = event_clean.split(" @ ")
+                if len(parts) >= 2:
+                    # For moneyline, we need to know which team was bet on
+                    # Try to get from the original market string or default to home team
+                    original_market = bet.get('market', '').lower()
+
+                    # Check if the market string contains a team name
+                    for part in parts:
+                        part_clean = part.strip()
+                        if part_clean.lower() in original_market:
+                            team_name = part_clean
+                            self.logger.info(f"  Extracted team from market: {team_name}")
+                            break
+
+                    # If still empty, default to home team
+                    if not team_name:
+                        team_name = parts[1].strip()  # Home team
+                        self.logger.info(f"  Defaulting to home team: {team_name}")
+            elif " vs " in event_clean:
+                parts = event_clean.split(" vs ")
+                if len(parts) >= 2:
+                    team_name = parts[0].strip()
+                    self.logger.info(f"  Extracted team from 'vs': {team_name}")
+
         params = {
             'event_string': bet.get('event', ''),
             'sport': bet.get('sport', '').lower(),
@@ -823,7 +859,7 @@ class EnhancedPaperTradingSystem:
             'market_type': classification.subcategory,
             'line_value': classification.line_value,
             'direction': classification.direction,
-            'team': classification.clean_team,
+            'team': team_name,  # <-- NOW HAS THE TEAM NAME
             'game_date': bet.get('game_date', '')
         }
 
