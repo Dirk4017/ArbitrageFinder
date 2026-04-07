@@ -876,10 +876,53 @@ class RStatsResolver:
         elif sport_info['is_nhl']:
             self.logger.info(f"🏒 NHL game detected: {event_string}")
             r_sport = 'nhl'
+        elif sport_info['is_mlb']:
+            self.logger.info(f"⚾ MLB game detected: {event_string}")
+            r_sport = 'mlb'
         else:
             # Fall back to the original sport hint
             r_sport = sport
             self.logger.info(f"❓ Unknown league, using hint: {r_sport}")
+
+        # ========== FIX: Handle empty player_name for moneyline bets ==========
+        # For moneyline bets, we need the team name to pass to R
+        if (not player_name or player_name == "" or player_name == "''") and any(
+                term in market_type.lower() for term in ['moneyline']):
+            self.logger.info(f"  Empty player_name for moneyline bet, extracting team from event: {event_string}")
+
+            # Extract teams from event string
+            import re
+            # Remove date from event string
+            event_clean = re.sub(r'\s+\d{4}-\d{2}-\d{2}$', '', event_string)
+
+            if " @ " in event_clean:
+                parts = event_clean.split(" @ ")
+                if len(parts) >= 2:
+                    away_team = parts[0].strip()
+                    home_team = parts[1].strip()
+                    self.logger.info(f"  Extracted teams: away='{away_team}', home='{home_team}'")
+
+                    # For moneyline, we need to know which team was bet on
+                    # Try to get from direction or default to home team
+                    if direction and direction.lower() in ['home', 'away']:
+                        if direction.lower() == 'home':
+                            player_name = home_team
+                        else:
+                            player_name = away_team
+                    else:
+                        # Default to home team (most common)
+                        player_name = home_team
+                        self.logger.info(f"  Defaulting to home team: {player_name}")
+
+                    self.logger.info(f"  Set player_name to: {player_name}")
+            elif " vs " in event_clean:
+                parts = event_clean.split(" vs ")
+                if len(parts) >= 2:
+                    team1 = parts[0].strip()
+                    team2 = parts[1].strip()
+                    # Default to first team
+                    player_name = team1
+                    self.logger.info(f"  Extracted teams from 'vs': {team1} vs {team2}, using: {player_name}")
 
         # Check if game is in the future
         if game_date:
