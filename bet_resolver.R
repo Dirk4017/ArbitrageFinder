@@ -7250,7 +7250,7 @@ fetch_game_result <- function(game_id, sport, season) {
   tryCatch({
     if (sport %in% c("nba", "basketball")) {
       # Use the SUMMARY endpoint which has structured data
-      debug_cat("  Using ESPN Summary API...\n")
+      debug_cat("  Using ESPN Summary API for NBA...\n")
       summary_url <- sprintf("https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=%s", game_id)
       
       summary_response <- tryCatch({
@@ -7301,7 +7301,6 @@ fetch_game_result <- function(game_id, sport, season) {
         # Method 2: Try boxscore as fallback
         if (!result$found && !is.null(summary_response$boxscore)) {
           debug_cat("  Trying boxscore data...\n")
-          # Boxscore structure varies, we could add extraction here if needed
         }
       }
       
@@ -7311,7 +7310,7 @@ fetch_game_result <- function(game_id, sport, season) {
       }
       
     } else if (sport %in% c("nfl", "football")) {
-      # FIXED: Actually implement NFL using nflreadr
+      # Use nflreadr for NFL game result
       debug_cat("  Using nflreadr for NFL game result...\n")
       
       # Load NFL schedule for the season
@@ -7353,12 +7352,142 @@ fetch_game_result <- function(game_id, sport, season) {
                         result$away_team, result$away_score,
                         result$home_score, result$home_team))
       
+    } else if (sport %in% c("mlb", "baseball")) {
+      # MLB support using ESPN API
+      debug_cat("  Using ESPN API for MLB game result...\n")
+      
+      url <- paste0("https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=", game_id)
+      debug_cat(sprintf("  URL: %s\n", url))
+      response <- GET(url, timeout = 10)
+      
+      if (status_code(response) != 200) {
+        debug_cat(sprintf("  ESPN MLB API returned status: %d\n", status_code(response)))
+        result$error <- paste("ESPN API returned status", status_code(response))
+        return(result)
+      }
+      
+      data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
+      
+      # Extract game result from header competitions
+      if (!is.null(data$header) && !is.null(data$header$competitions)) {
+        competitions <- data$header$competitions
+        
+        if (is.data.frame(competitions) && nrow(competitions) > 0) {
+          comp <- competitions[1, ]
+          
+          # Get teams and scores
+          if (!is.null(comp$competitors) && length(comp$competitors) > 0) {
+            competitors_df <- comp$competitors[[1]]
+            
+            if (is.data.frame(competitors_df) && nrow(competitors_df) >= 2) {
+              for (i in 1:nrow(competitors_df)) {
+                team_info <- competitors_df[i, ]
+                
+                if (!is.null(team_info$homeAway)) {
+                  if (team_info$homeAway == "home") {
+                    result$home_team <- team_info$team.displayName %||% team_info$team$displayName
+                    result$home_score <- as.numeric(team_info$score %||% 0)
+                    debug_cat(sprintf("  Home team: %s, Score: %d\n", result$home_team, result$home_score))
+                  } else if (team_info$homeAway == "away") {
+                    result$away_team <- team_info$team.displayName %||% team_info$team$displayName
+                    result$away_score <- as.numeric(team_info$score %||% 0)
+                    debug_cat(sprintf("  Away team: %s, Score: %d\n", result$away_team, result$away_score))
+                  }
+                }
+              }
+              
+              # Check if game is completed
+              game_completed <- FALSE
+              if (!is.null(comp$status) && !is.null(comp$status$type$completed)) {
+                game_completed <- as.logical(comp$status$type$completed)
+                debug_cat(sprintf("  Game completed status from API: %s\n", game_completed))
+              }
+              
+              # Also check if we have non-zero scores (indicates game was played)
+              if (game_completed || (result$home_score > 0 || result$away_score > 0)) {
+                result$found <- TRUE
+                result$total_points <- result$home_score + result$away_score
+                result$total_runs <- result$total_points  # MLB uses runs
+                
+                debug_cat(sprintf("  MLB game result: %s %d - %d %s\n",
+                                  result$away_team, result$away_score,
+                                  result$home_score, result$home_team))
+                debug_cat(sprintf("  Total runs: %d\n", result$total_points))
+                return(result)
+              } else {
+                result$error <- "Game not completed yet (no scores available)"
+                debug_cat(sprintf("  %s\n", result$error))
+              }
+            } else {
+              result$error <- "Could not parse competitors data"
+              debug_cat(sprintf("  %s\n", result$error))
+            }
+          } else {
+            result$error <- "No competitors data found"
+            debug_cat(sprintf("  %s\n", result$error))
+          }
+        } else {
+          result$error <- "No competitions data found"
+          debug_cat(sprintf("  %s\n", result$error))
+        }
+      } else {
+        result$error <- "Could not extract MLB game result from ESPN data"
+        debug_cat(sprintf("  %s\n", result$error))
+      }
+      
+      if (!result$found && is.null(result$error)) {
+        result$error <- "MLB game result extraction failed"
+      }
+      
+    } else if (sport %in% c("nhl", "hockey")) {
+      # NHL support using ESPN API
+      debug_cat("  Using ESPN API for NHL game result...\n")
+      
+      url <- paste0("https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=", game_id)
+      response <- GET(url, timeout = 10)
+      
+      if (status_code(response) == 200) {
+        data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
+        
+        if (!is.null(data$boxscore) && !is.null(data$boxscore$teams)) {
+          teams_data <- data$boxscore$teams
+          
+          if (is.data.frame(teams_data)) {
+            for (i in 1:nrow(teams_data)) {
+              team_info <- teams_data[i, ]
+              if (!is.null(team_info$homeAway)) {
+                if (team_info$homeAway == "home") {
+                  result$home_team <- team_info$team$displayName %||% team_info$team.displayName
+                  result$home_score <- as.numeric(team_info$score %||% 0)
+                } else if (team_info$homeAway == "away") {
+                  result$away_team <- team_info$team$displayName %||% team_info$team.displayName
+                  result$away_score <- as.numeric(team_info$score %||% 0)
+                }
+              }
+            }
+            
+            if (!is.na(result$home_score) && !is.na(result$away_score)) {
+              result$found <- TRUE
+              result$total_points <- result$home_score + result$away_score
+              debug_cat(sprintf("  NHL game result: %s %d - %d %s\n",
+                                result$away_team, result$away_score,
+                                result$home_score, result$home_team))
+            }
+          }
+        }
+      }
+      
+      if (!result$found && is.null(result$error)) {
+        result$error <- "Could not extract NHL game result"
+      }
+      
     } else {
       result$error <- paste("Sport not supported:", sport)
+      debug_cat(sprintf("  %s\n", result$error))
     }
     
   }, error = function(e) {
-    debug_cat(sprintf("  Unexpected error: %s\n", e$message))
+    debug_cat(sprintf("  Unexpected error in fetch_game_result: %s\n", e$message))
     result$error <- paste("Unexpected error:", e$message)
   })
   
