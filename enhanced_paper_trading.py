@@ -823,7 +823,6 @@ class EnhancedPaperTradingSystem:
 
         if not team_name and market_type == 'moneyline':
             event = bet.get('event', '')
-            import re
             # Remove date from event string
             event_clean = re.sub(r'\s+\d{4}-\d{2}-\d{2}$', '', event)
 
@@ -839,18 +838,18 @@ class EnhancedPaperTradingSystem:
                         part_clean = part.strip()
                         if part_clean.lower() in original_market:
                             team_name = part_clean
-                            self.logger.info(f"  Extracted team from market: {team_name}")
+                            logger.info(f"  Extracted team from market: {team_name}")
                             break
 
                     # If still empty, default to home team
                     if not team_name:
                         team_name = parts[1].strip()  # Home team
-                        self.logger.info(f"  Defaulting to home team: {team_name}")
+                        logger.info(f"  Defaulting to home team: {team_name}")
             elif " vs " in event_clean:
                 parts = event_clean.split(" vs ")
                 if len(parts) >= 2:
                     team_name = parts[0].strip()
-                    self.logger.info(f"  Extracted team from 'vs': {team_name}")
+                    logger.info(f"  Extracted team from 'vs': {team_name}")
 
         params = {
             'event_string': bet.get('event', ''),
@@ -859,7 +858,7 @@ class EnhancedPaperTradingSystem:
             'market_type': classification.subcategory,
             'line_value': classification.line_value,
             'direction': classification.direction,
-            'team': team_name,  # <-- NOW HAS THE TEAM NAME
+            'team': team_name,
             'game_date': bet.get('game_date', '')
         }
 
@@ -1224,7 +1223,7 @@ class EnhancedPaperTradingSystem:
         resolved_count = 0
         future_count = 0
         college_count = 0
-        void_count = 0  # Added void count
+        void_count = 0
         error_count = 0
 
         for bet in pending_bets:
@@ -1263,7 +1262,6 @@ class EnhancedPaperTradingSystem:
                 print(f"    🎓 Skipped (college): {message}")
                 college_count += 1
             else:
-                # Other reasons (like no data yet)
                 message = result.get('message', 'Not yet resolvable')
                 print(f"    ○ Not resolved: {message}")
                 error_count += 1
@@ -1402,3 +1400,13 @@ class EnhancedPaperTradingSystem:
         print("\nAttempting resolution...")
         result = self.resolve_bet_intelligently(bet_id)
         print(f"\nResult: {json.dumps(result, indent=2, default=str)}")
+
+
+# For standalone execution
+if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    )
+    system = EnhancedPaperTradingSystem()
+    system.run()
