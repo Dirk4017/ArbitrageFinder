@@ -11,6 +11,28 @@ import re
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Any
 
+# At the top of enhanced_paper_trading.py, after imports but before logger = logging.getLogger(__name__)
+
+# ========== FIX: Ensure log directories exist before any logging ==========
+import os
+
+# Create logs directory in current directory
+os.makedirs('logs', exist_ok=True)
+
+# Create logs directory in parent directory (for ../sports_betting.log)
+parent_dir = os.path.dirname(os.path.abspath(__file__))
+parent_logs = os.path.join(parent_dir, '..', 'logs')
+os.makedirs(parent_logs, exist_ok=True)
+
+# Also create the specific directory for the log file
+log_file_path = os.path.join(parent_dir, '..', 'sports_betting.log')
+log_dir = os.path.dirname(log_file_path)
+if log_dir:
+    os.makedirs(log_dir, exist_ok=True)
+
+print(f"Log directories created: logs/, {parent_logs}, {log_dir}")
+# ========== END FIX ==========
+
 # Add the current directory to Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
