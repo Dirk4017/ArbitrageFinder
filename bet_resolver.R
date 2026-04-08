@@ -4270,7 +4270,7 @@ find_mlb_game_id_flexible <- function(home_team, away_team, game_date, max_days_
   return(NA)
 }
 
-# Get MLB player stats from ESPN
+# Get MLB player stats from ESPN - UPDATED to handle both batting and pitching
 get_espn_mlb_player_stats <- function(game_id, player_name) {
   tryCatch({
     url <- paste0("https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=", game_id)
@@ -4304,12 +4304,15 @@ get_espn_mlb_player_stats <- function(game_id, player_name) {
         team_data <- players_df[team_idx, ]
         
         if (!is.null(team_data$statistics) && length(team_data$statistics) > 0) {
+          # Get ALL statistic groups (batting, pitching, etc.)
           stats_list <- team_data$statistics[[1]]
           
           if (is.data.frame(stats_list)) {
+            # Loop through ALL statistic groups (not just the first one)
             for (stat_group_idx in 1:nrow(stats_list)) {
               stat_group <- stats_list[stat_group_idx, ]
               
+              # Check if this is a data frame with athletes
               if (!is.null(stat_group$athletes) && length(stat_group$athletes) > 0) {
                 athletes <- stat_group$athletes[[1]]
                 
@@ -4330,14 +4333,19 @@ get_espn_mlb_player_stats <- function(game_id, player_name) {
                       
                       if (grepl(target_name, cleaned_athlete, fixed = TRUE) ||
                           grepl(cleaned_athlete, target_name, fixed = TRUE)) {
-                        debug_cat(sprintf("  Found MLB player match: %s\n", athlete_name))
+                        
+                        stat_type <- if (!is.null(stat_group$type)) stat_group$type else "unknown"
+                        debug_cat(sprintf("  Found MLB player match in %s stats: %s\n", stat_type, athlete_name))
                         
                         # Extract stats
                         stats_vector <- athlete$stats[[1]]
                         stat_labels <- stat_group$labels[[1]]
                         
+                        # Initialize result with both hitting and pitching fields
                         result <- list(
                           player = athlete_name,
+                          stat_type = stat_type,
+                          # Hitting stats
                           at_bats = 0,
                           runs = 0,
                           hits = 0,
@@ -4346,10 +4354,17 @@ get_espn_mlb_player_stats <- function(game_id, player_name) {
                           strikeouts = 0,
                           home_runs = 0,
                           stolen_bases = 0,
-                          batting_avg = 0,
-                          obp = 0,
-                          slg = 0,
-                          ops = 0
+                          # Pitching stats
+                          innings_pitched = 0,
+                          outs_recorded = 0,
+                          hits_allowed = 0,
+                          runs_allowed = 0,
+                          earned_runs = 0,
+                          walks_allowed = 0,
+                          pitching_strikeouts = 0,
+                          home_runs_allowed = 0,
+                          pitches_thrown = 0,
+                          era = 0
                         )
                         
                         if (!is.null(stats_vector) && !is.null(stat_labels)) {
@@ -4357,29 +4372,66 @@ get_espn_mlb_player_stats <- function(game_id, player_name) {
                             label <- tolower(stat_labels[j])
                             val <- stats_vector[j]
                             
+                            # Hitting stats
                             if (grepl("ab|at.?bat", label)) {
                               result$at_bats <- as.numeric(val) %||% 0
-                            } else if (grepl("^r$|runs", label)) {
+                            } else if (grepl("^r$|runs", label) && !grepl("er", label) && stat_type != "pitching") {
                               result$runs <- as.numeric(val) %||% 0
-                            } else if (grepl("^h$|hits", label)) {
+                            } else if (grepl("^h$|hits", label) && stat_type != "pitching") {
                               result$hits <- as.numeric(val) %||% 0
                             } else if (grepl("rbi", label)) {
                               result$rbi <- as.numeric(val) %||% 0
-                            } else if (grepl("bb|walks", label)) {
+                            } else if (grepl("bb|walks", label) && stat_type != "pitching") {
                               result$walks <- as.numeric(val) %||% 0
-                            } else if (grepl("so|k|strikeouts", label)) {
+                            } else if (grepl("so|k|strikeouts", label) && stat_type != "pitching") {
                               result$strikeouts <- as.numeric(val) %||% 0
-                            } else if (grepl("hr|home.?runs", label)) {
+                            } else if (grepl("hr|home.?runs", label) && stat_type != "pitching") {
                               result$home_runs <- as.numeric(val) %||% 0
                             } else if (grepl("sb|stolen.?bases", label)) {
                               result$stolen_bases <- as.numeric(val) %||% 0
                             }
+                            
+                            # Pitching stats
+                            else if (grepl("^ip$", label)) {
+                              result$innings_pitched <- as.numeric(val) %||% 0
+                              # Calculate outs recorded
+                              ip_value <- result$innings_pitched
+                              full_innings <- floor(ip_value)
+                              partial_outs <- if (ip_value - full_innings > 0) 1 else 0
+                              result$outs_recorded <- (full_innings * 3) + partial_outs
+                            }
+                            else if (grepl("^h$|hits", label) && stat_type == "pitching") {
+                              result$hits_allowed <- as.numeric(val) %||% 0
+                            }
+                            else if (grepl("^r$|runs", label) && stat_type == "pitching") {
+                              result$runs_allowed <- as.numeric(val) %||% 0
+                            }
+                            else if (grepl("^er$|earned", label)) {
+                              result$earned_runs <- as.numeric(val) %||% 0
+                            }
+                            else if (grepl("^bb$|walks", label) && stat_type == "pitching") {
+                              result$walks_allowed <- as.numeric(val) %||% 0
+                            }
+                            else if (grepl("^k$|strikeouts", label) && stat_type == "pitching") {
+                              result$pitching_strikeouts <- as.numeric(val) %||% 0
+                            }
+                            else if (grepl("^hr$|home.?runs", label) && stat_type == "pitching") {
+                              result$home_runs_allowed <- as.numeric(val) %||% 0
+                            }
+                            else if (grepl("pc-st|pitch.*count", label)) {
+                              pc_parts <- strsplit(as.character(val), "-")[[1]]
+                              result$pitches_thrown <- as.numeric(pc_parts[1]) %||% 0
+                            }
+                            else if (grepl("^era$", label)) {
+                              result$era <- as.numeric(val) %||% 0
+                            }
                           }
                         }
                         
-                        debug_cat(sprintf("  MLB Stats: AB=%d, H=%d, HR=%d, RBI=%d, SB=%d\n",
+                        debug_cat(sprintf("  Stats: AB=%d, H=%d, HR=%d, RBI=%d, SB=%d, IP=%s, Outs=%d\n",
                                           result$at_bats, result$hits, result$home_runs,
-                                          result$rbi, result$stolen_bases))
+                                          result$rbi, result$stolen_bases,
+                                          result$innings_pitched, result$outs_recorded))
                         
                         return(result)
                       }
@@ -4402,7 +4454,7 @@ get_espn_mlb_player_stats <- function(game_id, player_name) {
   })
 }
 
-# Fetch MLB player stats (main function)
+# Fetch MLB player stats (main function) - UPDATED with pitching stats
 fetch_mlb_player_stats <- function(player_name, season, game_date = NULL, game_id = NULL) {
   debug_cat(sprintf("\nDEBUG fetch_mlb_player_stats:\n"))
   debug_cat(sprintf("  Player: %s\n", player_name))
@@ -4415,22 +4467,40 @@ fetch_mlb_player_stats <- function(player_name, season, game_date = NULL, game_i
       player_stats <- get_espn_mlb_player_stats(game_id, player_name)
       
       if (!is.null(player_stats)) {
-        debug_cat(sprintf("  Found player stats via ESPN API\n"))
+        debug_cat(sprintf("  Found player stats via ESPN API (type: %s)\n", player_stats$stat_type %||% "unknown"))
+        
+        # Build stats list based on player type
+        stats_list <- list()
+        
+        # Common stats
+        stats_list$at_bats <- player_stats$at_bats
+        stats_list$runs <- player_stats$runs
+        stats_list$hits <- player_stats$hits
+        stats_list$rbi <- player_stats$rbi
+        stats_list$walks <- player_stats$walks
+        stats_list$strikeouts <- player_stats$strikeouts
+        stats_list$home_runs <- player_stats$home_runs
+        stats_list$stolen_bases <- player_stats$stolen_bases
+        
+        # Pitching-specific stats
+        if (!is.null(player_stats$innings_pitched) && player_stats$innings_pitched > 0) {
+          stats_list$innings_pitched <- player_stats$innings_pitched
+          stats_list$outs_recorded <- player_stats$outs_recorded
+          stats_list$hits_allowed <- player_stats$hits_allowed
+          stats_list$runs_allowed <- player_stats$runs_allowed
+          stats_list$earned_runs <- player_stats$earned_runs
+          stats_list$walks_allowed <- player_stats$walks_allowed
+          stats_list$pitching_strikeouts <- player_stats$pitching_strikeouts
+          stats_list$home_runs_allowed <- player_stats$home_runs_allowed
+          stats_list$pitches_thrown <- player_stats$pitches_thrown
+          stats_list$era <- player_stats$era
+        }
         
         return(list(
           found = TRUE,
           player = player_stats$player,
           games = 1,
-          stats = list(
-            at_bats = player_stats$at_bats,
-            runs = player_stats$runs,
-            hits = player_stats$hits,
-            rbi = player_stats$rbi,
-            walks = player_stats$walks,
-            strikeouts = player_stats$strikeouts,
-            home_runs = player_stats$home_runs,
-            stolen_bases = player_stats$stolen_bases
-          )
+          stats = stats_list
         ))
       } else {
         debug_cat("  ESPN API returned NULL player stats\n")
