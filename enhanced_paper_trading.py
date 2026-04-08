@@ -138,6 +138,22 @@ class EnhancedPaperTradingSystem:
         if sport_lower in ['ncaaf', 'ncaab', 'ncaaw', 'college football', 'college basketball']:
             return True
 
+        # MLB team names that should NEVER be flagged as college
+        mlb_teams = [
+            'cardinals', 'yankees', 'red sox', 'dodgers', 'giants', 'cubs',
+            'rays', 'phillies', 'braves', 'mets', 'blue jays', 'astros',
+            'mariners', 'padres', 'rockies', 'tigers', 'royals', 'twins',
+            'guardians', 'white sox', 'angels', 'rangers', 'athletics',
+            'marlins', 'nationals', 'pirates', 'reds', 'brewers', 'orioles',
+            'diamondbacks'
+        ]
+
+        # FIRST: Check for MLB teams - if found, it's NOT college
+        for team in mlb_teams:
+            if team in event_lower:
+                logger.info(f"MLB team '{team}' detected, not college")
+                return False
+
         # List of NFL team names that contain words that might look like college teams
         nfl_teams = [
             'kansas city chiefs', 'new england patriots', 'new york jets',
@@ -245,6 +261,49 @@ class EnhancedPaperTradingSystem:
                 return True
 
         return False
+
+    def _clean_malformed_player_name(self, player_name: str, market: str, event: str) -> str:
+        """Fix cases where player name is 'Over 0.5' or similar instead of actual player name"""
+        if not player_name:
+            return player_name
+
+        # Check for malformed player names (Over/Under values instead of names)
+        malformed_patterns = [
+            r'^Over\s+\d+\.?\d*$',
+            r'^Under\s+\d+\.?\d*$',
+            r'^Over$',
+            r'^Under$',
+            r'^O\s+\d+\.?\d*$',
+            r'^U\s+\d+\.?\d*$',
+            r'^\d+\.?\d*$'  # Just a number
+        ]
+
+        for pattern in malformed_patterns:
+            if re.match(pattern, player_name, re.IGNORECASE):
+                logger.info(f"Malformed player name detected: '{player_name}'")
+
+                # Try to extract from market string
+                # Example: "Hyeseong Kim Over 0.5" -> extract "Hyeseong Kim"
+                market_clean = re.sub(r'\s+(Over|Under|O|U)\s+\d+\.?\d*', '', market, flags=re.IGNORECASE)
+                market_clean = re.sub(r'\s+\d+\.?\d*$', '', market_clean)
+
+                # Check if market_clean looks like a name (has space, capital letters)
+                if ' ' in market_clean and any(c.isupper() for c in market_clean):
+                    logger.info(f"Extracted player from market: '{market_clean}'")
+                    return market_clean
+
+                # Try to extract from event
+                # Look for player names in event string (two capitalized words)
+                event_match = re.search(r'([A-Z][a-z]+ [A-Z][a-z]+)', event)
+                if event_match:
+                    extracted = event_match.group(1)
+                    logger.info(f"Extracted player from event: '{extracted}'")
+                    return extracted
+
+                # If all else fails, return original
+                return player_name
+
+        return player_name
 
     def place_intelligent_bet(self, opportunity: Dict) -> bool:
         """Place a bet with intelligent market classification"""
@@ -439,10 +498,20 @@ class EnhancedPaperTradingSystem:
                         logger.info(f"📅 NFL bet without date, using last Sunday: {opportunity['game_date']}")
             # ========== END DATE EXTRACTION ==========
 
+            # 0. Clean malformed player names FIRST
+            cleaned_player = self._clean_malformed_player_name(
+                opportunity.get('player', ''),
+                opportunity.get('market', ''),
+                opportunity.get('event', '')
+            )
+
+            # Update the opportunity with cleaned player name
+            opportunity['player'] = cleaned_player
+
             # 1. Classify the market FIRST
             classification = self.market_classifier.classify(
                 market=opportunity['market'],
-                player_or_team=opportunity['player']
+                player_or_team=cleaned_player
             )
 
             logger.info(f"Market classified as: {classification.category}")
@@ -493,7 +562,7 @@ class EnhancedPaperTradingSystem:
                 'event': opportunity['event'],
                 'sport': normalized_sport,
                 'market': opportunity['market'],
-                'player': opportunity['player'],
+                'player': cleaned_player,  # Use cleaned player name
                 'odds': decimal_odds,
                 'stake': stake,
                 'potential_win': stake * decimal_odds,
@@ -518,7 +587,7 @@ class EnhancedPaperTradingSystem:
             # 5. Update bankroll
             self.bankroll -= stake
 
-            logger.info(f"✅ Bet placed: {opportunity['player']} - {opportunity['market']}")
+            logger.info(f"✅ Bet placed: {cleaned_player} - {opportunity['market']}")
             logger.info(f"  Stake: €{stake:.2f}, Classification: {classification.category}")
             logger.info(
                 f"  Sport SAVED AS: {normalized_sport}, Season: {correct_season}, Stat Type: {classification.stat_type}")
@@ -1164,9 +1233,17 @@ class EnhancedPaperTradingSystem:
                 print(f"Skipping college game: {event}")
                 continue
 
+            # Clean malformed player name
+            cleaned_player = self._clean_malformed_player_name(
+                opp.get('player', ''),
+                opp.get('market', ''),
+                opp.get('event', '')
+            )
+            opp['player'] = cleaned_player
+
             # Classify and show info
-            classification = self.market_classifier.classify(opp['market'], opp['player'])
-            print(f"\n{opp['player']} - {opp['market']}")
+            classification = self.market_classifier.classify(opp['market'], cleaned_player)
+            print(f"\n{cleaned_player} - {opp['market']}")
             print(f"  Classified as: {classification.category}.{classification.subcategory}")
             print(f"  Sport: {sport}")
             print(f"  Stat Type: {classification.stat_type}")
