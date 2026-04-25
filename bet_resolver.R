@@ -860,6 +860,27 @@ classify_nhl_market <- function(market_lower) {
     return(list(type = "minutes_total_goals", minutes = 5))
   }
   
+  # ==================== SPECIAL PLAYER MARKETS (MUST BE BEFORE PLAYER MARKETS) ====================
+  # Player to record a shutout
+  if (grepl("player.*record.*shutout", market_lower) || grepl("player.*shutout", market_lower)) {
+    return(list(type = "player_special", special_type = "shutout"))
+  }
+  
+  # Player to have most goals
+  if (grepl("player.*to.*have.*most.*goals", market_lower)) {
+    return(list(type = "player_special", special_type = "most_goals"))
+  }
+  
+  # Player to have most points
+  if (grepl("player.*to.*have.*most.*points", market_lower)) {
+    return(list(type = "player_special", special_type = "most_points"))
+  }
+  
+  # Player to have most shots on goal
+  if (grepl("player.*to.*have.*most.*shots.*on.*goal", market_lower)) {
+    return(list(type = "player_special", special_type = "most_shots"))
+  }
+  
   # ==================== PLAYER PERIOD MARKETS ====================
   # Player period goals
   if (grepl("player.*1st.*period.*goals", market_lower)) {
@@ -914,8 +935,8 @@ classify_nhl_market <- function(market_lower) {
   }
   
   # ==================== PLAYER MARKETS ====================
-  # Player goals
-  if (grepl("player.*goals", market_lower) && !grepl("against", market_lower)) {
+  # Player goals (exclude "most" markets)
+  if (grepl("player.*goals", market_lower) && !grepl("against", market_lower) && !grepl("most", market_lower)) {
     return(list(type = "player_stat", stat = "goals"))
   }
   
@@ -960,18 +981,23 @@ classify_nhl_market <- function(market_lower) {
   }
   
   # Player plus/minus
-  if (grepl("player.*plus.*minus", market_lower) || grepl("player.*plus/minus", market_lower)) {
+  if (grepl("player.*plus.*minus", market_lower) || grepl("player.*plus/minus", market_lower) || grepl("player.*\\+/-", market_lower)) {
     return(list(type = "player_stat", stat = "plus_minus"))
+  }
+  
+  # Player penalty minutes
+  if (grepl("penalty minutes|pim", market_lower)) {
+    return(list(type = "player_stat", stat = "penalty_minutes"))
+  }
+  
+  # Player time on ice
+  if (grepl("time on ice|toi", market_lower)) {
+    return(list(type = "player_stat", stat = "time_on_ice"))
   }
   
   # Player power play points
   if (grepl("player.*power.*play.*points", market_lower)) {
     return(list(type = "player_stat", stat = "power_play_points"))
-  }
-  
-  # Player regulation time on ice
-  if (grepl("player.*regulation.*time.*on.*ice", market_lower) || grepl("player.*toi", market_lower)) {
-    return(list(type = "player_stat", stat = "time_on_ice"))
   }
   
   # ==================== SCORER MARKETS ====================
@@ -988,27 +1014,6 @@ classify_nhl_market <- function(market_lower) {
   # Team player first goal scorer
   if (grepl("team.*player.*first.*goal", market_lower)) {
     return(list(type = "team_first_scorer"))
-  }
-  
-  # ==================== SPECIAL PLAYER MARKETS ====================
-  # Player to record a shutout
-  if (grepl("player.*record.*shutout", market_lower) || grepl("player.*shutout", market_lower)) {
-    return(list(type = "player_special", special_type = "shutout"))
-  }
-  
-  # Player to have most goals
-  if (grepl("player.*to.*have.*most.*goals", market_lower)) {
-    return(list(type = "player_special", special_type = "most_goals"))
-  }
-  
-  # Player to have most points
-  if (grepl("player.*to.*have.*most.*points", market_lower)) {
-    return(list(type = "player_special", special_type = "most_points"))
-  }
-  
-  # Player to have most shots on goal
-  if (grepl("player.*to.*have.*most.*shots.*on.*goal", market_lower)) {
-    return(list(type = "player_special", special_type = "most_shots"))
   }
   
   # ==================== TEAM MARKETS ====================
@@ -1046,7 +1051,70 @@ classify_nhl_market <- function(market_lower) {
     return(list(type = "team_shorthanded_goals"))
   }
   
+  # Team to score last
+  if (grepl("team.*to.*score.*last", market_lower) && !grepl("regulation", market_lower)) {
+    return(list(type = "team_score_last"))
+  }
+  
+  # ==================== REGULATION MARKETS (MOVED BEFORE GAME MARKETS) ====================
+  if (grepl("regulation", market_lower)) {
+    # Regulation moneyline
+    if (grepl("moneyline", market_lower)) {
+      if (grepl("3.way", market_lower) || grepl("3way", market_lower)) {
+        return(list(type = "regulation_moneyline", bet_type = "3way"))
+      }
+      return(list(type = "regulation_moneyline", bet_type = "2way"))
+    }
+    
+    # Regulation puck line
+    if (grepl("puck.*line", market_lower)) {
+      return(list(type = "regulation_puck_line"))
+    }
+    
+    # Regulation total goals
+    if (grepl("total.*goals", market_lower)) {
+      return(list(type = "regulation_total_goals"))
+    }
+    
+    # Regulation both teams to score
+    if (grepl("both.*teams.*to.*score", market_lower)) {
+      return(list(type = "regulation_both_teams_score"))
+    }
+    
+    # Regulation team to score first
+    if (grepl("team.*to.*score.*first", market_lower)) {
+      if (grepl("3.way", market_lower) || grepl("3way", market_lower)) {
+        return(list(type = "regulation_team_score_first", bet_type = "3way"))
+      }
+      return(list(type = "regulation_team_score_first", bet_type = "2way"))
+    }
+    
+    # Regulation team to score last
+    if (grepl("team.*to.*score.*last", market_lower)) {
+      if (grepl("3.way", market_lower) || grepl("3way", market_lower)) {
+        return(list(type = "regulation_team_score_last", bet_type = "3way"))
+      }
+      return(list(type = "regulation_team_score_last", bet_type = "2way"))
+    }
+    
+    # Regulation shutout
+    if (grepl("shutout", market_lower)) {
+      return(list(type = "regulation_shutout"))
+    }
+  }
+  
   # ==================== GAME MARKETS ====================
+  # SPECIFIC TOTAL MARKETS FIRST (before generic total goals)
+  if (grepl("total power play goals", market_lower)) {
+    return(list(type = "game_power_play_goals"))
+  }
+  if (grepl("total shots on goal", market_lower)) {
+    return(list(type = "game_total_shots"))
+  }
+  if (grepl("total goals odd/even", market_lower)) {
+    return(list(type = "game_total_goals_oddeven"))
+  }
+  
   # Moneyline
   if (grepl("moneyline", market_lower)) {
     if (grepl("3.way", market_lower) || grepl("3way", market_lower)) {
@@ -1060,71 +1128,29 @@ classify_nhl_market <- function(market_lower) {
     return(list(type = "game_puckline"))
   }
   
-  # Total goals
-  if (grepl("total.*goals", market_lower) && !grepl("team|period|first", market_lower)) {
-    if (grepl("odd.*even", market_lower)) {
-      return(list(type = "game_total_goals_oddeven"))
-    }
-    return(list(type = "game_total_goals"))
-  }
-  
-  # Total shots on goal
-  if (grepl("total.*shots.*on.*goal", market_lower)) {
-    return(list(type = "game_total_shots"))
-  }
-  
-  # Total power play goals
-  if (grepl("total.*power.*play.*goals", market_lower)) {
-    return(list(type = "game_power_play_goals"))
-  }
-  
   # Both teams to score
   if (grepl("both.*teams.*to.*score", market_lower) && !grepl("period", market_lower)) {
     return(list(type = "game_both_teams_score"))
   }
   
-  # ==================== REGULATION MARKETS ====================
-  if (grepl("regulation", market_lower)) {
-    # Regulation moneyline
-    if (grepl("regulation.*moneyline", market_lower)) {
-      if (grepl("3.way", market_lower) || grepl("3way", market_lower)) {
-        return(list(type = "regulation_moneyline", bet_type = "3way"))
-      }
-      return(list(type = "regulation_moneyline", bet_type = "2way"))
-    }
-    
-    # Regulation puck line
-    if (grepl("regulation.*puck.*line", market_lower)) {
-      return(list(type = "regulation_puckline"))
-    }
-    
-    # Regulation total goals
-    if (grepl("regulation.*total.*goals", market_lower)) {
-      return(list(type = "regulation_total_goals"))
-    }
-    
-    # Regulation both teams to score
-    if (grepl("regulation.*both.*teams.*to.*score", market_lower)) {
-      return(list(type = "regulation_both_teams_score"))
-    }
-    
-    # Regulation team to score first
-    if (grepl("regulation.*team.*to.*score.*first", market_lower)) {
-      if (grepl("2.way", market_lower) || grepl("2way", market_lower)) {
-        return(list(type = "regulation_team_score_first", bet_type = "2way"))
-      }
-      return(list(type = "regulation_team_score_first", bet_type = "3way"))
-    }
-    
-    # Regulation team to score last
-    if (grepl("regulation.*team.*to.*score.*last", market_lower)) {
-      return(list(type = "regulation_team_score_last"))
-    }
-    
-    # Regulation will there be a shutout
-    if (grepl("regulation.*shutout", market_lower)) {
-      return(list(type = "regulation_shutout"))
-    }
+  # Will there be overtime
+  if (grepl("will.*there.*be.*overtime", market_lower)) {
+    return(list(type = "game_overtime"))
+  }
+  
+  # Goal in each period
+  if (grepl("goal.*in.*each.*period", market_lower)) {
+    return(list(type = "goal_each_period"))
+  }
+  
+  # Highest scoring period
+  if (grepl("highest.*scoring.*period", market_lower)) {
+    return(list(type = "highest_scoring_period", num_options = 4))
+  }
+  
+  # Generic total goals (LAST - only if no specific pattern matched)
+  if (grepl("total.*goals", market_lower) && !grepl("period|first|power|shots", market_lower)) {
+    return(list(type = "game_total_goals"))
   }
   
   # ==================== TEAM PROP MARKETS ====================
@@ -1134,6 +1160,11 @@ classify_nhl_market <- function(market_lower) {
       return(list(type = "team_score_first", bet_type = "3way"))
     }
     return(list(type = "team_score_first", bet_type = "2way"))
+  }
+  
+  # Team score first and win
+  if (grepl("team.*score.*first.*and.*win", market_lower)) {
+    return(list(type = "team_score_first_and_win"))
   }
   
   # Team to win the opening faceoff
@@ -1161,29 +1192,8 @@ classify_nhl_market <- function(market_lower) {
     return(list(type = "team_win_from_behind"))
   }
   
-  # Team score first and win
-  if (grepl("team.*score.*first.*and.*win", market_lower)) {
-    return(list(type = "team_score_first_and_win"))
-  }
-  
-  # ==================== SPECIAL GAME MARKETS ====================
-  # Will there be overtime
-  if (grepl("will.*there.*be.*overtime", market_lower)) {
-    return(list(type = "game_overtime"))
-  }
-  
-  # Goal in each period
-  if (grepl("goal.*in.*each.*period", market_lower)) {
-    return(list(type = "goal_each_period"))
-  }
-  
-  # Highest scoring period
-  if (grepl("highest.*scoring.*period", market_lower)) {
-    return(list(type = "highest_scoring_period"))
-  }
-  
   # ==================== FALLBACK ====================
-  debug_cat("  WARNING: Could not classify NHL market, defaulting to 'unknown'\n")
+  debug_cat(sprintf("  WARNING: Could not classify NHL market: '%s', defaulting to 'unknown'\n", market_lower))
   return(list(type = "unknown", market = market_lower))
 }
 
@@ -1304,9 +1314,10 @@ classify_market <- function(market_type, sport = NULL) {
   }
   
   # ==================== INNING MARKETS (BASEBALL) ====================
+  # Single inning markets (1st, 2nd, 3rd, etc.)
   for (inning in 1:9) {
     inning_suffix <- ifelse(inning == 1, "st", ifelse(inning == 2, "nd", ifelse(inning == 3, "rd", "th")))
-    inning_pattern <- paste0(inning, inning_suffix, " inning")
+    inning_pattern <- paste0("^", inning, inning_suffix, " inning")
     
     if (grepl(inning_pattern, market_lower)) {
       if (grepl("moneyline", market_lower)) {
@@ -1333,25 +1344,52 @@ classify_market <- function(market_type, sport = NULL) {
     }
   }
   
-  # Multiple inning ranges (e.g., "1st 3 innings", "1st 5 innings", etc.)
-  inning_range_pattern <- "1st ([3-9]) innings"
-  if (grepl(inning_range_pattern, market_lower)) {
-    num_innings <- as.numeric(gsub(inning_range_pattern, "\\1", market_lower))
+  # ==================== MULTI-INNING MARKETS (FIXED) ====================
+  # Pattern: "1st 2 Innings", "1st 3 Innings", "1st 5 Innings", etc.
+  multi_inning_match <- regexpr("1st\\s+([2-9])\\s+innings?", market_lower, ignore.case = TRUE)
+  
+  if (multi_inning_match != -1) {
+    num_innings <- as.numeric(regmatches(market_lower, regexec("1st\\s+([2-9])\\s+innings?", market_lower, ignore.case = TRUE))[[1]][2])
     
-    if (grepl("moneyline", market_lower)) {
-      if (grepl("3-way", market_lower)) {
-        return(list(type = "multi_inning_moneyline_3way", innings = num_innings))
+    if (!is.na(num_innings)) {
+      debug_cat(sprintf("  Multi-inning market detected: %d innings\n", num_innings))
+      
+      if (grepl("moneyline", market_lower)) {
+        if (grepl("3-way", market_lower)) {
+          return(list(type = "multi_inning_moneyline_3way", innings = num_innings))
+        }
+        return(list(type = "multi_inning_moneyline", innings = num_innings))
       }
-      return(list(type = "multi_inning_moneyline", innings = num_innings))
-    }
-    if (grepl("run line", market_lower)) {
-      return(list(type = "multi_inning_run_line", innings = num_innings))
-    }
-    if (grepl("total runs", market_lower)) {
-      return(list(type = "multi_inning_total_runs", innings = num_innings))
-    }
-    if (grepl("both teams to score", market_lower)) {
-      return(list(type = "multi_inning_both_teams_score", innings = num_innings))
+      if (grepl("run line", market_lower)) {
+        return(list(type = "multi_inning_run_line", innings = num_innings))
+      }
+      if (grepl("total runs", market_lower)) {
+        return(list(type = "multi_inning_total_runs", innings = num_innings))
+      }
+      if (grepl("both teams to score", market_lower)) {
+        return(list(type = "multi_inning_both_teams_score", innings = num_innings))
+      }
+      if (grepl("total hits", market_lower)) {
+        return(list(type = "multi_inning_total_hits", innings = num_innings))
+      }
+      if (grepl("total rbis?", market_lower)) {
+        return(list(type = "multi_inning_total_rbis", innings = num_innings))
+      }
+      if (grepl("total doubles", market_lower)) {
+        return(list(type = "multi_inning_total_doubles", innings = num_innings))
+      }
+      if (grepl("total triples", market_lower)) {
+        return(list(type = "multi_inning_total_triples", innings = num_innings))
+      }
+      if (grepl("total walks", market_lower)) {
+        return(list(type = "multi_inning_total_walks", innings = num_innings))
+      }
+      if (grepl("plate appearances", market_lower)) {
+        return(list(type = "multi_inning_total_pa", innings = num_innings))
+      }
+      if (grepl("total singles", market_lower)) {
+        return(list(type = "multi_inning_total_singles", innings = num_innings))
+      }
     }
   }
   
@@ -1392,13 +1430,13 @@ classify_market <- function(market_type, sport = NULL) {
   }
   
   # ==================== PLAYER PERIOD MARKETS ====================
-  # Player 1st Period/Quarter stats
+  # IMPORTANT: This must come BEFORE the generic PLAYER STAT MARKETS
   for (p in 1:4) {
     period_names <- c("1st", "2nd", "3rd", "4th")
     period_label <- period_names[p]
     
-    # For quarters (basketball)
-    if (grepl(paste0(period_label, " quarter"), market_lower) && grepl("player", market_lower)) {
+    # For quarters (basketball) - check for both "player X quarter" and "X quarter player"
+    if (grepl("player", market_lower) && grepl(paste0(period_label, " quarter"), market_lower)) {
       if (grepl("points", market_lower)) {
         return(list(type = "player_period_stat", stat = "points", period = paste0("quarter_", p)))
       }
@@ -1410,8 +1448,8 @@ classify_market <- function(market_type, sport = NULL) {
       }
     }
     
-    # For periods (hockey)
-    if (grepl(paste0(period_label, " period"), market_lower) && grepl("player", market_lower)) {
+    # For periods (hockey) - check for both "player X period" and "X period player"
+    if (grepl("player", market_lower) && grepl(paste0(period_label, " period"), market_lower)) {
       if (grepl("goals", market_lower)) {
         return(list(type = "player_period_stat", stat = "goals", period = paste0("period_", p)))
       }
@@ -1444,22 +1482,86 @@ classify_market <- function(market_type, sport = NULL) {
     return(list(type = "player_combo", combo_type = "blocks_steals"))
   }
   
+  # ==================== SPECIAL GAME MARKETS (MOVED HERE - BEFORE PLAYER STAT MARKETS) ====================
+  if (grepl("largest comeback", market_lower)) {
+    return(list(type = "largest_comeback"))
+  }
+  if (grepl("first run inning", market_lower)) {
+    return(list(type = "first_run_inning"))
+  }
+  if (grepl("last run inning", market_lower)) {
+    return(list(type = "last_run_inning"))
+  }
+  if (grepl("first scoring play runs", market_lower)) {
+    return(list(type = "first_scoring_play_runs"))
+  }
+  if (grepl("goal in each period", market_lower)) {
+    return(list(type = "goal_each_period"))
+  }
+  if (grepl("highest scoring period", market_lower)) {
+    return(list(type = "highest_scoring_period", num_options = 4))
+  }
+  if (grepl("highest scoring quarter", market_lower)) {
+    return(list(type = "highest_scoring_quarter", num_options = 5))
+  }
+  if (grepl("lowest scoring quarter", market_lower)) {
+    return(list(type = "lowest_scoring_quarter", num_options = 5))
+  }
+  if (grepl("highest scoring half", market_lower)) {
+    return(list(type = "highest_scoring_half", num_options = 3))
+  }
+  if (grepl("first field goal type", market_lower)) {
+    if (grepl("4-way", market_lower)) {
+      return(list(type = "first_field_goal_type", num_options = 4))
+    }
+    return(list(type = "first_field_goal_type", num_options = 2))
+  }
+  if (grepl("first home run type", market_lower)) {
+    return(list(type = "first_home_run_type", num_options = 5))
+  }
+  if (grepl("first minute both teams to score", market_lower)) {
+    return(list(type = "first_minute_both_score"))
+  }
+  # First X minutes total threes (MUST come before player stat patterns)
+  if (grepl("first.*minutes.*total.*threes", market_lower)) {
+    minutes <- as.numeric(gsub("[^0-9]", "", market_lower))
+    return(list(type = "first_minutes_total_threes", minutes = minutes))
+  }
+  if (grepl("first 10 minutes total goals", market_lower)) {
+    return(list(type = "first_minutes_total_goals", minutes = 10))
+  }
+  if (grepl("first 5 minutes total goals", market_lower)) {
+    return(list(type = "first_minutes_total_goals", minutes = 5))
+  }
+  if (grepl("first 2 minutes total shots on goal", market_lower)) {
+    return(list(type = "first_minutes_total_shots", minutes = 2))
+  }
+  
   # ==================== PLAYER SPECIAL MARKETS ====================
-  if (grepl("double.*double", market_lower)) {
-    return(list(type = "player_special", special_type = "double_double"))
-  }
-  if (grepl("triple.*double", market_lower)) {
-    return(list(type = "player_special", special_type = "triple_double"))
-  }
-  if (grepl("threes|3.*point|3pt|three.*point", market_lower) && !grepl("team", market_lower)) {
-    return(list(type = "player_stat", stat = "three_pointers_made"))
-  }
+  # Check for "most" markets FIRST (more specific, before generic patterns)
   if (grepl("player to have most", market_lower)) {
     if (grepl("points", market_lower)) return(list(type = "player_special", special_type = "most_points"))
     if (grepl("rebounds", market_lower)) return(list(type = "player_special", special_type = "most_rebounds"))
     if (grepl("assists", market_lower)) return(list(type = "player_special", special_type = "most_assists"))
     if (grepl("threes", market_lower)) return(list(type = "player_special", special_type = "most_threes"))
     if (grepl("shots on goal", market_lower)) return(list(type = "player_special", special_type = "most_shots"))
+  }
+  
+  if (grepl("double.*double", market_lower)) {
+    return(list(type = "player_special", special_type = "double_double"))
+  }
+  if (grepl("triple.*double", market_lower)) {
+    return(list(type = "player_special", special_type = "triple_double"))
+  }
+  
+  # Generic threes - exclude "most" and "total" markets
+  if (grepl("threes|3.*point|3pt|three.*point", market_lower) && !grepl("team", market_lower) && !grepl("most", market_lower) && !grepl("^total", market_lower)) {
+    return(list(type = "player_stat", stat = "three_pointers_made"))
+  }
+  
+  # Player record a win (MLB)
+  if (grepl("player record a win", market_lower)) {
+    return(list(type = "player_special", special_type = "win"))
   }
   
   # ==================== PLAYER FIRST/LAST MARKETS ====================
@@ -1471,12 +1573,14 @@ classify_market <- function(market_type, sport = NULL) {
     if (grepl("rebound", market_lower)) return(list(type = "first_scorer", scorer_type = "rebound"))
     if (grepl("three", market_lower)) return(list(type = "first_scorer", scorer_type = "three"))
     if (grepl("dunk", market_lower)) return(list(type = "first_scorer", scorer_type = "dunk"))
+    if (grepl("home run", market_lower)) return(list(type = "first_scorer", scorer_type = "home_run"))
   }
   if (grepl("player last", market_lower)) {
     if (grepl("goal", market_lower)) return(list(type = "last_scorer", scorer_type = "goal"))
   }
   
   # ==================== PLAYER STAT MARKETS ====================
+  # This comes AFTER SPECIAL GAME MARKETS so "First X Minutes Total Threes" is caught first
   player_stats <- c(
     "points", "rebounds", "assists", "steals", "blocks", "turnovers",
     "threes", "three_pointers_made", "field goals made", "field goals attempted",
@@ -1486,18 +1590,23 @@ classify_market <- function(market_type, sport = NULL) {
     "pitching strikeouts", "earned runs allowed", "hits allowed", "walks allowed",
     "innings pitched", "outs recorded", "saves", "goals", "assists", "shots on goal",
     "faceoffs won", "blocked shots", "power play points", "time on ice",
-    "fantasy score", "batting fantasy score", "pitching fantasy score"
+    "penalty minutes", "fantasy score", "batting fantasy score", "pitching fantasy score",
+    "singles", "doubles", "triples", "runs", "stolen_bases"
   )
   
   for (stat in player_stats) {
     stat_pattern <- gsub(" ", ".*", stat)
+    # IMPORTANT: Skip if it's a "Total" market (game total, not player stat)
+    if (grepl("^total", market_lower) && !grepl("player", market_lower)) {
+      next
+    }
     if (grepl(paste0("player.*", stat_pattern), market_lower)) {
       return(list(type = "player_stat", stat = gsub(" ", "_", stat)))
     }
   }
   
   # ==================== TEAM MARKETS ====================
-  if (grepl("team to score first", market_lower)) {
+  if (grepl("team to score first", market_lower) && !grepl("period|inning", market_lower)) {
     if (grepl("3-way", market_lower)) {
       return(list(type = "team_score_first", bet_type = "3way"))
     }
@@ -1567,7 +1676,15 @@ classify_market <- function(market_type, sport = NULL) {
     "team total singles" = "singles",
     "team total power play goals" = "power_play_goals",
     "team total shorthanded goals" = "shorthanded_goals",
-    "team total shots on goal" = "shots_on_goal"
+    "team total shots on goal" = "shots_on_goal",
+    # Added missing team inning total patterns
+    "team 1st inning total batters" = "batters",
+    "team 1st inning total batting walks" = "batting_walks",
+    "team 1st inning total pitches thrown" = "pitches_thrown",
+    "team 1st inning total plate appearances" = "plate_appearances",
+    "team 1st inning total rbis" = "rbis",
+    "team 1st 5 innings total batting walks" = "batting_walks",
+    "team 1st 5 innings total pitching strikeouts" = "pitching_strikeouts"
   )
   
   for (pattern in names(team_total_patterns)) {
@@ -1576,6 +1693,40 @@ classify_market <- function(market_type, sport = NULL) {
         return(list(type = "team_total_oddeven", stat = team_total_patterns[[pattern]]))
       }
       return(list(type = "team_total", stat = team_total_patterns[[pattern]]))
+    }
+  }
+  
+  # ==================== REGULATION MARKETS (MOVED BEFORE GAME MARKETS) ====================
+  if (grepl("regulation", market_lower)) {
+    if (grepl("moneyline", market_lower)) {
+      if (grepl("3-way", market_lower)) {
+        return(list(type = "regulation_moneyline", bet_type = "3way"))
+      }
+      return(list(type = "regulation_moneyline", bet_type = "2way"))
+    }
+    if (grepl("puck line", market_lower)) {
+      return(list(type = "regulation_puck_line"))
+    }
+    if (grepl("total goals", market_lower)) {
+      return(list(type = "regulation_total_goals"))
+    }
+    if (grepl("both teams to score", market_lower)) {
+      return(list(type = "regulation_both_teams_score"))
+    }
+    if (grepl("team to score first", market_lower)) {
+      if (grepl("3-way", market_lower)) {
+        return(list(type = "regulation_team_score_first", bet_type = "3way"))
+      }
+      return(list(type = "regulation_team_score_first", bet_type = "2way"))
+    }
+    if (grepl("team to score last", market_lower)) {
+      if (grepl("3-way", market_lower)) {
+        return(list(type = "regulation_team_score_last", bet_type = "3way"))
+      }
+      return(list(type = "regulation_team_score_last", bet_type = "2way"))
+    }
+    if (grepl("shutout", market_lower)) {
+      return(list(type = "regulation_shutout"))
     }
   }
   
@@ -1595,11 +1746,10 @@ classify_market <- function(market_type, sport = NULL) {
   if (grepl("puck line", market_lower)) {
     return(list(type = "game_puck_line"))
   }
-  if (grepl("total points", market_lower) || grepl("total runs", market_lower) || grepl("total goals", market_lower)) {
-    if (grepl("odd/even", market_lower)) {
-      return(list(type = "game_total_oddeven"))
-    }
-    return(list(type = "game_total"))
+  
+  # ========== SPECIFIC TOTAL MARKETS FIRST (MUST BE BEFORE GENERIC "total goals") ==========
+  if (grepl("total power play goals", market_lower)) {
+    return(list(type = "game_power_play_goals"))
   }
   if (grepl("total threes", market_lower)) {
     return(list(type = "game_total_threes"))
@@ -1607,9 +1757,46 @@ classify_market <- function(market_type, sport = NULL) {
   if (grepl("total shots on goal", market_lower)) {
     return(list(type = "game_total_shots"))
   }
-  if (grepl("total power play goals", market_lower)) {
-    return(list(type = "game_power_play_goals"))
+  if (grepl("total grand slams", market_lower)) {
+    return(list(type = "total_grand_slams"))
   }
+  if (grepl("total home runs", market_lower)) {
+    return(list(type = "total_home_runs"))
+  }
+  if (grepl("total hits", market_lower)) {
+    return(list(type = "total_hits"))
+  }
+  # Added missing MLB total markets
+  if (grepl("total doubles", market_lower) && !grepl("team", market_lower)) {
+    return(list(type = "game_total", stat = "doubles"))
+  }
+  if (grepl("total plate appearances", market_lower) && !grepl("team", market_lower)) {
+    return(list(type = "game_total", stat = "plate_appearances"))
+  }
+  if (grepl("total rbis", market_lower) && !grepl("team", market_lower)) {
+    return(list(type = "game_total", stat = "rbis"))
+  }
+  if (grepl("total singles", market_lower) && !grepl("team", market_lower)) {
+    return(list(type = "game_total", stat = "singles"))
+  }
+  if (grepl("total strikeouts", market_lower) && !grepl("team", market_lower)) {
+    return(list(type = "game_total", stat = "strikeouts"))
+  }
+  if (grepl("total triples", market_lower) && !grepl("team", market_lower)) {
+    return(list(type = "game_total", stat = "triples"))
+  }
+  if (grepl("total walks", market_lower) && !grepl("team", market_lower)) {
+    return(list(type = "game_total", stat = "walks"))
+  }
+  
+  # ========== GENERIC TOTAL MARKETS (LAST RESORT FOR TOTAL MARKETS) ==========
+  if (grepl("total points", market_lower) || grepl("total runs", market_lower) || grepl("total goals", market_lower)) {
+    if (grepl("odd/even", market_lower)) {
+      return(list(type = "game_total_oddeven"))
+    }
+    return(list(type = "game_total"))
+  }
+  
   if (grepl("both teams to score", market_lower)) {
     return(list(type = "game_both_teams_score"))
   }
@@ -1622,86 +1809,9 @@ classify_market <- function(market_type, sport = NULL) {
   if (grepl("will home team bat in bottom of 9th", market_lower)) {
     return(list(type = "game_home_bat_bottom_9th"))
   }
-  
-  # ==================== REGULATION MARKETS ====================
-  if (grepl("regulation", market_lower)) {
-    if (grepl("moneyline", market_lower)) {
-      if (grepl("3-way", market_lower)) {
-        return(list(type = "regulation_moneyline", bet_type = "3way"))
-      }
-      return(list(type = "regulation_moneyline", bet_type = "2way"))
-    }
-    if (grepl("puck line", market_lower)) {
-      return(list(type = "regulation_puck_line"))
-    }
-    if (grepl("total goals", market_lower)) {
-      return(list(type = "regulation_total_goals"))
-    }
-    if (grepl("both teams to score", market_lower)) {
-      return(list(type = "regulation_both_teams_score"))
-    }
-    if (grepl("team to score first", market_lower)) {
-      return(list(type = "regulation_team_score_first"))
-    }
-    if (grepl("team to score last", market_lower)) {
-      return(list(type = "regulation_team_score_last"))
-    }
-    if (grepl("will there be a shutout", market_lower)) {
-      return(list(type = "regulation_shutout"))
-    }
-  }
-  
-  # ==================== SPECIAL GAME MARKETS ====================
-  if (grepl("goal in each period", market_lower)) {
-    return(list(type = "goal_each_period"))
-  }
-  if (grepl("highest scoring period", market_lower)) {
-    return(list(type = "highest_scoring_period", num_options = 4))
-  }
-  if (grepl("highest scoring quarter", market_lower)) {
-    return(list(type = "highest_scoring_quarter", num_options = 5))
-  }
-  if (grepl("lowest scoring quarter", market_lower)) {
-    return(list(type = "lowest_scoring_quarter", num_options = 5))
-  }
-  if (grepl("highest scoring half", market_lower)) {
-    return(list(type = "highest_scoring_half", num_options = 3))
-  }
-  if (grepl("largest comeback", market_lower)) {
-    return(list(type = "largest_comeback"))
-  }
-  if (grepl("first scoring play runs", market_lower)) {
-    return(list(type = "first_scoring_play_runs"))
-  }
-  if (grepl("first run inning", market_lower)) {
-    return(list(type = "first_run_inning"))
-  }
-  if (grepl("last run inning", market_lower)) {
-    return(list(type = "last_run_inning"))
-  }
-  if (grepl("first field goal type", market_lower)) {
-    if (grepl("4-way", market_lower)) {
-      return(list(type = "first_field_goal_type", num_options = 4))
-    }
-    return(list(type = "first_field_goal_type", num_options = 2))
-  }
-  if (grepl("first home run type", market_lower)) {
-    return(list(type = "first_home_run_type", num_options = 5))
-  }
-  if (grepl("first minute both teams to score", market_lower)) {
-    return(list(type = "first_minute_both_score"))
-  }
-  if (grepl("first 3 minutes total threes", market_lower)) {
-    return(list(type = "first_minutes_total_threes", minutes = 3))
-  }
-  if (grepl("first 10 minutes total goals", market_lower)) {
-    return(list(type = "first_minutes_total_goals", minutes = 10))
-  }
-  if (grepl("first 5 minutes total goals", market_lower)) {
-    return(list(type = "first_minutes_total_goals", minutes = 5))
-  }
-  if (grepl("first 2 minutes total shots on goal", market_lower)) {
-    return(list(type = "first_minutes_total_shots", minutes = 2))
+  # Will there be a no-hitter
+  if (grepl("will there be a no-hitter", market_lower)) {
+    return(list(type = "game_special", special_type = "no_hitter"))
   }
   
   # ==================== TEAM PLAYER MARKETS ====================
@@ -1713,7 +1823,7 @@ classify_market <- function(market_type, sport = NULL) {
   }
   
   # ==================== FALLBACK ====================
-  debug_cat(sprintf("  WARNING: Could not classify market, defaulting to 'unknown'\n"))
+  debug_cat(sprintf("  WARNING: Could not classify market: '%s', defaulting to 'unknown'\n", market_type))
   return(list(type = "unknown", market = market_type))
 }
 
@@ -3563,7 +3673,7 @@ get_espn_nhl_period_data <- function(game_id) {
   })
 }
 
-# Get NHL player stats from ESPN
+# FIXED: Get NHL player stats from ESPN (with goalie support)
 get_espn_nhl_player_stats <- function(game_id, player_name) {
   tryCatch({
     url <- paste0("https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=", game_id)
@@ -3594,103 +3704,114 @@ get_espn_nhl_player_stats <- function(game_id, player_name) {
       debug_cat(sprintf("  Found %d team(s) in NHL boxscore\n", nrow(players_df)))
       
       for (team_idx in 1:nrow(players_df)) {
-        team_data <- players_df[team_idx, ]
+        team_name <- players_df$team$displayName[team_idx]
+        team_stats <- players_df$statistics[[team_idx]]
         
-        if (!is.null(team_data$statistics) && length(team_data$statistics) > 0) {
-          stats_list <- team_data$statistics[[1]]
-          
-          if (is.data.frame(stats_list)) {
-            for (stat_group_idx in 1:nrow(stats_list)) {
-              stat_group <- stats_list[stat_group_idx, ]
+        if (is.data.frame(team_stats)) {
+          # Loop through all stat categories (skaters, goalies, etc.)
+          for (row_idx in 1:nrow(team_stats)) {
+            # Get athletes for this row
+            if (!is.null(team_stats$athletes[row_idx]) && is.list(team_stats$athletes[row_idx])) {
+              athletes_data <- team_stats$athletes[[row_idx]]
+              labels <- team_stats$labels[[row_idx]]
               
-              if (!is.null(stat_group$athletes) && length(stat_group$athletes) > 0) {
-                athletes <- stat_group$athletes[[1]]
-                
-                if (is.data.frame(athletes)) {
-                  for (athlete_idx in 1:nrow(athletes)) {
-                    athlete <- athletes[athlete_idx, ]
+              if (is.data.frame(athletes_data) && nrow(athletes_data) > 0) {
+                for (athlete_idx in 1:nrow(athletes_data)) {
+                  athlete_row <- athletes_data[athlete_idx, ]
+                  
+                  # Extract athlete name
+                  athlete_name <- NULL
+                  if (!is.null(athlete_row$athlete$displayName)) {
+                    athlete_name <- athlete_row$athlete$displayName
+                  } else if (!is.null(athlete_row$athlete.displayName)) {
+                    athlete_name <- athlete_row$athlete.displayName
+                  }
+                  
+                  if (!is.null(athlete_name)) {
+                    cleaned_athlete <- clean_name_for_matching(athlete_name)
                     
-                    # Get athlete name
-                    athlete_name <- NULL
-                    if (!is.null(athlete$athlete$displayName)) {
-                      athlete_name <- athlete$athlete$displayName
-                    } else if (!is.null(athlete$athlete.displayName)) {
-                      athlete_name <- athlete$athlete.displayName
-                    }
-                    
-                    if (!is.null(athlete_name)) {
-                      cleaned_athlete <- clean_name_for_matching(athlete_name)
+                    if (grepl(target_name, cleaned_athlete, fixed = TRUE) ||
+                        grepl(cleaned_athlete, target_name, fixed = TRUE)) {
+                      debug_cat(sprintf("  Found NHL player match: %s (Team: %s)\n", athlete_name, team_name))
                       
-                      if (grepl(target_name, cleaned_athlete, fixed = TRUE) ||
-                          grepl(cleaned_athlete, target_name, fixed = TRUE)) {
-                        debug_cat(sprintf("  Found NHL player match: %s\n", athlete_name))
-                        
-                        # Extract stats
-                        stats_vector <- athlete$stats[[1]]
-                        stat_labels <- stat_group$labels[[1]]
-                        
-                        result <- list(
-                          player = athlete_name,
-                          goals = 0,
-                          assists = 0,
-                          points = 0,
-                          plus_minus = 0,
-                          penalty_minutes = 0,
-                          shots = 0,
-                          hits = 0,
-                          blocked_shots = 0,
-                          faceoffs_won = 0,
-                          time_on_ice = "0:00",
-                          saves = 0,
-                          goals_against = 0,
-                          save_percentage = 0
-                        )
-                        
-                        if (!is.null(stats_vector) && !is.null(stat_labels)) {
-                          for (j in seq_along(stat_labels)) {
-                            label <- tolower(stat_labels[j])
-                            val <- stats_vector[j]
-                            
-                            if (grepl("^g$|goals", label) && !grepl("against", label)) {
-                              result$goals <- as.numeric(val) %||% 0
-                            } else if (grepl("^a$|assists", label)) {
-                              result$assists <- as.numeric(val) %||% 0
-                            } else if (grepl("^pts$|points", label)) {
-                              result$points <- as.numeric(val) %||% 0
-                            } else if (grepl("\\+/-|plusminus|plus/minus", label)) {
-                              result$plus_minus <- as.numeric(val) %||% 0
-                            } else if (grepl("pim|penalty", label)) {
-                              result$penalty_minutes <- as.numeric(val) %||% 0
-                            } else if (grepl("sog|shots", label)) {
-                              result$shots <- as.numeric(val) %||% 0
-                            } else if (grepl("hits", label)) {
-                              result$hits <- as.numeric(val) %||% 0
-                            } else if (grepl("blk|blocked", label)) {
-                              result$blocked_shots <- as.numeric(val) %||% 0
-                            } else if (grepl("fow|faceoff", label)) {
-                              result$faceoffs_won <- as.numeric(val) %||% 0
-                            } else if (grepl("toi|time", label)) {
-                              result$time_on_ice <- val %||% "0:00"
-                            } else if (grepl("sv|saves", label)) {
-                              result$saves <- as.numeric(val) %||% 0
-                            } else if (grepl("ga|goals.*against", label)) {
-                              result$goals_against <- as.numeric(val) %||% 0
-                            } else if (grepl("sv%|save.*pct", label)) {
-                              result$save_percentage <- as.numeric(val) %||% 0
-                            }
+                      # Extract stats vector
+                      stats_vector <- NULL
+                      if (!is.null(athlete_row$stats) && is.list(athlete_row$stats) && length(athlete_row$stats) > 0) {
+                        stats_vector <- athlete_row$stats[[1]]
+                      }
+                      
+                      # Initialize result
+                      result <- list(
+                        player = athlete_name,
+                        team = team_name,
+                        goals = 0,
+                        assists = 0,
+                        points = 0,
+                        plus_minus = 0,
+                        penalty_minutes = 0,
+                        shots = 0,
+                        hits = 0,
+                        blocked_shots = 0,
+                        faceoffs_won = 0,
+                        time_on_ice = "0:00",
+                        saves = 0,
+                        goals_against = 0,
+                        save_percentage = 0,
+                        shots_against = 0
+                      )
+                      
+                      # Parse stats based on labels
+                      if (!is.null(stats_vector) && !is.null(labels) && length(stats_vector) == length(labels)) {
+                        for (j in seq_along(labels)) {
+                          label <- tolower(labels[j])
+                          val <- stats_vector[j]
+                          
+                          # Skater stats
+                          if (label == "g") {
+                            result$goals <- as.numeric(val) %||% 0
+                          } else if (label == "a") {
+                            result$assists <- as.numeric(val) %||% 0
+                          } else if (label == "pts") {
+                            result$points <- as.numeric(val) %||% 0
+                          } else if (label == "+/-") {
+                            result$plus_minus <- as.numeric(val) %||% 0
+                          } else if (label == "pim") {
+                            result$penalty_minutes <- as.numeric(val) %||% 0
+                          } else if (label == "sog") {
+                            result$shots <- as.numeric(val) %||% 0
+                          } else if (label == "hits") {
+                            result$hits <- as.numeric(val) %||% 0
+                          } else if (label == "bs") {
+                            result$blocked_shots <- as.numeric(val) %||% 0
+                          } else if (label == "fow") {
+                            result$faceoffs_won <- as.numeric(val) %||% 0
+                          } else if (label == "toi") {
+                            result$time_on_ice <- val %||% "0:00"
+                          }
+                          
+                          # Goalie stats
+                          else if (label == "sv") {
+                            result$saves <- as.numeric(val) %||% 0
+                          } else if (label == "ga") {
+                            result$goals_against <- as.numeric(val) %||% 0
+                          } else if (label == "sv%") {
+                            result$save_percentage <- as.numeric(val) %||% 0
+                          } else if (label == "sa") {
+                            result$shots_against <- as.numeric(val) %||% 0
                           }
                         }
-                        
-                        # Calculate points if not provided
-                        if (result$points == 0 && (result$goals > 0 || result$assists > 0)) {
-                          result$points <- result$goals + result$assists
-                        }
-                        
-                        debug_cat(sprintf("  NHL Stats: G=%d, A=%d, P=%d, SOG=%d\n",
-                                          result$goals, result$assists, result$points, result$shots))
-                        
-                        return(result)
                       }
+                      
+                      # Calculate points if not provided
+                      if (result$points == 0 && (result$goals > 0 || result$assists > 0)) {
+                        result$points <- result$goals + result$assists
+                      }
+                      
+                      debug_cat(sprintf("  NHL Stats: G=%d, A=%d, P=%d, SOG=%d, SV=%d, GA=%d\n",
+                                        result$goals, result$assists, result$points, 
+                                        result$shots, result$saves, result$goals_against))
+                      
+                      return(result)
                     }
                   }
                 }
@@ -5820,10 +5941,12 @@ extract_date_from_event <- function(event_string, provided_date = NULL) {
     tryCatch({
       # Clean the provided date
       provided_date_clean <- gsub("['\"]", "", provided_date)
-      parsed_date <- parse_date_time(provided_date_clean, orders = c("ymd", "mdy", "dmy"))
-      result <- as.Date(parsed_date)
-      debug_cat(sprintf("DEBUG extract_date_from_event: Using provided date: %s\n", result))
-      return(result)
+      # Try as.Date first (works for YYYY-MM-DD)
+      result <- as.Date(provided_date_clean)
+      if (!is.na(result)) {
+        debug_cat(sprintf("DEBUG extract_date_from_event: Using provided date: %s\n", result))
+        return(result)
+      }
     }, error = function(e) {
       debug_cat(sprintf("DEBUG extract_date_from_event: Failed to parse provided date '%s': %s\n",
                         provided_date, e$message))
@@ -5834,38 +5957,22 @@ extract_date_from_event <- function(event_string, provided_date = NULL) {
   patterns <- c(
     "\\d{4}-\\d{2}-\\d{2}",           # YYYY-MM-DD
     "\\d{2}/\\d{2}/\\d{4}",           # MM/DD/YYYY
-    "\\d{1,2}\\.\\d{1,2}\\.\\d{4}",   # DD.MM.YYYY
-    "(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]* \\d{1,2},? \\d{4}" # Month Day, Year
+    "\\d{1,2}\\.\\d{1,2}\\.\\d{4}"    # DD.MM.YYYY
   )
   
   for (pattern in patterns) {
     date_match <- regmatches(event_string, regexpr(pattern, event_string))
     if (length(date_match) > 0) {
       tryCatch({
-        parsed_date <- parse_date_time(date_match, orders = c("ymd", "mdy", "dmy", "b d Y"))
-        result <- as.Date(parsed_date)
-        debug_cat(sprintf("DEBUG extract_date_from_event: Found date in event string: %s\n", result))
-        return(result)
+        result <- as.Date(date_match)
+        if (!is.na(result)) {
+          debug_cat(sprintf("DEBUG extract_date_from_event: Found date in event string: %s\n", result))
+          return(result)
+        }
       }, error = function(e) {
         debug_cat(sprintf("DEBUG extract_date_from_event: Failed to parse date '%s': %s\n", date_match, e$message))
-        NULL
       })
     }
-  }
-  
-  # If no date found, check if we can infer from context
-  if (grepl("yesterday", tolower(event_string))) {
-    result <- Sys.Date() - 1
-    debug_cat(sprintf("DEBUG extract_date_from_event: Using yesterday: %s\n", result))
-    return(result)
-  } else if (grepl("today|tonight", tolower(event_string))) {
-    result <- Sys.Date()
-    debug_cat(sprintf("DEBUG extract_date_from_event: Using today: %s\n", result))
-    return(result)
-  } else if (grepl("last week", tolower(event_string))) {
-    result <- Sys.Date() - 7
-    debug_cat(sprintf("DEBUG extract_date_from_event: Using last week: %s\n", result))
-    return(result)
   }
   
   # Default to today if no date found
@@ -7573,6 +7680,1269 @@ fetch_game_result <- function(game_id, sport, season) {
   return(result)
 }
 
+# ==============================================
+# PERIOD/INNING DATA EXTRACTION FUNCTIONS
+# ==============================================
+
+# Extract inning number from period list
+extract_inning_number <- function(period) {
+  if(is.list(period) && !is.null(period$number)) {
+    return(period$number)
+  }
+  if(is.numeric(period)) {
+    return(period)
+  }
+  return(NA)
+}
+
+# Get inning-by-inning runs from play-by-play
+get_inning_runs <- function(plays, away_team, home_team) {
+  if(is.null(plays)) return(NULL)
+  
+  # Get scoring plays
+  scoring_plays <- plays[!is.na(plays$scoringPlay) & plays$scoringPlay == TRUE, ]
+  if(nrow(scoring_plays) == 0) return(NULL)
+  
+  # Extract inning numbers
+  scoring_plays$inning <- sapply(scoring_plays$period, extract_inning_number)
+  
+  # Calculate runs per inning
+  inning_runs <- data.frame()
+  for(inn in 1:9) {
+    inn_scoring <- scoring_plays[scoring_plays$inning == inn, ]
+    away_inn <- 0
+    home_inn <- 0
+    
+    if(nrow(inn_scoring) > 0) {
+      for(i in 1:nrow(inn_scoring)) {
+        text <- tolower(inn_scoring$text[i])
+        if(grepl(tolower(away_team), text) || grepl(tolower(gsub(" .*", "", away_team)), text)) {
+          away_inn <- away_inn + inn_scoring$scoreValue[i]
+        } else {
+          home_inn <- home_inn + inn_scoring$scoreValue[i]
+        }
+      }
+    }
+    
+    inning_runs <- rbind(inning_runs, data.frame(
+      inning = inn,
+      away_runs = away_inn,
+      home_runs = home_inn,
+      total_runs = away_inn + home_inn
+    ))
+  }
+  
+  return(inning_runs)
+}
+
+# Get cumulative scores throughout the game
+get_cumulative_scores <- function(plays, away_team, home_team) {
+  if(is.null(plays)) return(NULL)
+  
+  scoring_plays <- plays[!is.na(plays$scoringPlay) & plays$scoringPlay == TRUE, ]
+  if(nrow(scoring_plays) == 0) return(NULL)
+  
+  scoring_plays$inning <- sapply(scoring_plays$period, extract_inning_number)
+  
+  cumulative <- data.frame()
+  cum_away <- 0
+  cum_home <- 0
+  
+  for(i in 1:nrow(scoring_plays)) {
+    text <- tolower(scoring_plays$text[i])
+    if(grepl(tolower(away_team), text) || grepl(tolower(gsub(" .*", "", away_team)), text)) {
+      cum_away <- cum_away + scoring_plays$scoreValue[i]
+    } else {
+      cum_home <- cum_home + scoring_plays$scoreValue[i]
+    }
+    
+    cumulative <- rbind(cumulative, data.frame(
+      play_index = i,
+      inning = scoring_plays$inning[i],
+      away_score = cum_away,
+      home_score = cum_home,
+      deficit = abs(cum_away - cum_home),
+      leader = if(cum_away > cum_home) away_team else if(cum_home > cum_away) home_team else "Tie"
+    ))
+  }
+  
+  return(cumulative)
+}
+
+# Get NBA quarter scores
+get_nba_quarter_scores <- function(game_data) {
+  if(is.null(game_data$boxscore$periodScores)) return(NULL)
+  
+  ps <- game_data$boxscore$periodScores
+  result <- list()
+  
+  for(i in 1:nrow(ps)) {
+    result[[i]] <- list(
+      quarter = i,
+      away_score = as.numeric(ps$awayScore[i]),
+      home_score = as.numeric(ps$homeScore[i]),
+      total = as.numeric(ps$awayScore[i]) + as.numeric(ps$homeScore[i])
+    )
+  }
+  
+  return(result)
+}
+
+# FIXED: Get NBA quarter scores from the correct location
+get_nba_quarter_scores <- function(game_data) {
+  # NBA quarter scores are in header$competitions$competitors$linescores
+  if(is.null(game_data$header$competitions)) return(NULL)
+  
+  comp <- game_data$header$competitions
+  if(is.null(comp$competitors) || length(comp$competitors) == 0) return(NULL)
+  
+  competitors <- comp$competitors[[1]]
+  
+  away_scores <- c()
+  home_scores <- c()
+  
+  for(i in 1:nrow(competitors)) {
+    competitor <- competitors[i, ]
+    linescores <- competitor$linescores
+    
+    if(!is.null(linescores) && length(linescores) > 0) {
+      linescores_df <- linescores[[1]]
+      
+      if(competitor$homeAway == "home") {
+        home_scores <- as.numeric(linescores_df$value)
+      } else {
+        away_scores <- as.numeric(linescores_df$value)
+      }
+    }
+  }
+  
+  if(length(home_scores) == 0 || length(away_scores) == 0) return(NULL)
+  
+  result <- list()
+  for(i in 1:length(home_scores)) {
+    result[[i]] <- list(
+      quarter = i,
+      away_score = away_scores[i],
+      home_score = home_scores[i],
+      total = away_scores[i] + home_scores[i]
+    )
+  }
+  
+  return(result)
+}
+
+# For NHL, the period scores are in boxscore$periods (your existing function is correct)
+get_nhl_period_scores <- function(game_data) {
+  if(is.null(game_data$boxscore$periods)) return(NULL)
+  
+  periods <- game_data$boxscore$periods
+  result <- list()
+  
+  for(i in 1:nrow(periods)) {
+    result[[i]] <- list(
+      period = i,
+      away_score = as.numeric(periods$awayScore[i]),
+      home_score = as.numeric(periods$homeScore[i]),
+      total = as.numeric(periods$awayScore[i]) + as.numeric(periods$homeScore[i])
+    )
+  }
+  
+  return(result)
+}
+
+# ==============================================
+# MARKET-SPECIFIC RESOLUTION FUNCTIONS
+# ==============================================
+
+# Resolve inning total runs
+resolve_inning_total_runs <- function(game_data, inning_num, line_value, direction) {
+  inning_runs <- get_inning_runs(game_data$plays, "", "")
+  if(is.null(inning_runs) || inning_num > nrow(inning_runs)) {
+    return(list(success = FALSE, error = "Inning data not available"))
+  }
+  
+  total <- inning_runs$total_runs[inning_num]
+  line <- as.numeric(line_value)
+  
+  result <- list(
+    success = TRUE,
+    actual_value = total,
+    line_value = line
+  )
+  
+  if(direction == "over") {
+    result$bet_won <- total > line
+  } else if(direction == "under") {
+    result$bet_won <- total < line
+  }
+  
+  return(result)
+}
+
+# Resolve multi-inning total runs
+
+# Function to resolve multi-inning total runs - CORRECT VERSION using linescores
+resolve_multi_inning_total_runs <- function(game_data, num_innings, line_value, direction) {
+  result <- list(success = FALSE, actual_value = 0, bet_won = NULL, error = NULL)
+  
+  tryCatch({
+    if (is.null(game_data) || is.null(game_data$header$competitions)) {
+      result$error <- "No game data available"
+      return(result)
+    }
+    
+    total_runs <- 0
+    
+    # Extract inning runs from header$competitions$competitors$linescores
+    comp <- game_data$header$competitions
+    if (is.data.frame(comp) && nrow(comp) > 0) {
+      if ("competitors" %in% names(comp) && length(comp$competitors) > 0) {
+        competitors <- comp$competitors[[1]]
+        
+        if (is.data.frame(competitors) && nrow(competitors) >= 2) {
+          away_linescores <- NULL
+          home_linescores <- NULL
+          
+          # Find home and away teams' linescores
+          for (i in 1:nrow(competitors)) {
+            if (competitors$homeAway[i] == "away") {
+              if ("linescores" %in% names(competitors) && length(competitors$linescores) >= i) {
+                away_linescores <- competitors$linescores[[i]]
+                debug_cat(sprintf("  Found away team linescores with %d innings\n", nrow(away_linescores)))
+              }
+            } else if (competitors$homeAway[i] == "home") {
+              if ("linescores" %in% names(competitors) && length(competitors$linescores) >= i) {
+                home_linescores <- competitors$linescores[[i]]
+                debug_cat(sprintf("  Found home team linescores with %d innings\n", nrow(home_linescores)))
+              }
+            }
+          }
+          
+          # Calculate runs for specified number of innings
+          if (!is.null(away_linescores) && !is.null(home_linescores)) {
+            max_innings <- max(nrow(away_linescores), nrow(home_linescores))
+            
+            for (inning in 1:min(num_innings, max_innings)) {
+              away_runs <- 0
+              home_runs <- 0
+              
+              if (inning <= nrow(away_linescores)) {
+                away_runs <- as.numeric(away_linescores$displayValue[inning])
+                if (is.na(away_runs)) away_runs <- 0
+              }
+              if (inning <= nrow(home_linescores)) {
+                home_runs <- as.numeric(home_linescores$displayValue[inning])
+                if (is.na(home_runs)) home_runs <- 0
+              }
+              
+              inning_total <- away_runs + home_runs
+              total_runs <- total_runs + inning_total
+              
+              debug_cat(sprintf("  Inning %d: Away=%d, Home=%d, Inning Total=%d, Cumulative=%d\n", 
+                                inning, away_runs, home_runs, inning_total, total_runs))
+            }
+            
+            result$success <- TRUE
+            result$actual_value <- total_runs
+            
+            if (!is.null(line_value) && !is.null(direction)) {
+              line_num <- as.numeric(line_value)
+              if (direction == "over") {
+                result$bet_won <- total_runs > line_num
+              } else if (direction == "under") {
+                result$bet_won <- total_runs < line_num
+              }
+              debug_cat(sprintf("  Final: %d runs, Line: %.1f, %s -> Bet won: %s\n", 
+                                total_runs, line_num, direction, 
+                                if(!is.null(result$bet_won)) result$bet_won else "NULL"))
+            }
+          } else {
+            result$error <- "Could not find linescores data for both teams"
+            debug_cat("  ERROR: Could not find linescores data for both teams\n")
+          }
+        } else {
+          result$error <- "Could not find competitors data"
+        }
+      } else {
+        result$error <- "No competitors data in game header"
+      }
+    } else {
+      result$error <- "No competition data in game header"
+    }
+    
+  }, error = function(e) {
+    result$error <- paste("Error in resolve_multi_inning_total_runs:", e$message)
+    debug_cat(sprintf("  ERROR: %s\n", e$message))
+  })
+  
+  return(result)
+}
+
+# Resolve inning moneyline
+resolve_inning_moneyline <- function(game_data, inning_num, bet_team = NULL) {
+  inning_runs <- get_inning_runs(game_data$plays, "", "")
+  if(is.null(inning_runs) || inning_num > nrow(inning_runs)) {
+    return(list(success = FALSE, error = "Inning data not available"))
+  }
+  
+  away_runs <- inning_runs$away_runs[inning_num]
+  home_runs <- inning_runs$home_runs[inning_num]
+  
+  result <- list(
+    success = TRUE,
+    away_score = away_runs,
+    home_score = home_runs
+  )
+  
+  if(away_runs > home_runs) {
+    result$winner <- "away"
+    result$bet_won <- (!is.null(bet_team) && bet_team == "away")
+  } else if(home_runs > away_runs) {
+    result$winner <- "home"
+    result$bet_won <- (!is.null(bet_team) && bet_team == "home")
+  } else {
+    result$winner <- "tie"
+    result$bet_won <- FALSE
+  }
+  
+  return(result)
+}
+
+# Resolve largest comeback
+resolve_largest_comeback <- function(game_data) {
+  cumulative <- get_cumulative_scores(game_data$plays, "", "")
+  if(is.null(cumulative)) {
+    return(list(success = FALSE, error = "Play-by-play data not available"))
+  }
+  
+  max_deficit <- max(cumulative$deficit, na.rm = TRUE)
+  
+  return(list(
+    success = TRUE,
+    largest_comeback = max_deficit
+  ))
+}
+
+# Resolve team score first and win
+resolve_team_score_first_and_win <- function(game_data, team_name) {
+  plays <- game_data$plays
+  scoring_plays <- plays[!is.na(plays$scoringPlay) & plays$scoringPlay == TRUE, ]
+  
+  if(nrow(scoring_plays) == 0) {
+    return(list(success = FALSE, error = "No scoring plays found"))
+  }
+  
+  # Get first scorer
+  first_play <- scoring_plays[1, ]
+  first_text <- tolower(first_play$text)
+  first_scorer <- if(grepl(tolower(team_name), first_text)) team_name else "Opponent"
+  
+  # Get winner from header
+  winner <- NA
+  if(!is.null(game_data$header$competitions)) {
+    comp <- game_data$header$competitions
+    competitors <- comp$competitors[[1]]
+    away_score <- as.numeric(competitors$score[1])
+    home_score <- as.numeric(competitors$score[2])
+    
+    if(grepl(team_name, competitors$team.displayName[1], ignore.case = TRUE)) {
+      winner <- if(away_score > home_score) team_name else "Opponent"
+    } else {
+      winner <- if(home_score > away_score) team_name else "Opponent"
+    }
+  }
+  
+  return(list(
+    success = TRUE,
+    first_scorer = first_scorer,
+    winner = winner,
+    bet_won = (first_scorer == team_name && winner == team_name)
+  ))
+}
+
+# Resolve NBA quarter total points
+resolve_nba_quarter_total <- function(game_data, quarter_num, line_value, direction) {
+  quarters <- get_nba_quarter_scores(game_data)
+  if(is.null(quarters) || quarter_num > length(quarters)) {
+    return(list(success = FALSE, error = "Quarter data not available"))
+  }
+  
+  total <- quarters[[quarter_num]]$total
+  line <- as.numeric(line_value)
+  
+  result <- list(
+    success = TRUE,
+    actual_value = total,
+    line_value = line
+  )
+  
+  if(direction == "over") {
+    result$bet_won <- total > line
+  } else if(direction == "under") {
+    result$bet_won <- total < line
+  }
+  
+  return(result)
+}
+
+# Resolve NBA half total points
+resolve_nba_half_total <- function(game_data, half_num, line_value, direction) {
+  quarters <- get_nba_quarter_scores(game_data)
+  if(is.null(quarters)) {
+    return(list(success = FALSE, error = "Quarter data not available"))
+  }
+  
+  if(half_num == 1) {
+    total <- quarters[[1]]$total + quarters[[2]]$total
+  } else {
+    total <- quarters[[3]]$total + quarters[[4]]$total
+  }
+  
+  line <- as.numeric(line_value)
+  
+  result <- list(
+    success = TRUE,
+    actual_value = total,
+    line_value = line
+  )
+  
+  if(direction == "over") {
+    result$bet_won <- total > line
+  } else if(direction == "under") {
+    result$bet_won <- total < line
+  }
+  
+  return(result)
+}
+
+# Resolve NHL period total goals
+resolve_nhl_period_total <- function(game_data, period_num, line_value, direction) {
+  periods <- get_nhl_period_scores(game_data)
+  if(is.null(periods) || period_num > length(periods)) {
+    return(list(success = FALSE, error = "Period data not available"))
+  }
+  
+  total <- periods[[period_num]]$total
+  line <- as.numeric(line_value)
+  
+  result <- list(
+    success = TRUE,
+    actual_value = total,
+    line_value = line
+  )
+  
+  if(direction == "over") {
+    result$bet_won <- total > line
+  } else if(direction == "under") {
+    result$bet_won <- total < line
+  }
+  
+  return(result)
+}
+
+# Resolve both teams to score
+resolve_both_teams_score <- function(game_data) {
+  if(!is.null(game_data$boxscore$teams)) {
+    away_score <- as.numeric(game_data$boxscore$teams$score[1])
+    home_score <- as.numeric(game_data$boxscore$teams$score[2])
+    
+    return(list(
+      success = TRUE,
+      both_scored = (away_score > 0 && home_score > 0),
+      away_score = away_score,
+      home_score = home_score
+    ))
+  }
+  
+  return(list(success = FALSE, error = "Score data not available"))
+}
+
+# Resolve player batting fantasy score (MLB)
+resolve_batting_fantasy_score <- function(game_data, player_name) {
+  # Get player stats
+  player_stats <- get_espn_mlb_player_stats(game_data$game_id %||% "unknown", player_name)
+  
+  if(is.null(player_stats)) {
+    return(list(success = FALSE, error = "Player not found"))
+  }
+  
+  # Fantasy scoring typically: 
+  # Singles = 1, Doubles = 2, Triples = 3, HR = 4
+  # RBI = 1, Runs = 1, Walks = 1, Stolen Bases = 2
+  # Strikeouts = -0.5
+  
+  singles <- player_stats$hits - (player_stats$doubles + player_stats$triples + player_stats$home_runs)
+  
+  fantasy_score <- 
+    singles * 1 +
+    player_stats$doubles * 2 +
+    player_stats$triples * 3 +
+    player_stats$home_runs * 4 +
+    player_stats$rbi * 1 +
+    player_stats$runs * 1 +
+    player_stats$walks * 1 +
+    player_stats$stolen_bases * 2 +
+    player_stats$strikeouts * -0.5
+  
+  return(list(
+    success = TRUE,
+    actual_value = fantasy_score,
+    player = player_stats$player,
+    breakdown = list(
+      singles = singles,
+      doubles = player_stats$doubles,
+      triples = player_stats$triples,
+      home_runs = player_stats$home_runs,
+      rbi = player_stats$rbi,
+      runs = player_stats$runs,
+      walks = player_stats$walks,
+      stolen_bases = player_stats$stolen_bases,
+      strikeouts = player_stats$strikeouts
+    )
+  ))
+}
+
+# Resolve player dunks (NBA)
+resolve_player_dunks <- function(game_data, player_name) {
+  if(is.null(game_data$plays)) {
+    return(list(success = FALSE, error = "No play-by-play data"))
+  }
+  
+  # Search for dunks involving the player
+  player_plays <- game_data$plays[grepl(player_name, game_data$plays$text, ignore.case = TRUE), ]
+  dunk_plays <- player_plays[grepl("dunk", player_plays$text, ignore.case = TRUE), ]
+  
+  dunks <- nrow(dunk_plays)
+  
+  return(list(
+    success = TRUE,
+    actual_value = dunks,
+    dunk_plays = dunk_plays$text
+  ))
+}
+
+# Resolve player Hits + Runs + RBIs (MLB)
+resolve_player_hits_runs_rbi <- function(game_data, player_name) {
+  player_stats <- get_espn_mlb_player_stats(game_data$game_id %||% "unknown", player_name)
+  
+  if(is.null(player_stats)) {
+    return(list(success = FALSE, error = "Player not found"))
+  }
+  
+  total <- player_stats$hits + player_stats$runs + player_stats$rbi
+  
+  return(list(
+    success = TRUE,
+    actual_value = total,
+    hits = player_stats$hits,
+    runs = player_stats$runs,
+    rbi = player_stats$rbi
+  ))
+}
+
+# Get team inning totals for various stats
+get_team_inning_totals <- function(game_data, team_name, innings, stat_type) {
+  if(is.null(game_data$plays)) {
+    return(NULL)
+  }
+  
+  # Get scoring plays for the specified innings
+  inning_plays <- game_data$plays[game_data$plays$period %in% 1:innings, ]
+  
+  # Determine which team
+  is_home <- grepl(team_name, game_data$boxscore$teams$team.displayName[2], ignore.case = TRUE)
+  
+  total <- 0
+  
+  if(stat_type == "batting_walks") {
+    # Count walks (BB) from batting team
+    team_plays <- inning_plays[grepl(team_name, inning_plays$text, ignore.case = TRUE), ]
+    total <- sum(grepl("walked|bb|base on balls", team_plays$text, ignore.case = TRUE))
+    
+  } else if(stat_type == "pitching_strikeouts") {
+    # Count strikeouts thrown by pitching team
+    team_plays <- inning_plays[grepl(team_name, inning_plays$text, ignore.case = TRUE), ]
+    total <- sum(grepl("struck out|strikeout|k\\s+swinging|k\\s+looking", team_plays$text, ignore.case = TRUE))
+    
+  } else if(stat_type == "batters") {
+    # Count batters faced in specific innings
+    # This requires parsing plate appearances
+    if(stat_type == "batters") {
+      # Count unique at-bats in the inning
+      at_bats <- unique(inning_plays$atBatId[!is.na(inning_plays$atBatId)])
+      total <- length(at_bats)
+    }
+    
+  } else if(stat_type == "pitches_thrown") {
+    # Count pitches thrown in specific innings
+    # Look for pitch events
+    pitch_plays <- inning_plays[!is.na(inning_plays$pitchCount), ]
+    total <- sum(pitch_plays$pitchCount, na.rm = TRUE)
+    
+  } else if(stat_type == "strikeouts_thrown") {
+    # Count strikeouts thrown by pitching team
+    team_plays <- inning_plays[grepl(team_name, inning_plays$text, ignore.case = TRUE), ]
+    total <- sum(grepl("struck out", team_plays$text, ignore.case = TRUE))
+  }
+  
+  return(total)
+}
+
+# Resolve team inning total batting walks
+resolve_team_inning_batting_walks <- function(game_data, team_name, innings) {
+  total <- get_team_inning_totals(game_data, team_name, innings, "batting_walks")
+  
+  return(list(
+    success = TRUE,
+    actual_value = total,
+    team = team_name,
+    innings = innings
+  ))
+}
+
+# Resolve team inning total pitching strikeouts
+resolve_team_inning_pitching_strikeouts <- function(game_data, team_name, innings) {
+  total <- get_team_inning_totals(game_data, team_name, innings, "pitching_strikeouts")
+  
+  return(list(
+    success = TRUE,
+    actual_value = total,
+    team = team_name,
+    innings = innings
+  ))
+}
+
+# Resolve team 1st inning total batters
+resolve_team_inning_batters <- function(game_data, team_name) {
+  if(is.null(game_data$plays)) {
+    return(list(success = FALSE, error = "No play-by-play data"))
+  }
+  
+  # Get 1st inning plays
+  inning_1_plays <- game_data$plays[game_data$plays$period == 1, ]
+  
+  # Count unique at-bats for the team
+  team_plays <- inning_1_plays[grepl(team_name, inning_1_plays$text, ignore.case = TRUE), ]
+  at_bats <- unique(team_plays$atBatId[!is.na(team_plays$atBatId)])
+  total <- length(at_bats)
+  
+  return(list(
+    success = TRUE,
+    actual_value = total,
+    team = team_name
+  ))
+}
+
+# Resolve team 1st inning total pitches thrown
+resolve_team_inning_pitches <- function(game_data, team_name) {
+  if(is.null(game_data$plays)) {
+    return(list(success = FALSE, error = "No play-by-play data"))
+  }
+  
+  # Get 1st inning plays
+  inning_1_plays <- game_data$plays[game_data$plays$period == 1, ]
+  
+  # Sum pitch counts
+  total <- sum(inning_1_plays$pitchCount, na.rm = TRUE)
+  
+  return(list(
+    success = TRUE,
+    actual_value = total,
+    team = team_name
+  ))
+}
+
+# Resolve team 1st inning total strikeouts thrown
+resolve_team_inning_strikeouts_thrown <- function(game_data, team_name) {
+  if(is.null(game_data$plays)) {
+    return(list(success = FALSE, error = "No play-by-play data"))
+  }
+  
+  # Get 1st inning plays
+  inning_1_plays <- game_data$plays[game_data$plays$period == 1, ]
+  
+  # Count strikeouts by the pitching team
+  team_plays <- inning_1_plays[grepl(team_name, inning_1_plays$text, ignore.case = TRUE), ]
+  strikeouts <- sum(grepl("struck out", team_plays$text, ignore.case = TRUE))
+  
+  return(list(
+    success = TRUE,
+    actual_value = strikeouts,
+    team = team_name
+  ))
+}
+
+# Resolve team player first basket (NBA)
+resolve_team_player_first_basket <- function(game_data, team_name) {
+  if(is.null(game_data$plays)) {
+    return(list(success = FALSE, error = "No play-by-play data"))
+  }
+  
+  # Find first scoring play of the game
+  scoring_plays <- game_data$plays[!is.na(game_data$plays$scoringPlay) & game_data$plays$scoringPlay == TRUE, ]
+  
+  if(nrow(scoring_plays) == 0) {
+    return(list(success = FALSE, error = "No scoring plays found"))
+  }
+  
+  first_play <- scoring_plays[1, ]
+  play_text <- first_play$text
+  
+  # Check if the scoring team matches
+  if(grepl(team_name, play_text, ignore.case = TRUE)) {
+    # Extract scorer name from play text
+    scorer <- "Unknown"
+    # Pattern: "Player Name makes/made X point shot"
+    if(grepl("makes|made", play_text)) {
+      name_part <- strsplit(play_text, " makes | made ")[[1]][1]
+      scorer <- trimws(name_part)
+    }
+    
+    return(list(
+      success = TRUE,
+      player = scorer,
+      team = team_name,
+      points = first_play$scoreValue %||% 2,
+      description = play_text
+    ))
+  }
+  
+  return(list(
+    success = TRUE,
+    player = NULL,
+    team = team_name,
+    scored_first = FALSE,
+    description = play_text
+  ))
+}
+
+
+# Function to resolve multi-inning markets (generic)
+resolve_multi_inning_market <- function(game_id, num_innings, market_subtype, line_value, direction, team = NULL) {
+  result <- list(success = FALSE, actual_value = 0, bet_won = NULL, error = NULL)
+  
+  tryCatch({
+    # For total_runs, use the specific function
+    if (market_subtype == "total_runs") {
+      # Fetch game data
+      url <- paste0("https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=", game_id)
+      response <- GET(url, timeout = 10)
+      if (status_code(response) == 200) {
+        game_data <- fromJSON(rawToChar(response$content))
+        result <- resolve_multi_inning_total_runs(game_data, num_innings, line_value, direction)
+      } else {
+        result$error <- "Failed to fetch game data"
+      }
+    } else {
+      # For other market types, return not implemented
+      result$error <- paste("Multi-inning market type not yet implemented:", market_subtype)
+    }
+  }, error = function(e) {
+    result$error <- paste("Error in resolve_multi_inning_market:", e$message)
+  })
+  
+  return(result)
+}
+
+# Fix for NHL first/last scorer
+resolve_nhl_first_last_scorer <- function(game_id, player_name, is_first = TRUE) {
+  result <- list(success = FALSE, player_scored = FALSE, scorer = NULL, error = NULL)
+  
+  tryCatch({
+    url <- paste0("https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=", game_id)
+    response <- GET(url, timeout = 10)
+    
+    if (status_code(response) == 200) {
+      data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
+      
+      if (!is.null(data$plays) && is.data.frame(data$plays) && nrow(data$plays) > 0) {
+        # Find goal plays
+        goal_plays <- data$plays[grepl("goal", data$plays$text, ignore.case = TRUE), ]
+        
+        if (nrow(goal_plays) > 0) {
+          if (is_first) {
+            target_play <- goal_plays[which.min(goal_plays$id), ]
+          } else {
+            target_play <- goal_plays[which.max(goal_plays$id), ]
+          }
+          
+          # Extract scorer from play text
+          play_text <- tolower(target_play$text)
+          result$scorer <- target_play$text
+          
+          # Check if player scored (handle partial matches)
+          player_lower <- tolower(player_name)
+          result$player_scored <- grepl(player_lower, play_text, fixed = TRUE) ||
+            grepl(gsub("^\\w+\\s+", "", player_lower), play_text, fixed = TRUE)
+          
+          result$success <- TRUE
+          debug_cat(sprintf("  %s goal scorer: %s\n", if(is_first) "First" else "Last", result$scorer))
+          debug_cat(sprintf("  Player %s scored: %s\n", player_name, result$player_scored))
+        } else {
+          result$error <- "No goals found in this game"
+          debug_cat("  No goals found in game\n")
+        }
+      } else {
+        result$error <- "No play-by-play data available"
+      }
+    } else {
+      result$error <- paste("API returned status:", status_code(response))
+    }
+  }, error = function(e) {
+    result$error <- paste("Error in resolve_nhl_first_last_scorer:", e$message)
+  })
+  
+  return(result)
+}
+
+# ==============================================
+# MLB TOTAL MARKETS RESOLVERS
+# ==============================================
+
+resolve_mlb_total_strikeouts <- function(game_id, line_value, direction, player_name = NULL) {
+  debug_cat(sprintf("  Resolving MLB total strikeouts: %s %s\n", direction, line_value))
+  
+  result <- list(success = FALSE, actual_value = 0, bet_won = NULL, error = NULL)
+  
+  tryCatch({
+    # Fetch game data from ESPN
+    url <- paste0("https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=", game_id)
+    response <- GET(url, timeout = 10)
+    
+    if (status_code(response) != 200) {
+      result$error <- paste("ESPN API returned status:", status_code(response))
+      return(result)
+    }
+    
+    data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
+    
+    total_strikeouts <- 0
+    
+    # Sum strikeouts from both teams
+    if (!is.null(data$boxscore$teams)) {
+      teams_data <- data$boxscore$teams
+      
+      for (i in 1:nrow(teams_data)) {
+        team <- teams_data[i, ]
+        
+        # Look for strikeout stats in player statistics
+        if (!is.null(team$statistics) && length(team$statistics) > 0) {
+          stats_list <- team$statistics[[1]]
+          
+          if (is.data.frame(stats_list)) {
+            for (j in 1:nrow(stats_list)) {
+              stat_group <- stats_list[j, ]
+              
+              # Look for pitching stats (strikeouts)
+              if (!is.null(stat_group$type) && stat_group$type == "pitching") {
+                if (!is.null(stat_group$labels) && !is.null(stat_group$athletes)) {
+                  labels <- stat_group$labels[[1]]
+                  athletes <- stat_group$athletes[[1]]
+                  
+                  if (is.data.frame(athletes)) {
+                    for (k in 1:nrow(athletes)) {
+                      athlete <- athletes[k, ]
+                      if (!is.null(athlete$stats) && is.list(athlete$stats) && length(athlete$stats) > 0) {
+                        stats_vector <- athlete$stats[[1]]
+                        
+                        # Find strikeouts index (usually "K" or "strikeouts" in labels)
+                        for (l in seq_along(labels)) {
+                          label <- tolower(labels[l])
+                          if (label %in% c("k", "strikeouts", "so")) {
+                            total_strikeouts <- total_strikeouts + as.numeric(stats_vector[l] %||% 0)
+                            break
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    result$success <- TRUE
+    result$actual_value <- total_strikeouts
+    
+    if (!is.null(line_value) && !is.null(direction)) {
+      line_num <- as.numeric(line_value)
+      if (direction == "over") {
+        result$bet_won <- total_strikeouts > line_num
+      } else if (direction == "under") {
+        result$bet_won <- total_strikeouts < line_num
+      }
+    }
+    
+    debug_cat(sprintf("  Total strikeouts: %d\n", total_strikeouts))
+    
+  }, error = function(e) {
+    result$error <- paste("Error in resolve_mlb_total_strikeouts:", e$message)
+  })
+  
+  return(result)
+}
+
+resolve_mlb_total_walks <- function(game_id, line_value, direction, player_name = NULL) {
+  debug_cat(sprintf("  Resolving MLB total walks: %s %s\n", direction, line_value))
+  
+  result <- list(success = FALSE, actual_value = 0, bet_won = NULL, error = NULL)
+  
+  tryCatch({
+    # Fetch game data from ESPN
+    url <- paste0("https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=", game_id)
+    response <- GET(url, timeout = 10)
+    
+    if (status_code(response) != 200) {
+      result$error <- paste("ESPN API returned status:", status_code(response))
+      return(result)
+    }
+    
+    data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
+    
+    total_walks <- 0
+    
+    # Sum walks from both teams
+    if (!is.null(data$boxscore$teams)) {
+      teams_data <- data$boxscore$teams
+      
+      for (i in 1:nrow(teams_data)) {
+        team <- teams_data[i, ]
+        
+        # Look for walk stats
+        if (!is.null(team$statistics) && length(team$statistics) > 0) {
+          stats_list <- team$statistics[[1]]
+          
+          if (is.data.frame(stats_list)) {
+            for (j in 1:nrow(stats_list)) {
+              stat_group <- stats_list[j, ]
+              
+              # Look for batting stats (walks)
+              if (!is.null(stat_group$type) && stat_group$type == "batting") {
+                if (!is.null(stat_group$labels) && !is.null(stat_group$athletes)) {
+                  labels <- stat_group$labels[[1]]
+                  athletes <- stat_group$athletes[[1]]
+                  
+                  if (is.data.frame(athletes)) {
+                    for (k in 1:nrow(athletes)) {
+                      athlete <- athletes[k, ]
+                      if (!is.null(athlete$stats) && is.list(athlete$stats) && length(athlete$stats) > 0) {
+                        stats_vector <- athlete$stats[[1]]
+                        
+                        # Find walks index (usually "BB" or "walks" in labels)
+                        for (l in seq_along(labels)) {
+                          label <- tolower(labels[l])
+                          if (label %in% c("bb", "walks")) {
+                            total_walks <- total_walks + as.numeric(stats_vector[l] %||% 0)
+                            break
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    result$success <- TRUE
+    result$actual_value <- total_walks
+    
+    if (!is.null(line_value) && !is.null(direction)) {
+      line_num <- as.numeric(line_value)
+      if (direction == "over") {
+        result$bet_won <- total_walks > line_num
+      } else if (direction == "under") {
+        result$bet_won <- total_walks < line_num
+      }
+    }
+    
+    debug_cat(sprintf("  Total walks: %d\n", total_walks))
+    
+  }, error = function(e) {
+    result$error <- paste("Error in resolve_mlb_total_walks:", e$message)
+  })
+  
+  return(result)
+}
+
+resolve_mlb_total_rbis <- function(game_id, line_value, direction, player_name = NULL) {
+  debug_cat(sprintf("  Resolving MLB total RBIs: %s %s\n", direction, line_value))
+  
+  result <- list(success = FALSE, actual_value = 0, bet_won = NULL, error = NULL)
+  
+  tryCatch({
+    # Fetch game data from ESPN
+    url <- paste0("https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=", game_id)
+    response <- GET(url, timeout = 10)
+    
+    if (status_code(response) != 200) {
+      result$error <- paste("ESPN API returned status:", status_code(response))
+      return(result)
+    }
+    
+    data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
+    
+    total_rbis <- 0
+    
+    # Sum RBIs from both teams
+    if (!is.null(data$boxscore$teams)) {
+      teams_data <- data$boxscore$teams
+      
+      for (i in 1:nrow(teams_data)) {
+        team <- teams_data[i, ]
+        
+        # Look for RBI stats
+        if (!is.null(team$statistics) && length(team$statistics) > 0) {
+          stats_list <- team$statistics[[1]]
+          
+          if (is.data.frame(stats_list)) {
+            for (j in 1:nrow(stats_list)) {
+              stat_group <- stats_list[j, ]
+              
+              # Look for batting stats (RBIs)
+              if (!is.null(stat_group$type) && stat_group$type == "batting") {
+                if (!is.null(stat_group$labels) && !is.null(stat_group$athletes)) {
+                  labels <- stat_group$labels[[1]]
+                  athletes <- stat_group$athletes[[1]]
+                  
+                  if (is.data.frame(athletes)) {
+                    for (k in 1:nrow(athletes)) {
+                      athlete <- athletes[k, ]
+                      if (!is.null(athlete$stats) && is.list(athlete$stats) && length(athlete$stats) > 0) {
+                        stats_vector <- athlete$stats[[1]]
+                        
+                        # Find RBIs index (usually "RBI" or "rbi" in labels)
+                        for (l in seq_along(labels)) {
+                          label <- tolower(labels[l])
+                          if (label %in% c("rbi", "rbis", "runs batted in")) {
+                            total_rbis <- total_rbis + as.numeric(stats_vector[l] %||% 0)
+                            break
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    result$success <- TRUE
+    result$actual_value <- total_rbis
+    
+    if (!is.null(line_value) && !is.null(direction)) {
+      line_num <- as.numeric(line_value)
+      if (direction == "over") {
+        result$bet_won <- total_rbis > line_num
+      } else if (direction == "under") {
+        result$bet_won <- total_rbis < line_num
+      }
+    }
+    
+    debug_cat(sprintf("  Total RBIs: %d\n", total_rbis))
+    
+  }, error = function(e) {
+    result$error <- paste("Error in resolve_mlb_total_rbis:", e$message)
+  })
+  
+  return(result)
+}
+
+# ==============================================
+# NHL GAME TOTAL MARKETS RESOLVERS
+# ==============================================
+
+resolve_nhl_game_total_goals <- function(game_id, line_value, direction, is_oddeven = FALSE) {
+  debug_cat(sprintf("  Resolving NHL game total goals: %s %s\n", direction, line_value))
+  
+  result <- list(success = FALSE, actual_value = 0, bet_won = NULL, error = NULL)
+  
+  tryCatch({
+    period_data <- get_espn_nhl_period_data(game_id)
+    
+    if (!period_data$success) {
+      result$error <- period_data$error
+      return(result)
+    }
+    
+    total_goals <- period_data$game_data$home_score + period_data$game_data$away_score
+    result$actual_value <- total_goals
+    result$success <- TRUE
+    
+    if (is_oddeven) {
+      result$bet_won <- (total_goals %% 2 == 1)  # Odd = 1, Even = 0
+      debug_cat(sprintf("  Total goals: %d - %s\n", total_goals, ifelse(result$bet_won, "ODD", "EVEN")))
+    } else if (!is.null(line_value) && !is.null(direction)) {
+      line_num <- as.numeric(line_value)
+      if (direction == "over") {
+        result$bet_won <- total_goals > line_num
+      } else if (direction == "under") {
+        result$bet_won <- total_goals < line_num
+      }
+      debug_cat(sprintf("  Total goals: %d (line: %.1f) - %s\n", total_goals, line_num, 
+                        ifelse(result$bet_won, "WIN", "LOSS")))
+    }
+    
+  }, error = function(e) {
+    result$error <- paste("Error in resolve_nhl_game_total_goals:", e$message)
+  })
+  
+  return(result)
+}
+
+resolve_nhl_game_total_shots <- function(game_id, line_value, direction) {
+  debug_cat(sprintf("  Resolving NHL game total shots: %s %s\n", direction, line_value))
+  
+  result <- list(success = FALSE, actual_value = 0, bet_won = NULL, error = NULL)
+  
+  tryCatch({
+    url <- paste0("https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=", game_id)
+    response <- GET(url, timeout = 10)
+    
+    if (status_code(response) != 200) {
+      result$error <- paste("ESPN API returned status:", status_code(response))
+      return(result)
+    }
+    
+    data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
+    
+    total_shots <- 0
+    
+    # Sum shots on goal from both teams
+    if (!is.null(data$boxscore$teams)) {
+      teams_data <- data$boxscore$teams
+      
+      for (i in 1:nrow(teams_data)) {
+        team <- teams_data[i, ]
+        
+        # Look for shot stats in team statistics
+        if (!is.null(team$statistics) && length(team$statistics) > 0) {
+          stats_list <- team$statistics[[1]]
+          
+          if (is.data.frame(stats_list)) {
+            for (j in 1:nrow(stats_list)) {
+              stat_group <- stats_list[j, ]
+              
+              if (!is.null(stat_group$type) && stat_group$type == "skaters") {
+                if (!is.null(stat_group$labels) && is.data.frame(stat_group$labels)) {
+                  labels <- stat_group$labels[[1]]
+                  
+                  # Find shots index (usually "SOG" or "sog" in labels)
+                  for (k in seq_along(labels)) {
+                    label <- tolower(labels[k])
+                    if (label %in% c("sog", "shots on goal", "shots")) {
+                      if (!is.null(team[[paste0("statistics.", j, ".teamStats")]])) {
+                        team_stats <- team[[paste0("statistics.", j, ".teamStats")]]
+                        total_shots <- total_shots + as.numeric(team_stats[k] %||% 0)
+                      }
+                      break
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    # Fallback: Try to get shots from boxscore directly
+    if (total_shots == 0 && !is.null(data$boxscore$teams)) {
+      teams_data <- data$boxscore$teams
+      for (i in 1:nrow(teams_data)) {
+        team <- teams_data[i, ]
+        if (!is.null(team$statistics) && is.list(team$statistics) && length(team$statistics) > 0) {
+          team_stats <- team$statistics[[1]]
+          if (is.list(team_stats) && !is.null(team_stats$shotsOnGoal)) {
+            total_shots <- total_shots + as.numeric(team_stats$shotsOnGoal %||% 0)
+          }
+        }
+      }
+    }
+    
+    result$success <- TRUE
+    result$actual_value <- total_shots
+    
+    if (!is.null(line_value) && !is.null(direction)) {
+      line_num <- as.numeric(line_value)
+      if (direction == "over") {
+        result$bet_won <- total_shots > line_num
+      } else if (direction == "under") {
+        result$bet_won <- total_shots < line_num
+      }
+    }
+    
+    debug_cat(sprintf("  Total shots on goal: %d\n", total_shots))
+    
+  }, error = function(e) {
+    result$error <- paste("Error in resolve_nhl_game_total_shots:", e$message)
+  })
+  
+  return(result)
+}
+
+resolve_nhl_game_power_play_goals <- function(game_id, line_value, direction) {
+  debug_cat(sprintf("  Resolving NHL game power play goals: %s %s\n", direction, line_value))
+  
+  result <- list(success = FALSE, actual_value = 0, bet_won = NULL, error = NULL)
+  
+  tryCatch({
+    url <- paste0("https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=", game_id)
+    response <- GET(url, timeout = 10)
+    
+    if (status_code(response) != 200) {
+      result$error <- paste("ESPN API returned status:", status_code(response))
+      return(result)
+    }
+    
+    data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
+    
+    total_pp_goals <- 0
+    
+    # Parse plays to count power play goals
+    if (!is.null(data$plays) && is.data.frame(data$plays) && nrow(data$plays) > 0) {
+      # Look for goal plays with power play indicator
+      for (i in 1:nrow(data$plays)) {
+        play <- data$plays[i, ]
+        play_text <- tolower(play$text %||% "")
+        
+        # Check if it's a goal and power play
+        if (grepl("goal", play_text) && (grepl("power play", play_text) || grepl("pp", play_text))) {
+          total_pp_goals <- total_pp_goals + 1
+        }
+      }
+    }
+    
+    result$success <- TRUE
+    result$actual_value <- total_pp_goals
+    
+    if (!is.null(line_value) && !is.null(direction)) {
+      line_num <- as.numeric(line_value)
+      if (direction == "over") {
+        result$bet_won <- total_pp_goals > line_num
+      } else if (direction == "under") {
+        result$bet_won <- total_pp_goals < line_num
+      }
+    }
+    
+    debug_cat(sprintf("  Total power play goals: %d\n", total_pp_goals))
+    
+  }, error = function(e) {
+    result$error <- paste("Error in resolve_nhl_game_power_play_goals:", e$message)
+  })
+  
+  return(result)
+}
+
 resolve_bet <- function(player_name, sport, season, market_type, event_string, line_value = NULL, game_date = NULL) {
   debug_cat("\n===============================================================================\n")
   debug_cat("STARTING BET RESOLUTION - DEBUG VERSION\n")
@@ -7634,14 +9004,19 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
   }
   
   # ==========================================================================
-  # FIX 1: Fix NHL scorer markets
+  # FIX 1: Fix NHL scorer markets (ONLY override market_type, no resolution here)
   # ==========================================================================
   if (sport %in% c("nhl", "hockey")) {
     debug_cat("  NHL game detected, checking for scorer markets...\n")
     
-    if (grepl("team.*player.*first.*goal.*scorer", market_lower) ||
-        grepl("first.*goal.*scorer", market_lower) ||
-        (market_lower == "generic" && grepl("blackhawks|jets|devils|bruins|rangers|maple leafs|canadiens|penguins|capitals|lightning|panthers|hurricanes|blue jackets|red wings|sabres|senators|islanders|flyers|wild|predators|blues|stars|avalanche|coyotes|flames|oilers|canucks|kraken|golden knights|ducks|kings|sharks", player_lower))) {
+    # FIRST: Check for specific shot types before generic "shots"
+    if (grepl("blocked shots|blocks", market_lower)) {
+      debug_cat("  OVERRIDE: Keeping 'Player Blocked Shots' for NHL\n")
+      market_type <- "Player Blocked Shots"
+      
+    } else if (grepl("team.*player.*first.*goal.*scorer", market_lower) ||
+               grepl("first.*goal.*scorer", market_lower) ||
+               (market_lower == "generic" && grepl("blackhawks|jets|devils|bruins|rangers|maple leafs|canadiens|penguins|capitals|lightning|panthers|hurricanes|blue jackets|red wings|sabres|senators|islanders|flyers|wild|predators|blues|stars|avalanche|coyotes|flames|oilers|canucks|kraken|golden knights|ducks|kings|sharks", player_lower))) {
       debug_cat("  OVERRIDE: NHL scorer market detected\n")
       market_type <- "Player First Goal"
       
@@ -7674,15 +9049,24 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
     } else if (grepl("player.*goals", market_lower)) {
       debug_cat("  OVERRIDE: Keeping 'Player Goals' for NHL\n")
       market_type <- "Player Goals"
-    } else if (grepl("player.*shots", market_lower)) {
-      debug_cat("  OVERRIDE: Keeping 'Player Shots On Goal' for NHL\n")
-      market_type <- "Player Shots On Goal"
     } else if (grepl("player.*saves", market_lower)) {
       debug_cat("  OVERRIDE: Keeping 'Player Saves' for NHL\n")
       market_type <- "Player Saves"
     } else if (grepl("player.*points", market_lower)) {
       debug_cat("  OVERRIDE: Keeping 'Player Points' for NHL\n")
       market_type <- "Player Points"
+    } else if (grepl("player.*shots", market_lower)) {
+      debug_cat("  OVERRIDE: Keeping 'Player Shots On Goal' for NHL\n")
+      market_type <- "Player Shots On Goal"
+    } else if (grepl("penalty minutes|pim", market_lower)) {
+      debug_cat("  OVERRIDE: Keeping 'Player Penalty Minutes' for NHL\n")
+      market_type <- "Player Penalty Minutes"
+    } else if (grepl("time on ice|toi", market_lower)) {
+      debug_cat("  OVERRIDE: Keeping 'Player Time On Ice' for NHL\n")
+      market_type <- "Player Time On Ice"
+    } else if (grepl("hits", market_lower)) {
+      debug_cat("  OVERRIDE: Keeping 'Player Hits' for NHL\n")
+      market_type <- "Player Hits"
     }
   }
   
@@ -7868,9 +9252,488 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
     market_info <- classify_market(market_type, sport)
     debug_cat(sprintf("Market classification: %s\n", market_info$type))
     
-    # ==================== PERIOD/QUARTER/INNING MARKETS ====================
-    if (market_info$type %in% c("period_moneyline", "period_moneyline_3way", "period_spread", 
-                                "period_total", "period_total_oddeven", "period_both_teams_score")) {
+    # ========== FORCED OVERRIDE FOR NFL TEAM MARKETS ==========
+    if (sport == "nfl" || sport == "football") {
+      if (grepl("team to score first", tolower(market_type))) {
+        debug_cat("  FORCED OVERRIDE: Setting market type to 'team_score_first' for NFL\n")
+        market_info <- list(type = "team_score_first")
+      }
+      if (grepl("team score first and win", tolower(market_type))) {
+        debug_cat("  FORCED OVERRIDE: Setting market type to 'team_score_first_and_win' for NFL\n")
+        market_info <- list(type = "team_score_first_and_win")
+      }
+    }
+    
+    # Helper to fetch game data for resolution
+    fetch_game_data_for_resolution <- function(game_id, sport) {
+      tryCatch({
+        if(sport == "mlb") {
+          url <- paste0("https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=", game_id)
+        } else if(sport == "nba") {
+          url <- paste0("https://site.api.espn.com/apis/site/v2/sports/basketball/nba/summary?event=", game_id)
+        } else if(sport == "nhl") {
+          url <- paste0("https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=", game_id)
+        } else {
+          return(NULL)
+        }
+        response <- GET(url, timeout = 10)
+        if(status_code(response) == 200) {
+          # CRITICAL: Use flatten = TRUE to get consistent data frame structure
+          return(fromJSON(rawToChar(response$content), flatten = TRUE))
+        }
+        return(NULL)
+      }, error = function(e) {
+        debug_cat(sprintf("Error fetching game data: %s\n", e$message))
+        return(NULL)
+      })
+    }
+    
+    # ==================== MLB TOTAL MARKETS ====================
+    if (sport == "mlb" && grepl("total.*strikeouts", market_lower)) {
+      result_data <- resolve_mlb_total_strikeouts(game_id, line_value, gsub("total.*strikeouts", "", market_lower), player_name)
+      if (result_data$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- result_data
+        if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+        if (!is.null(result_data$actual_value)) result$actual_value <- result_data$actual_value
+      } else {
+        result$error <- result_data$error
+      }
+      
+    } else if (sport == "mlb" && grepl("total.*walks", market_lower)) {
+      result_data <- resolve_mlb_total_walks(game_id, line_value, gsub("total.*walks", "", market_lower), player_name)
+      if (result_data$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- result_data
+        if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+        if (!is.null(result_data$actual_value)) result$actual_value <- result_data$actual_value
+      } else {
+        result$error <- result_data$error
+      }
+      
+    } else if (sport == "mlb" && grepl("total.*rbis?", market_lower)) {
+      result_data <- resolve_mlb_total_rbis(game_id, line_value, gsub("total.*rbis?", "", market_lower), player_name)
+      if (result_data$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- result_data
+        if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+        if (!is.null(result_data$actual_value)) result$actual_value <- result_data$actual_value
+      } else {
+        result$error <- result_data$error
+      }
+      
+      # ==================== NHL GAME TOTAL MARKETS ====================
+    } else if (sport == "nhl" && market_info$type == "game_total_goals") {
+      result_data <- resolve_nhl_game_total_goals(game_id, line_value, if(grepl("over", market_lower)) "over" else if(grepl("under", market_lower)) "under" else NULL, FALSE)
+      if (result_data$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- result_data
+        if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+        if (!is.null(result_data$actual_value)) result$actual_value <- result_data$actual_value
+      } else {
+        result$error <- result_data$error
+      }
+      
+    } else if (sport == "nhl" && market_info$type == "game_total_goals_oddeven") {
+      result_data <- resolve_nhl_game_total_goals(game_id, line_value, NULL, TRUE)
+      if (result_data$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- result_data
+        if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+        if (!is.null(result_data$actual_value)) result$actual_value <- result_data$actual_value
+      } else {
+        result$error <- result_data$error
+      }
+      
+    } else if (sport == "nhl" && market_info$type == "game_total_shots") {
+      result_data <- resolve_nhl_game_total_shots(game_id, line_value, if(grepl("over", market_lower)) "over" else if(grepl("under", market_lower)) "under" else NULL)
+      if (result_data$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- result_data
+        if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+        if (!is.null(result_data$actual_value)) result$actual_value <- result_data$actual_value
+      } else {
+        result$error <- result_data$error
+      }
+      
+    } else if (sport == "nhl" && market_info$type == "game_power_play_goals") {
+      result_data <- resolve_nhl_game_power_play_goals(game_id, line_value, if(grepl("over", market_lower)) "over" else if(grepl("under", market_lower)) "under" else NULL)
+      if (result_data$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- result_data
+        if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+        if (!is.null(result_data$actual_value)) result$actual_value <- result_data$actual_value
+      } else {
+        result$error <- result_data$error
+      }
+      
+      # ==================== PROMOTED PLAYER PERIOD STATS HANDLER (MUST BE FIRST) ====================
+    } else if (market_info$type == "player_period_stat") {
+      debug_cat("Processing player_period_stat market (High Priority)...\n")
+      
+      # NBA player period stats (quarters)
+      if (sport == "nba" || sport == "basketball") {
+        debug_cat(sprintf("  Resolving NBA player period stat: %s for %s in %s\n", 
+                          market_info$stat, player_name, market_info$period))
+        
+        game_data <- fetch_game_data_for_resolution(game_id, sport)
+        
+        if (!is.null(game_data) && !is.null(game_data$plays) && is.data.frame(game_data$plays)) {
+          
+          # Determine period number (supports both "quarter_1" and "period_1" formats)
+          if (grepl("quarter", market_info$period)) {
+            period_num <- as.numeric(gsub("quarter_", "", market_info$period))
+            period_type <- "quarter"
+          } else if (grepl("period", market_info$period)) {
+            period_num <- as.numeric(gsub("period_", "", market_info$period))
+            period_type <- "period"
+          } else {
+            period_num <- 1
+            period_type <- "unknown"
+          }
+          
+          debug_cat(sprintf("  Looking at %s %d for player: %s\n", period_type, period_num, player_name))
+          
+          # Filter plays for the specific period - handle different column names
+          if ("period.number" %in% names(game_data$plays)) {
+            period_plays <- game_data$plays[game_data$plays$period.number == period_num, ]
+          } else if ("period" %in% names(game_data$plays)) {
+            period_plays <- game_data$plays[game_data$plays$period == period_num, ]
+          } else {
+            result$error <- "Cannot find period information in play data"
+            next
+          }
+          
+          debug_cat(sprintf("  Total plays in %s %d: %d\n", period_type, period_num, nrow(period_plays)))
+          
+          # Find plays involving the player (case-insensitive)
+          player_plays <- period_plays[grepl(player_name, period_plays$text, ignore.case = TRUE), ]
+          debug_cat(sprintf("  Plays involving %s: %d\n", player_name, nrow(player_plays)))
+          
+          actual_value <- 0
+          
+          if (market_info$stat == "points") {
+            # Sum points from scoring plays WHERE THE PLAYER ACTUALLY SCORED (not assisted)
+            for (i in 1:nrow(player_plays)) {
+              play_text <- player_plays$text[i]
+              # Check if the player actually scored (not just involved)
+              if (player_plays$scoringPlay[i] == TRUE) {
+                # Look for patterns where the player is the scorer
+                # Pattern: "Player Name makes/made/hits" (the player is the one taking the shot)
+                if (grepl(paste0(player_name, " makes|made|hits"), play_text, ignore.case = TRUE)) {
+                  points <- player_plays$scoreValue[i] %||% 2
+                  actual_value <- actual_value + points
+                  debug_cat(sprintf("    Scoring play (by %s): %s (+%d points)\n", player_name, play_text, points))
+                } else {
+                  debug_cat(sprintf("    Skipping assist/other: %s\n", play_text))
+                }
+              }
+            }
+            debug_cat(sprintf("  Total %s in %s %d: %d\n", market_info$stat, period_type, period_num, actual_value))
+            
+          } else if (market_info$stat == "assists") {
+            # Count assists - look for "Player Name assists" pattern
+            for (i in 1:nrow(player_plays)) {
+              play_text <- player_plays$text[i]
+              if (grepl(paste0(player_name, " assists"), play_text, ignore.case = TRUE)) {
+                actual_value <- actual_value + 1
+                debug_cat(sprintf("    Assist by %s: %s\n", player_name, play_text))
+              }
+            }
+            debug_cat(sprintf("  Total %s in %s %d: %d\n", market_info$stat, period_type, period_num, actual_value))
+            
+          } else if (market_info$stat == "rebounds") {
+            # Count rebounds - look for "Player Name rebound" pattern
+            for (i in 1:nrow(player_plays)) {
+              play_text <- player_plays$text[i]
+              if (grepl(paste0(player_name, ".*rebound"), play_text, ignore.case = TRUE)) {
+                actual_value <- actual_value + 1
+                debug_cat(sprintf("    Rebound by %s: %s\n", player_name, play_text))
+              }
+            }
+            debug_cat(sprintf("  Total %s in %s %d: %d\n", market_info$stat, period_type, period_num, actual_value))
+          }
+          
+          result$success <- TRUE
+          result$resolved <- TRUE
+          result$actual_value <- actual_value
+          result$data <- list(
+            period_type = period_type,
+            period_number = period_num,
+            stat = market_info$stat,
+            value = actual_value,
+            plays_found = nrow(player_plays)
+          )
+          
+          # Check against line value if provided
+          if (!is.null(line_value)) {
+            line_val_num <- as.numeric(line_value)
+            if (grepl("over", market_lower)) {
+              result$bet_won <- actual_value > line_val_num
+            } else if (grepl("under", market_lower)) {
+              result$bet_won <- actual_value < line_val_num
+            }
+            result$line_value <- line_val_num
+            debug_cat(sprintf("  Line: %.1f %s -> Bet won: %s\n", 
+                              line_val_num, 
+                              if(grepl("over", market_lower)) "over" else "under",
+                              result$bet_won))
+          }
+          
+        } else {
+          result$error <- "Could not fetch play-by-play data for player period stats"
+          debug_cat("  ERROR: No play-by-play data available\n")
+        }
+        
+      } else if (sport == "nhl") {
+        # NHL player period stats
+        result_data <- resolve_nhl_player_period_market(game_id, player_name, market_info, market_lower, line_value)
+        if (result_data$success) {
+          result$success <- TRUE
+          result$resolved <- TRUE
+          result$data <- result_data
+          if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+          if (!is.null(result_data$actual_value)) result$actual_value <- result_data$actual_value
+        } else {
+          result$error <- result_data$error
+        }
+      } else {
+        result$error <- paste("Player period stats not supported for sport:", sport)
+      }
+      
+      # ==================== PLAYER COMBO & SPECIAL ====================
+    } else if (market_info$type == "player_combo") {
+      debug_cat("Market type: Player combo prop\n")
+      combo_result <- resolve_combo_prop(game_id, player_name, sport, result$season,
+                                         market_info$combo_type, line_value)
+      if (combo_result$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- combo_result
+        if (!is.null(line_value)) {
+          line_val_num <- as.numeric(line_value)
+          if (grepl("over", market_lower)) result$bet_won <- (combo_result$actual_value > line_val_num)
+          else if (grepl("under", market_lower)) result$bet_won <- (combo_result$actual_value < line_val_num)
+          result$actual_value <- combo_result$actual_value
+          result$line_value <- line_val_num
+        }
+      } else {
+        result$error <- combo_result$error
+      }
+      
+    } else if (market_info$type == "player_special") {
+      debug_cat(sprintf("Market type: Special prop - %s\n", market_info$special_type))
+      special_result <- resolve_special_prop(game_id, player_name, sport, result$season,
+                                             market_info$special_type, line_value)
+      if (special_result$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- special_result
+        if (market_info$special_type %in% c("double_double", "triple_double")) {
+          if (!is.null(special_result$achieved)) result$bet_won <- special_result$achieved
+        } else if (market_info$special_type %in% c("three_pointers_made")) {
+          if (!is.null(line_value) && !is.null(special_result$actual_value)) {
+            line_val_num <- as.numeric(line_value)
+            if (grepl("over", market_lower)) result$bet_won <- special_result$actual_value > line_val_num
+            else if (grepl("under", market_lower)) result$bet_won <- special_result$actual_value < line_val_num
+            result$actual_value <- special_result$actual_value
+            result$line_value <- line_val_num
+          }
+        }
+      } else {
+        result$error <- special_result$error
+      }
+      
+      # ==================== PLAYER STAT MARKETS (MOVED UP - BEFORE INNING MARKETS) ====================
+    } else if (market_info$type == "player_stat") {
+      debug_cat(sprintf("Market type: Player stat - %s\n", market_info$stat))
+      
+      if (market_info$stat == "three_pointers_made") {
+        special_result <- resolve_special_prop(game_id, player_name, sport, result$season,
+                                               "three_pointers_made", line_value)
+        if (special_result$success) {
+          result$success <- TRUE
+          result$resolved <- TRUE
+          result$data <- special_result
+          if (!is.null(line_value) && !is.null(special_result$actual_value)) {
+            line_val_num <- as.numeric(line_value)
+            if (grepl("over", market_lower)) result$bet_won <- special_result$actual_value > line_val_num
+            else if (grepl("under", market_lower)) result$bet_won <- special_result$actual_value < line_val_num
+            result$actual_value <- special_result$actual_value
+            result$line_value <- line_val_num
+          }
+        } else {
+          result$error <- special_result$error
+        }
+      } else {
+        if (sport %in% c("nba", "basketball")) {
+          stats_data <- fetch_nba_player_stats(player_name, result$season, game_date_obj, game_id)
+        } else if (sport %in% c("nfl", "football")) {
+          stats_data <- fetch_nfl_player_stats(player_name, result$season, game_id = game_id)
+        } else if (sport %in% c("mlb")) {
+          stats_data <- fetch_mlb_player_stats(player_name, result$season, game_date_obj, game_id)
+        } else if (sport %in% c("wnba")) {
+          stats_data <- fetch_wnba_player_stats(player_name, result$season, game_date_obj, game_id)
+        } else if (sport %in% c("ncaab", "ncaaw")) {
+          stats_data <- fetch_ncaa_bball_player_stats(player_name, result$season, game_date_obj, game_id, sport)
+        } else {
+          stats_data <- NULL
+        }
+        
+        if (!is.null(stats_data) && stats_data$found) {
+          result$success <- TRUE
+          result$resolved <- TRUE
+          result$data <- stats_data
+          actual_value <- stats_data$stats[[market_info$stat]]
+          if (!is.null(actual_value) && !is.na(actual_value)) {
+            result$actual_value <- actual_value
+            if (!is.null(line_value)) {
+              line_val_num <- as.numeric(line_value)
+              if (grepl("over", market_lower)) result$bet_won <- actual_value > line_val_num
+              else if (grepl("under", market_lower)) result$bet_won <- actual_value < line_val_num
+              result$line_value <- line_val_num
+            }
+          }
+        } else {
+          error_msg <- if (!is.null(stats_data)) stats_data$error else "Failed to fetch player stats"
+          result$error <- error_msg
+        }
+      }
+      
+    } else if (market_info$type == "team_score_first") {
+      debug_cat("Market type: Team to score first\n")
+      
+      # Handle NFL separately using nflreadr
+      if (sport == "nfl" || sport == "football") {
+        debug_cat("  Using nflreadr for NFL game data\n")
+        
+        # Load play-by-play data for the season
+        pbp <- nflreadr::load_pbp(result$season)
+        
+        if (!is.null(pbp) && nrow(pbp) > 0) {
+          # Filter for the specific game
+          game_plays <- pbp[pbp$game_id == game_id, ]
+          
+          if (nrow(game_plays) > 0) {
+            # Find first scoring play (touchdown or field goal)
+            scoring_plays <- game_plays %>%
+              filter(!is.na(td_team) | (!is.na(field_goal_result) & field_goal_result == "made")) %>%
+              arrange(play_id)
+            
+            if (nrow(scoring_plays) > 0) {
+              first_play <- scoring_plays[1, ]
+              
+              # Determine which team scored
+              scoring_team <- first_play$td_team %||% first_play$posteam
+              
+              # Get team names
+              home_team_std <- standardize_team_name(teams$home, "nfl")
+              away_team_std <- standardize_team_name(teams$away, "nfl")
+              
+              # Determine if our bet team scored first
+              bet_team_std <- standardize_team_name(player_name, "nfl")
+              result$bet_won <- FALSE
+              
+              if (!is.na(scoring_team) && !is.na(bet_team_std)) {
+                result$bet_won <- (scoring_team == bet_team_std)
+                result$first_scorer <- if(scoring_team == home_team_std) "home" else "away"
+              }
+              
+              result$success <- TRUE
+              result$resolved <- TRUE
+              result$actual_value <- result$first_scorer
+              result$data <- list(
+                first_scorer = result$first_scorer,
+                scoring_team = scoring_team,
+                play_description = first_play$desc,
+                quarter = first_play$qtr,
+                time = first_play$game_seconds_remaining
+              )
+              
+              debug_cat(sprintf("  First scoring team: %s\n", scoring_team))
+              debug_cat(sprintf("  Bet team (%s) scored first: %s\n", player_name, result$bet_won))
+              
+            } else {
+              result$error <- "No scoring plays found in game"
+            }
+          } else {
+            result$error <- "Game not found in play-by-play data"
+          }
+        } else {
+          result$error <- "Could not load NFL play-by-play data"
+        }
+        
+      } else {
+        # For other sports (NBA, NHL, MLB, etc.) use ESPN API
+        debug_cat("  Using ESPN API for non-NFL sport\n")
+        
+        # Fetch game data
+        game_data <- fetch_game_data_for_resolution(game_id, sport)
+        
+        if (!is.null(game_data) && !is.null(game_data$plays) && is.data.frame(game_data$plays)) {
+          # Find first scoring play of the game
+          scoring_plays <- game_data$plays[game_data$plays$scoringPlay == TRUE, ]
+          
+          if (nrow(scoring_plays) > 0) {
+            first_play <- scoring_plays[1, ]
+            play_text <- tolower(first_play$text)
+            
+            # Determine which team scored
+            home_team_lower <- tolower(teams$home)
+            away_team_lower <- tolower(teams$away)
+            
+            # Extract team names without location (e.g., "Bears" from "Chicago Bears")
+            home_short <- gsub(".*?([A-Z][a-z]+)$", "\\1", teams$home)
+            away_short <- gsub(".*?([A-Z][a-z]+)$", "\\1", teams$away)
+            
+            result$first_scorer <- "unknown"
+            if (grepl(home_team_lower, play_text) || grepl(tolower(home_short), play_text)) {
+              result$first_scorer <- "home"
+            } else if (grepl(away_team_lower, play_text) || grepl(tolower(away_short), play_text)) {
+              result$first_scorer <- "away"
+            }
+            
+            # Determine if our bet team scored first
+            bet_team_lower <- tolower(player_name)
+            result$bet_won <- FALSE
+            
+            if (result$first_scorer == "home" && (grepl(bet_team_lower, home_team_lower) || grepl(bet_team_lower, tolower(home_short)))) {
+              result$bet_won <- TRUE
+            } else if (result$first_scorer == "away" && (grepl(bet_team_lower, away_team_lower) || grepl(bet_team_lower, tolower(away_short)))) {
+              result$bet_won <- TRUE
+            }
+            
+            result$success <- TRUE
+            result$resolved <- TRUE
+            result$actual_value <- result$first_scorer
+            result$data <- list(
+              first_scorer = result$first_scorer,
+              play_description = first_play$text,
+              play_time = first_play$clock.displayValue %||% "Unknown",
+              period = first_play$period.number %||% 1
+            )
+            
+            debug_cat(sprintf("  First scorer: %s\n", result$first_scorer))
+            debug_cat(sprintf("  Bet team (%s) scored first: %s\n", player_name, result$bet_won))
+            
+          } else {
+            result$error <- "No scoring plays found in game"
+          }
+        } else {
+          result$error <- "Could not fetch play-by-play data for team score first"
+        }
+      }
+      
+      # ==================== PERIOD/QUARTER/INNING MARKETS ====================
+    } else if (market_info$type %in% c("period_moneyline", "period_moneyline_3way", "period_spread", 
+                                       "period_total", "period_total_oddeven", "period_both_teams_score")) {
       
       if (market_info$type %in% c("period_moneyline", "period_moneyline_3way")) {
         period <- market_info$period
@@ -7893,7 +9756,7 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
       } else if (market_info$type %in% c("period_total", "period_total_oddeven")) {
         direction <- if (grepl("over", market_lower)) "over" else if (grepl("under", market_lower)) "under" else 
           if (grepl("odd", market_lower)) "odd" else if (grepl("even", market_lower)) "even" else "over"
-        result_data <- resolve_period_total(game_id, sport, market_info$period, line_value, direction)
+        result_data <- resolve_period_total(game_id, sport, result$season, market_info$period, line_value, direction)
         result$success <- TRUE
         result$resolved <- TRUE
         result$data <- result_data
@@ -7927,12 +9790,511 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
     } else if (grepl("multi_inning", market_info$type)) {
       market_subtype <- gsub("multi_inning_", "", market_info$type)
       direction <- if (grepl("over", market_lower)) "over" else if (grepl("under", market_lower)) "under" else NULL
-      result_data <- resolve_multi_inning_market(game_id, market_info$innings, market_subtype, 
-                                                 line_value, direction, NULL)
-      result$success <- TRUE
-      result$resolved <- TRUE
-      result$data <- result_data
-      if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+      
+      debug_cat(sprintf("  Resolving multi-inning market: %d innings, subtype: %s\n", 
+                        market_info$innings, market_subtype))
+      
+      # Fetch game data for multi-inning resolution
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      
+      if (market_subtype == "total_runs") {
+        result_data <- resolve_multi_inning_total_runs(game_data, market_info$innings, line_value, direction)
+      } else {
+        result_data <- resolve_multi_inning_market(game_id, market_info$innings, market_subtype, 
+                                                   line_value, direction, NULL)
+      }
+      
+      if (result_data$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- result_data
+        if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+        if (!is.null(result_data$actual_value)) result$actual_value <- result_data$actual_value
+        debug_cat(sprintf("  Multi-inning resolution successful. Total: %d, Bet won: %s\n", 
+                          result_data$actual_value, result_data$bet_won))
+      } else {
+        result$error <- result_data$error %||% "Multi-inning resolution failed"
+        debug_cat(sprintf("  ERROR: %s\n", result$error))
+      }
+      
+      # ==================== MLB INNING MARKERS (pattern matching) ====================
+    } else if (grepl("^[1-9][0-9]?st|nd|rd|th Inning Total Runs$", market_lower, ignore.case = TRUE)) {
+      inning_num <- as.numeric(gsub("[^0-9]", "", market_lower))
+      direction <- if(grepl("over", market_lower)) "over" else if(grepl("under", market_lower)) "under" else NULL
+      
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_inning_total_runs(game_data, inning_num, line_value, direction)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$data <- result_data
+        if(!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+        if(!is.null(result_data$actual_value)) result$actual_value <- result_data$actual_value
+      } else {
+        result$error <- "Could not fetch game data for inning resolution"
+      }
+      
+    } else if (grepl("1st [3-9] Innings Total Runs", market_lower, ignore.case = TRUE)) {
+      num_innings <- as.numeric(gsub("[^0-9]", "", market_lower))
+      direction <- if(grepl("over", market_lower)) "over" else if(grepl("under", market_lower)) "under" else NULL
+      
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_multi_inning_total_runs(game_data, num_innings, line_value, direction)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$data <- result_data
+        if(!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+      } else {
+        result$error <- "Could not fetch game data for multi-inning resolution"
+      }
+      
+      # ==================== MLB SPECIAL MARKETS ====================
+    } else if (market_info$type == "largest_comeback") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_largest_comeback(game_data)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$data <- result_data
+      } else {
+        result$error <- "Could not fetch game data for comeback resolution"
+      }
+      
+    } else if (market_info$type == "team_score_first_and_win") {
+      team_name <- if(!is.null(teams$team_only) && teams$team_only) teams$home else player_name
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_team_score_first_and_win(game_data, team_name)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$data <- result_data
+        if(!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+      } else {
+        result$error <- "Could not fetch game data for team score first resolution"
+      }
+      
+    } else if (market_info$type == "game_both_teams_score") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_both_teams_score(game_data)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$data <- result_data
+        if(!is.null(result_data$both_scored)) result$bet_won <- result_data$both_scored
+      } else {
+        result$error <- "Could not fetch game data for both teams score resolution"
+      }
+      
+    } else if (market_info$type == "game_home_bat_bottom_9th") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data) && !is.null(game_data$plays)) {
+        inning_9_plays <- game_data$plays[game_data$plays$period == 9, ]
+        if(nrow(inning_9_plays) > 0) {
+          top_9_plays <- inning_9_plays[grepl("Top", inning_9_plays$period.displayValue, ignore.case = TRUE), ]
+          if(nrow(top_9_plays) > 0) {
+            last_top_play <- top_9_plays[nrow(top_9_plays), ]
+            away_score <- last_top_play$awayScore
+            home_score <- last_top_play$homeScore
+            result$success <- TRUE
+            result$resolved <- TRUE
+            result$bet_won <- (!is.null(away_score) && !is.null(home_score) && away_score > home_score)
+            result$data <- list(away_score = away_score, home_score = home_score, home_bats = away_score > home_score)
+          } else {
+            result$error <- "Could not find top of 9th inning data"
+          }
+        } else {
+          result$error <- "Game did not go 9 innings"
+        }
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+    } else if (market_info$type == "total_grand_slams") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data) && !is.null(game_data$plays)) {
+        scoring_plays <- game_data$plays[!is.na(game_data$plays$scoringPlay) & game_data$plays$scoringPlay == TRUE, ]
+        grand_slams <- 0
+        for(i in 1:nrow(scoring_plays)) {
+          play_text <- tolower(scoring_plays$text[i])
+          if(grepl("grand slam", play_text) || (grepl("homer", play_text) && grepl("bases loaded", play_text))) {
+            grand_slams <- grand_slams + 1
+          }
+        }
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$actual_value <- grand_slams
+        result$data <- list(grand_slams = grand_slams)
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+    } else if (market_info$type == "team_most_hits") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data) && !is.null(game_data$boxscore$teams)) {
+        away_hits <- as.numeric(game_data$boxscore$teams$statistics[[1]]$hits[1] %||% 0)
+        home_hits <- as.numeric(game_data$boxscore$teams$statistics[[2]]$hits[1] %||% 0)
+        
+        bet_team <- if(!is.null(teams$team_only) && teams$team_only) "home" else 
+          if(grepl(teams$home, player_name, ignore.case=TRUE)) "home" else "away"
+        
+        result$success <- TRUE
+        result$resolved <- TRUE
+        if(away_hits > home_hits) {
+          result$winner <- "away"
+          result$bet_won <- (bet_team == "away")
+        } else if(home_hits > away_hits) {
+          result$winner <- "home"
+          result$bet_won <- (bet_team == "home")
+        } else {
+          result$winner <- "tie"
+          result$bet_won <- FALSE
+        }
+        result$data <- list(away_hits = away_hits, home_hits = home_hits)
+      } else {
+        result$error <- "Could not fetch hit data"
+      }
+      
+    } else if (market_info$type == "team_most_innings") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data) && !is.null(game_data$plays)) {
+        inning_runs <- get_inning_runs(game_data$plays, teams$away, teams$home)
+        if(!is.null(inning_runs)) {
+          away_wins <- sum(inning_runs$away_runs > inning_runs$home_runs, na.rm = TRUE)
+          home_wins <- sum(inning_runs$home_runs > inning_runs$away_runs, na.rm = TRUE)
+          
+          bet_team <- if(!is.null(teams$team_only) && teams$team_only) "home" else 
+            if(grepl(teams$home, player_name, ignore.case=TRUE)) "home" else "away"
+          
+          result$success <- TRUE
+          result$resolved <- TRUE
+          if(away_wins > home_wins) {
+            result$winner <- "away"
+            result$bet_won <- (bet_team == "away")
+          } else if(home_wins > away_wins) {
+            result$winner <- "home"
+            result$bet_won <- (bet_team == "home")
+          } else {
+            result$winner <- "tie"
+            result$bet_won <- FALSE
+          }
+          result$data <- list(away_wins = away_wins, home_wins = home_wins)
+        } else {
+          result$error <- "Could not calculate inning wins"
+        }
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+    } else if (market_info$type == "team_highest_scoring_inning") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data) && !is.null(game_data$plays)) {
+        inning_runs <- get_inning_runs(game_data$plays, teams$away, teams$home)
+        if(!is.null(inning_runs)) {
+          max_away <- max(inning_runs$away_runs, na.rm = TRUE)
+          max_home <- max(inning_runs$home_runs, na.rm = TRUE)
+          
+          bet_team <- if(!is.null(teams$team_only) && teams$team_only) "home" else 
+            if(grepl(teams$home, player_name, ignore.case=TRUE)) "home" else "away"
+          
+          result$success <- TRUE
+          result$resolved <- TRUE
+          if(max_away > max_home) {
+            result$winner <- "away"
+            result$bet_won <- (bet_team == "away")
+          } else if(max_home > max_away) {
+            result$winner <- "home"
+            result$bet_won <- (bet_team == "home")
+          } else {
+            result$winner <- "tie"
+            result$bet_won <- FALSE
+          }
+          result$data <- list(max_away = max_away, max_home = max_home)
+        } else {
+          result$error <- "Could not calculate inning runs"
+        }
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+      # ==================== NBA QUARTER/HALF MARKETS ====================
+    } else if (grepl("^[1-4]st|nd|rd|th Quarter Total Points$", market_lower, ignore.case = TRUE) && sport == "nba") {
+      quarter_num <- as.numeric(gsub("[^0-9]", "", market_lower))
+      direction <- if(grepl("over", market_lower)) "over" else if(grepl("under", market_lower)) "under" else NULL
+      
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_nba_quarter_total(game_data, quarter_num, line_value, direction)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$data <- result_data
+        if(!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+      } else {
+        result$error <- "Could not fetch game data for NBA quarter resolution"
+      }
+      
+    } else if (grepl("^[1-2]st|nd Half Total Points$", market_lower, ignore.case = TRUE) && sport == "nba") {
+      half_num <- as.numeric(gsub("[^0-9]", "", market_lower))
+      direction <- if(grepl("over", market_lower)) "over" else if(grepl("under", market_lower)) "under" else NULL
+      
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_nba_half_total(game_data, half_num, line_value, direction)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$data <- result_data
+        if(!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+      } else {
+        result$error <- "Could not fetch game data for NBA half resolution"
+      }
+      
+    } else if (grepl("team win both halves", market_lower, ignore.case = TRUE)) {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        quarters <- get_nba_quarter_scores(game_data)
+        if(!is.null(quarters) && length(quarters) >= 4) {
+          first_half_away <- quarters[[1]]$away_score + quarters[[2]]$away_score
+          first_half_home <- quarters[[1]]$home_score + quarters[[2]]$home_score
+          second_half_away <- quarters[[3]]$away_score + quarters[[4]]$away_score
+          second_half_home <- quarters[[3]]$home_score + quarters[[4]]$home_score
+          
+          first_half_winner <- if(first_half_away > first_half_home) "away" else "home"
+          second_half_winner <- if(second_half_away > second_half_home) "away" else "home"
+          
+          bet_team <- if(!is.null(teams$team_only) && teams$team_only) "home" else NULL
+          
+          result$success <- TRUE
+          result$resolved <- TRUE
+          result$first_half_winner <- first_half_winner
+          result$second_half_winner <- second_half_winner
+          result$bet_won <- (!is.null(bet_team) && first_half_winner == bet_team && second_half_winner == bet_team)
+        } else {
+          result$error <- "Could not extract quarter data"
+        }
+      } else {
+        result$error <- "Could not fetch game data for team win both halves resolution"
+      }
+      
+    } else if (market_info$type == "team_win_every_quarter") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        quarters <- get_nba_quarter_scores(game_data)
+        if(!is.null(quarters) && length(quarters) >= 4) {
+          bet_team <- if(!is.null(teams$team_only) && teams$team_only) "home" else 
+            if(grepl(teams$home, player_name, ignore.case=TRUE)) "home" else "away"
+          won_all <- TRUE
+          for(q in 1:4) {
+            if(quarters[[q]]$away_score > quarters[[q]]$home_score) {
+              if(bet_team != "away") won_all <- FALSE
+            } else if(quarters[[q]]$home_score > quarters[[q]]$away_score) {
+              if(bet_team != "home") won_all <- FALSE
+            } else {
+              won_all <- FALSE
+            }
+          }
+          result$success <- TRUE
+          result$resolved <- TRUE
+          result$bet_won <- won_all
+          result$data <- list(won_all_quarters = won_all)
+        } else {
+          result$error <- "Could not extract quarter data"
+        }
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+      # ==================== NHL PERIOD MARKETS ====================
+    } else if (grepl("^[1-3]st|nd|rd Period Total Goals$", market_lower, ignore.case = TRUE) && sport == "nhl") {
+      period_num <- as.numeric(gsub("[^0-9]", "", market_lower))
+      direction <- if(grepl("over", market_lower)) "over" else if(grepl("under", market_lower)) "under" else NULL
+      
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_nhl_period_total(game_data, period_num, line_value, direction)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$data <- result_data
+        if(!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+      } else {
+        result$error <- "Could not fetch game data for NHL period resolution"
+      }
+      
+    } else if (market_info$type == "goal_each_period") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data) && !is.null(game_data$boxscore$periods)) {
+        periods <- game_data$boxscore$periods
+        goals_each_period <- TRUE
+        for(i in 1:min(3, nrow(periods))) {
+          if(as.numeric(periods$awayScore[i]) == 0 && as.numeric(periods$homeScore[i]) == 0) {
+            goals_each_period <- FALSE
+            break
+          }
+        }
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$bet_won <- goals_each_period
+        result$actual_value <- goals_each_period
+        result$data <- list(goals_in_each_period = goals_each_period, period_scores = periods)
+      } else {
+        result$error <- "Could not fetch period data"
+      }
+      
+    } else if (market_info$type == "highest_scoring_period") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data) && !is.null(game_data$boxscore$periods)) {
+        periods <- game_data$boxscore$periods
+        period_totals <- as.numeric(periods$awayScore) + as.numeric(periods$homeScore)
+        max_total <- max(period_totals[1:3], na.rm = TRUE)
+        highest_period <- which.max(period_totals[1:3])
+        
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$actual_value <- highest_period
+        result$data <- list(
+          highest_period = highest_period, 
+          period_totals = period_totals[1:3],
+          period_1_total = period_totals[1],
+          period_2_total = period_totals[2],
+          period_3_total = period_totals[3]
+        )
+        
+        if(!is.null(line_value)) {
+          bet_period <- as.numeric(line_value)
+          result$bet_won <- (highest_period == bet_period)
+        }
+      } else {
+        result$error <- "Could not fetch period data"
+      }
+      
+      # ==================== ADDITIONAL MARKET HANDLERS ====================
+    } else if (market_info$stat == "batting_fantasy_score") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_batting_fantasy_score(game_data, player_name)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$actual_value <- result_data$actual_value
+        result$data <- result_data
+        if(!is.null(line_value)) {
+          line_val_num <- as.numeric(line_value)
+          if(grepl("over", market_lower)) result$bet_won <- result_data$actual_value > line_val_num
+          else if(grepl("under", market_lower)) result$bet_won <- result_data$actual_value < line_val_num
+        }
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+    } else if (market_info$stat == "dunks") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_player_dunks(game_data, player_name)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$actual_value <- result_data$actual_value
+        result$data <- result_data
+        if(!is.null(line_value)) {
+          line_val_num <- as.numeric(line_value)
+          if(grepl("over", market_lower)) result$bet_won <- result_data$actual_value > line_val_num
+          else if(grepl("under", market_lower)) result$bet_won <- result_data$actual_value < line_val_num
+        }
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+    } else if (market_info$stat == "hits_runs_rbi") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_player_hits_runs_rbi(game_data, player_name)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$actual_value <- result_data$actual_value
+        result$data <- result_data
+        if(!is.null(line_value)) {
+          line_val_num <- as.numeric(line_value)
+          if(grepl("over", market_lower)) result$bet_won <- result_data$actual_value > line_val_num
+          else if(grepl("under", market_lower)) result$bet_won <- result_data$actual_value < line_val_num
+        }
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+    } else if (market_info$type == "team_total" && market_info$stat == "batting_walks") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        innings <- if(!is.null(market_info$innings)) market_info$innings else 5
+        result_data <- resolve_team_inning_batting_walks(game_data, teams$home, innings)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$actual_value <- result_data$actual_value
+        result$data <- result_data
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+    } else if (market_info$type == "team_total" && market_info$stat == "pitching_strikeouts") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        innings <- if(!is.null(market_info$innings)) market_info$innings else 5
+        result_data <- resolve_team_inning_pitching_strikeouts(game_data, teams$home, innings)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$actual_value <- result_data$actual_value
+        result$data <- result_data
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+    } else if (market_info$type == "team_total" && market_info$stat == "batters") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_team_inning_batters(game_data, teams$home)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$actual_value <- result_data$actual_value
+        result$data <- result_data
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+    } else if (market_info$type == "team_total" && market_info$stat == "pitches_thrown") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_team_inning_pitches(game_data, teams$home)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$actual_value <- result_data$actual_value
+        result$data <- result_data
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+    } else if (market_info$type == "team_total" && market_info$stat == "strikeouts_thrown") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        result_data <- resolve_team_inning_strikeouts_thrown(game_data, teams$home)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$actual_value <- result_data$actual_value
+        result$data <- result_data
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+      
+    } else if (market_info$type == "team_player_first") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        team_name <- teams$home
+        result_data <- resolve_team_player_first_basket(game_data, team_name)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        if(!is.null(result_data$player)) {
+          result$actual_value <- result_data$player
+          result$bet_won <- grepl(player_name, result_data$player, ignore.case = TRUE)
+        }
+        result$data <- result_data
+      } else {
+        result$error <- "Could not fetch game data"
+      }
       
       # ==================== SPECIAL GAME MARKETS ====================
     } else if (market_info$type == "game_overtime") {
@@ -7994,24 +10356,25 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
           result$error <- "Could not fetch NHL player stats"
         }
       } else if (market_info$type %in% c("first_scorer", "last_scorer")) {
-        url <- paste0("https://site.api.espn.com/apis/site/v2/sports/hockey/nhl/summary?event=", game_id)
-        response <- GET(url, timeout = 10)
-        if (status_code(response) == 200) {
-          data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
-          if (!is.null(data$plays) && is.data.frame(data$plays)) {
-            goal_plays <- data$plays[grepl("goal", data$plays$text, ignore.case = TRUE), ]
-            if (nrow(goal_plays) > 0) {
-              if (market_info$type == "first_scorer") {
-                first_goal <- goal_plays[order(goal_plays$id), ][1, ]
-                result$player_scored <- grepl(player_name, first_goal$text, ignore.case = TRUE)
-              } else {
-                last_goal <- goal_plays[order(goal_plays$id, decreasing = TRUE), ][1, ]
-                result$player_scored <- grepl(player_name, last_goal$text, ignore.case = TRUE)
-              }
-              result$success <- TRUE
-              result$resolved <- TRUE
-            }
+        debug_cat(sprintf("Resolving NHL %s scorer\n", market_info$type))
+        scorer_result <- resolve_nhl_first_last_scorer(
+          game_id, 
+          player_name, 
+          is_first = (market_info$type == "first_scorer")
+        )
+        
+        if (scorer_result$success) {
+          result$success <- TRUE
+          result$resolved <- TRUE
+          result$data <- scorer_result
+          result$bet_won <- scorer_result$player_scored
+          if (!is.null(scorer_result$scorer)) {
+            result$actual_value <- scorer_result$scorer
           }
+          debug_cat(sprintf("  Bet won: %s\n", scorer_result$player_scored))
+        } else {
+          result$error <- scorer_result$error
+          debug_cat(sprintf("  ERROR: %s\n", scorer_result$error))
         }
       } else if (market_info$type %in% c("game_moneyline", "game_total_goals", "game_both_teams_score", "game_puckline")) {
         period_data <- get_espn_nhl_period_data(game_id)
@@ -8068,49 +10431,6 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
         result$error <- paste("Unknown NHL market type:", market_type)
       }
       
-      # ==================== PLAYER COMBO & SPECIAL ====================
-    } else if (market_info$type == "player_combo") {
-      debug_cat("Market type: Player combo prop\n")
-      combo_result <- resolve_combo_prop(game_id, player_name, sport, result$season,
-                                         market_info$combo_type, line_value)
-      if (combo_result$success) {
-        result$success <- TRUE
-        result$resolved <- TRUE
-        result$data <- combo_result
-        if (!is.null(line_value)) {
-          line_val_num <- as.numeric(line_value)
-          if (grepl("over", market_lower)) result$bet_won <- (combo_result$actual_value > line_val_num)
-          else if (grepl("under", market_lower)) result$bet_won <- (combo_result$actual_value < line_val_num)
-          result$actual_value <- combo_result$actual_value
-          result$line_value <- line_val_num
-        }
-      } else {
-        result$error <- combo_result$error
-      }
-      
-    } else if (market_info$type == "player_special") {
-      debug_cat(sprintf("Market type: Special prop - %s\n", market_info$special_type))
-      special_result <- resolve_special_prop(game_id, player_name, sport, result$season,
-                                             market_info$special_type, line_value)
-      if (special_result$success) {
-        result$success <- TRUE
-        result$resolved <- TRUE
-        result$data <- special_result
-        if (market_info$special_type %in% c("double_double", "triple_double")) {
-          if (!is.null(special_result$achieved)) result$bet_won <- special_result$achieved
-        } else if (market_info$special_type %in% c("three_pointers_made")) {
-          if (!is.null(line_value) && !is.null(special_result$actual_value)) {
-            line_val_num <- as.numeric(line_value)
-            if (grepl("over", market_lower)) result$bet_won <- special_result$actual_value > line_val_num
-            else if (grepl("under", market_lower)) result$bet_won <- special_result$actual_value < line_val_num
-            result$actual_value <- special_result$actual_value
-            result$line_value <- line_val_num
-          }
-        }
-      } else {
-        result$error <- special_result$error
-      }
-      
     } else if (market_info$type == "period_total") {
       debug_cat(sprintf("Market type: %s total\n", market_info$period))
       period_result <- resolve_period_total(game_id, sport, result$season,
@@ -8144,61 +10464,6 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
         debug_cat(sprintf("Scorer: %s, Our player scored: %s\n", scorer_data$scorer, result$player_scored))
       } else {
         result$error <- scorer_data$error
-      }
-      
-    } else if (market_info$type == "player_stat") {
-      debug_cat(sprintf("Market type: Player stat - %s\n", market_info$stat))
-      
-      if (market_info$stat == "three_pointers_made") {
-        special_result <- resolve_special_prop(game_id, player_name, sport, result$season,
-                                               "three_pointers_made", line_value)
-        if (special_result$success) {
-          result$success <- TRUE
-          result$resolved <- TRUE
-          result$data <- special_result
-          if (!is.null(line_value) && !is.null(special_result$actual_value)) {
-            line_val_num <- as.numeric(line_value)
-            if (grepl("over", market_lower)) result$bet_won <- special_result$actual_value > line_val_num
-            else if (grepl("under", market_lower)) result$bet_won <- special_result$actual_value < line_val_num
-            result$actual_value <- special_result$actual_value
-            result$line_value <- line_val_num
-          }
-        } else {
-          result$error <- special_result$error
-        }
-      } else {
-        if (sport %in% c("nba", "basketball")) {
-          stats_data <- fetch_nba_player_stats(player_name, result$season, game_date_obj, game_id)
-        } else if (sport %in% c("nfl", "football")) {
-          stats_data <- fetch_nfl_player_stats(player_name, result$season, game_id = game_id)
-        } else if (sport %in% c("mlb")) {
-          stats_data <- fetch_mlb_player_stats(player_name, result$season, game_date_obj, game_id)
-        } else if (sport %in% c("wnba")) {
-          stats_data <- fetch_wnba_player_stats(player_name, result$season, game_date_obj, game_id)
-        } else if (sport %in% c("ncaab", "ncaaw")) {
-          stats_data <- fetch_ncaa_bball_player_stats(player_name, result$season, game_date_obj, game_id, sport)
-        } else {
-          stats_data <- NULL
-        }
-        
-        if (!is.null(stats_data) && stats_data$found) {
-          result$success <- TRUE
-          result$resolved <- TRUE
-          result$data <- stats_data
-          actual_value <- stats_data$stats[[market_info$stat]]
-          if (!is.null(actual_value) && !is.na(actual_value)) {
-            result$actual_value <- actual_value
-            if (!is.null(line_value)) {
-              line_val_num <- as.numeric(line_value)
-              if (grepl("over", market_lower)) result$bet_won <- actual_value > line_val_num
-              else if (grepl("under", market_lower)) result$bet_won <- actual_value < line_val_num
-              result$line_value <- line_val_num
-            }
-          }
-        } else {
-          error_msg <- if (!is.null(stats_data)) stats_data$error else "Failed to fetch player stats"
-          result$error <- error_msg
-        }
       }
       
     } else if (grepl("total.*points|game.*total|points.*total", market_lower) && grepl("over|under", market_lower)) {
