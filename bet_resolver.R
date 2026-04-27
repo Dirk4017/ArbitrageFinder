@@ -76,6 +76,83 @@ debug_print <- function(x) {
 }
 
 # ==============================================
+# MLB STAT MAPPING - Ensures correct stat is extracted
+# ==============================================
+get_correct_player_stat <- function(stats_data, requested_stat, sport = "mlb") {
+  if (is.null(stats_data) || is.null(stats_data$stats)) return(NA)
+
+  if (sport != "mlb" && sport != "baseball") {
+    val <- stats_data$stats[[requested_stat]]
+    if (!is.null(val) && !is.na(val)) return(val)
+    return(NA)
+  }
+
+  mlb_mapping <- list(
+    home_runs = c("home_runs", "hr", "homers", "home_run"),
+    runs = c("runs", "runs_scored", "r"),
+    rbi = c("rbi", "runs_batted_in", "rbis"),
+    stolen_bases = c("stolen_bases", "sb", "steals", "stolen_base"),
+    walks = c("walks", "base_on_balls", "bb", "batting_walks"),
+    batting_walks = c("walks", "base_on_balls", "bb", "batting_walks"),
+    strikeouts = c("strikeouts", "so", "batting_strikeouts"),
+    pitching_strikeouts = c("pitching_strikeouts", "strikeouts_pitched", "so_pitched"),
+    hits = c("hits", "h"),
+    total_bases = c("total_bases", "tb"),
+    doubles = c("doubles", "2b"),
+    triples = c("triples", "3b"),
+    singles = c("singles", "1b"),
+    at_bats = c("at_bats", "ab"),
+    innings_pitched = c("innings_pitched", "ip"),
+    earned_runs = c("earned_runs", "er", "earned_runs_allowed"),
+    hits_allowed = c("hits_allowed", "ha"),
+    walks_allowed = c("walks_allowed", "bb_allowed"),
+    outs_recorded = c("outs_recorded", "outs"),
+    home_runs_allowed = c("home_runs_allowed", "hra")
+  )
+
+  possible_fields <- mlb_mapping[[requested_stat]]
+  if (is.null(possible_fields)) {
+    possible_fields <- c(requested_stat)
+  }
+
+  for (field in possible_fields) {
+    val <- stats_data$stats[[field]]
+    if (!is.null(val) && !is.na(val) && is.numeric(val)) return(val)
+  }
+
+  return(NA)
+}
+
+# ==============================================
+# MLB TEAM DETECTION - Override sport if MLB teams found in event
+# ==============================================
+check_mlb_team_in_event <- function(event_string) {
+  event_lower <- tolower(event_string)
+  mlb_teams <- c(
+    "yankees", "red sox", "dodgers", "giants", "cubs", "white sox",
+    "rangers", "athletics", "rays", "orioles", "blue jays", "twins",
+    "guardians", "tigers", "royals", "astros", "angels", "mariners",
+    "braves", "marlins", "mets", "phillies", "nationals", "padres",
+    "rockies", "diamondbacks", "d-backs", "cardinals", "brewers", "pirates", "reds",
+    "arizona diamondbacks", "atlanta braves", "baltimore orioles",
+    "boston red sox", "chicago cubs", "chicago white sox",
+    "cincinnati reds", "cleveland guardians", "colorado rockies",
+    "detroit tigers", "houston astros", "kansas city royals",
+    "los angeles angels", "los angeles dodgers", "miami marlins",
+    "milwaukee brewers", "minnesota twins", "new york mets",
+    "new york yankees", "oakland athletics", "philadelphia phillies",
+    "pittsburgh pirates", "san diego padres", "san francisco giants",
+    "seattle mariners", "st. louis cardinals", "st louis cardinals",
+    "tampa bay rays", "texas rangers", "toronto blue jays",
+    "washington nationals"
+  )
+  for (team in mlb_teams) {
+    if (grepl(team, event_lower, fixed = TRUE)) return(TRUE)
+  }
+  return(FALSE)
+}
+
+# ==============================================
 # UPDATED SPORT NORMALIZATION
 # ==============================================
 normalize_sport_name <- function(sport) {
@@ -1791,33 +1868,33 @@ classify_market <- function(market_type, sport = NULL) {
   if (grepl("total hits", market_lower)) {
     return(list(type = "total_hits"))
   }
-  # Added missing MLB total markets
+  # Added missing MLB total markets (These map to player_stat if no team prefix)
   if (grepl("total doubles", market_lower) && !grepl("team", market_lower)) {
-    return(list(type = "game_total", stat = "doubles"))
+    return(list(type = "player_stat", stat = "doubles"))
   }
   if (grepl("total plate appearances", market_lower) && !grepl("team", market_lower)) {
-    return(list(type = "game_total", stat = "plate_appearances"))
+    return(list(type = "player_stat", stat = "plate_appearances"))
   }
   if (grepl("total rbis", market_lower) && !grepl("team", market_lower)) {
-    return(list(type = "game_total", stat = "rbis"))
+    return(list(type = "player_stat", stat = "rbis"))
   }
   if (grepl("total singles", market_lower) && !grepl("team", market_lower)) {
-    return(list(type = "game_total", stat = "singles"))
+    return(list(type = "player_stat", stat = "singles"))
   }
   if (grepl("total strikeouts", market_lower) && !grepl("team", market_lower)) {
-    return(list(type = "game_total", stat = "strikeouts"))
+    return(list(type = "player_stat", stat = "strikeouts"))
   }
   if (grepl("total triples", market_lower) && !grepl("team", market_lower)) {
-    return(list(type = "game_total", stat = "triples"))
+    return(list(type = "player_stat", stat = "triples"))
   }
   if (grepl("total walks", market_lower) && !grepl("team", market_lower)) {
-    return(list(type = "game_total", stat = "walks"))
+    return(list(type = "player_stat", stat = "walks"))
   }
   if (grepl("total bases", market_lower) && !grepl("team|player", market_lower)) {
-    return(list(type = "game_total", stat = "total_bases"))
+    return(list(type = "player_stat", stat = "total_bases"))
   }
   if (grepl("total extra base hits", market_lower) && !grepl("team", market_lower)) {
-    return(list(type = "game_total", stat = "extra_base_hits"))
+    return(list(type = "player_stat", stat = "extra_base_hits"))
   }
   
   # ========== GENERIC TOTAL MARKETS (LAST RESORT FOR TOTAL MARKETS) ==========
@@ -4357,39 +4434,71 @@ find_mlb_game_id <- function(home_team, away_team, game_date) {
 find_mlb_game_id_single_date <- function(home_team, away_team, game_date) {
   tryCatch({
     games <- get_espn_mlb_games(game_date)
-    
+
     if (is.null(games) || nrow(games) == 0) {
       return(NA)
     }
-    
-    # Clean team names for matching
+
     clean_team <- function(name) {
       if (is.null(name) || is.na(name)) return("")
       name <- tolower(name)
-      name <- gsub("[^a-z0-9]", "", name)
+      name <- gsub("st\\.", "st", name)
+      name <- gsub("[^a-z0-9 ]", "", name)
+      name <- gsub("\\s+", " ", trimws(name))
       name
     }
-    
+
+    get_team_keywords <- function(name) {
+      name <- clean_team(name)
+      parts <- unlist(strsplit(name, " "))
+      parts <- parts[nchar(parts) >= 3]
+      parts
+    }
+
     home_clean <- clean_team(home_team)
     away_clean <- clean_team(away_team)
-    
+    home_keywords <- get_team_keywords(home_team)
+    away_keywords <- get_team_keywords(away_team)
+
     for (i in 1:nrow(games)) {
       game <- games[i, ]
       game_id <- game$id
       game_name <- tolower(game$name)
-      
-      # Clean game name for matching
       game_name_clean <- clean_team(game_name)
-      
-      # Check if both teams appear in the game name
-      if (grepl(home_clean, game_name_clean) && grepl(away_clean, game_name_clean)) {
-        debug_cat(sprintf("    Found match: %s (ID: %s)\n", game$name, game_id))
+
+      home_stripped <- gsub("[^a-z0-9]", "", home_clean)
+      away_stripped <- gsub("[^a-z0-9]", "", away_clean)
+      game_stripped <- gsub("[^a-z0-9]", "", game_name_clean)
+
+      if (grepl(home_stripped, game_stripped) && grepl(away_stripped, game_stripped)) {
+        debug_cat(sprintf("    Found match (exact): %s (ID: %s)\n", game$name, game_id))
+        return(game_id)
+      }
+
+      home_match <- any(sapply(home_keywords, function(kw) grepl(kw, game_name_clean)))
+      away_match <- any(sapply(away_keywords, function(kw) grepl(kw, game_name_clean)))
+      if (home_match && away_match) {
+        debug_cat(sprintf("    Found match (keyword): %s (ID: %s)\n", game$name, game_id))
         return(game_id)
       }
     }
-    
+
+    if (length(home_keywords) > 0 || length(away_keywords) > 0) {
+      for (i in 1:nrow(games)) {
+        game <- games[i, ]
+        game_id <- game$id
+        game_name_clean <- clean_team(tolower(game$name))
+        home_match <- any(sapply(home_keywords, function(kw) grepl(kw, game_name_clean)))
+        away_match <- any(sapply(away_keywords, function(kw) grepl(kw, game_name_clean)))
+        if (home_match || away_match) {
+          debug_cat(sprintf("    Found partial match: %s (ID: %s)\n", game$name, game_id))
+          return(game_id)
+        }
+      }
+    }
+
     return(NA)
-    
+
   }, error = function(e) {
     return(NA)
   })
@@ -4426,199 +4535,168 @@ find_mlb_game_id_flexible <- function(home_team, away_team, game_date, max_days_
 get_espn_mlb_player_stats <- function(game_id, player_name) {
   tryCatch({
     url <- paste0("https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=", game_id)
-    debug_cat(sprintf("  Calling ESPN MLB API for player stats: %s\n", url))
-    
+    debug_cat(sprintf("  Calling ESPN MLB API for player stats: %s
+", url))
+
     response <- GET(url, timeout = 10)
     if (status_code(response) != 200) {
-      debug_cat(sprintf("  ESPN MLB API returned status: %d\n", status_code(response)))
+      debug_cat(sprintf("  ESPN MLB API returned status: %d
+", status_code(response)))
       return(NULL)
     }
-    
+
     data <- fromJSON(content(response, "text", encoding = "UTF-8"), flatten = TRUE)
-    
-    # Clean name for matching
+
+    # Helper to clean names for matching
     clean_name_for_matching <- function(name) {
       name <- tolower(trimws(name))
       name <- gsub("[[:punct:]]", "", name)
       name <- gsub("\\s+", " ", name)
       name
     }
-    
-    target_name <- clean_name_for_matching(player_name)
-    debug_cat(sprintf("  Searching for MLB player: %s\n", target_name))
-    
+
+    target_clean <- clean_name_for_matching(player_name)
+    debug_cat(sprintf("  Searching for MLB player: %s
+", target_clean))
+
+    # Advanced fuzzy matching logic
+    is_player_match <- function(target, athlete) {
+      t_clean <- clean_name_for_matching(target)
+      a_clean <- clean_name_for_matching(athlete)
+
+      if (t_clean == a_clean) return(TRUE)
+      if (grepl(t_clean, a_clean, fixed = TRUE) || grepl(a_clean, t_clean, fixed = TRUE)) return(TRUE)
+
+      t_parts <- strsplit(t_clean, " ")[[1]]
+      a_parts <- strsplit(a_clean, " ")[[1]]
+
+      if (length(t_parts) >= 2 && length(a_parts) >= 2) {
+        t_last <- t_parts[length(t_parts)]
+        a_last <- a_parts[length(a_parts)]
+
+        # If last names match exactly or very closely
+        if (t_last == a_last || utils::adist(t_last, a_last)[1,1] <= 1) {
+          t_first <- t_parts[1]
+          a_first <- a_parts[1]
+
+          # Check initials
+          if (nchar(t_first) == 1 && substr(a_first, 1, 1) == t_first) return(TRUE)
+          if (nchar(a_first) == 1 && substr(t_first, 1, 1) == a_first) return(TRUE)
+
+          # Allow slight typo in first name (distance <= 2)
+          if (utils::adist(t_first, a_first)[1,1] <= 2) return(TRUE)
+        }
+
+        # Full name fuzzy match (allow distance up to 2)
+        if (utils::adist(t_clean, a_clean)[1,1] <= 2) return(TRUE)
+      }
+      return(FALSE)
+    }
+
+    # Initialize result structure
+    result <- list(
+      player = player_name, # will be updated to actual name
+      team = "Unknown",
+      # Hitting stats
+      at_bats = 0, runs = 0, hits = 0, rbi = 0, walks = 0, strikeouts = 0,
+      home_runs = 0, stolen_bases = 0, doubles = 0, triples = 0, singles = 0, total_bases = 0,
+      # Pitching stats
+      innings_pitched = 0, outs_recorded = 0, hits_allowed = 0, runs_allowed = 0,
+      earned_runs = 0, walks_allowed = 0, pitching_strikeouts = 0, home_runs_allowed = 0,
+      pitches_thrown = 0, era = 0
+    )
+
+    found_player <- FALSE
+
     # Check for boxscore players
     if (!is.null(data$boxscore) && !is.null(data$boxscore$players)) {
       players_df <- data$boxscore$players
-      debug_cat(sprintf("  Found %d team(s) in MLB boxscore\n", nrow(players_df)))
-      
+
       for (team_idx in 1:nrow(players_df)) {
         team_data <- players_df[team_idx, ]
         team_name <- team_data$team$displayName %||% "Unknown"
-        
-        # The statistics is a data frame with rows for different stat types
+
         if (!is.null(team_data$statistics) && length(team_data$statistics) > 0) {
           stats_list <- team_data$statistics[[1]]
-          
+
           if (is.data.frame(stats_list) && nrow(stats_list) > 0) {
-            # Find the batting stat group
-            batting_idx <- NULL
-            for (i in 1:nrow(stats_list)) {
-              if (!is.null(stats_list$type[i]) && stats_list$type[i] == "batting") {
-                batting_idx <- i
-                break
-              }
-            }
-            
-            if (!is.null(batting_idx)) {
-              batting_stats <- stats_list[batting_idx, ]
-              
-              # Get athletes from batting stats
-              if (!is.null(batting_stats$athletes) && length(batting_stats$athletes) > 0) {
-                athletes_data <- batting_stats$athletes[[1]]
-                
-                if (is.data.frame(athletes_data) && nrow(athletes_data) > 0) {
-                  debug_cat(sprintf("  Checking team %s with %d batters\n", team_name, nrow(athletes_data)))
-                  
-                  for (athlete_idx in 1:nrow(athletes_data)) {
-                    athlete_row <- athletes_data[athlete_idx, ]
-                    
-                    # Extract athlete name - handle nested structure
-                    athlete_name <- NULL
-                    
-                    # Method 1: athlete$athlete$displayName
-                    if (!is.null(athlete_row$athlete) && is.data.frame(athlete_row$athlete)) {
-                      if ("displayName" %in% colnames(athlete_row$athlete)) {
-                        athlete_name <- athlete_row$athlete$displayName[1]
+            # Iterate through all stat groups (batting and pitching)
+            for (stat_idx in 1:nrow(stats_list)) {
+              stat_type <- stats_list$type[stat_idx] %||% "unknown"
+
+              if (stat_type %in% c("batting", "pitching")) {
+                athletes_data <- stats_list$athletes[stat_idx]
+                if (is.list(athletes_data) && length(athletes_data) > 0) {
+                  athletes_df <- athletes_data[[1]]
+
+                  if (is.data.frame(athletes_df) && nrow(athletes_df) > 0) {
+                    for (athlete_idx in 1:nrow(athletes_df)) {
+                      athlete_row <- athletes_df[athlete_idx, ]
+
+                      # Extract name safely
+                      athlete_name <- NULL
+                      if (!is.null(athlete_row$athlete) && is.data.frame(athlete_row$athlete)) {
+                        if ("displayName" %in% colnames(athlete_row$athlete)) athlete_name <- athlete_row$athlete$displayName[1]
                       }
-                    }
-                    
-                    # Method 2: athlete$athlete.displayName (flattened)
-                    if (is.null(athlete_name) && "athlete.displayName" %in% colnames(athlete_row)) {
-                      athlete_name <- athlete_row$athlete.displayName
-                    }
-                    
-                    # Method 3: athlete$displayName
-                    if (is.null(athlete_name) && "displayName" %in% colnames(athlete_row)) {
-                      athlete_name <- athlete_row$displayName
-                    }
-                    
-                    if (!is.null(athlete_name)) {
-                      cleaned_athlete <- clean_name_for_matching(athlete_name)
-                      
-                      if (grepl(target_name, cleaned_athlete, fixed = TRUE) ||
-                          grepl(cleaned_athlete, target_name, fixed = TRUE)) {
-                        
-                        debug_cat(sprintf("  Found MLB player match in batting stats: %s\n", athlete_name))
-                        
-                        # Extract stats vector
+                      if (is.null(athlete_name) && "athlete.displayName" %in% colnames(athlete_row)) athlete_name <- athlete_row$athlete.displayName
+                      if (is.null(athlete_name) && "displayName" %in% colnames(athlete_row)) athlete_name <- athlete_row$displayName
+
+                      if (!is.null(athlete_name) && is_player_match(player_name, athlete_name)) {
+                        found_player <- TRUE
+                        result$player <- athlete_name
+                        result$team <- team_name
+                        debug_cat(sprintf("  Found MLB player match in %s stats: %s
+", stat_type, athlete_name))
+
                         stats_vector <- NULL
                         if (!is.null(athlete_row$stats) && is.list(athlete_row$stats) && length(athlete_row$stats) > 0) {
                           stats_vector <- athlete_row$stats[[1]]
                         }
-                        
-                        # Initialize result
-                        result <- list(
-                          player = athlete_name,
-                          team = team_name,
-                          # Hitting stats
-                          at_bats = 0,
-                          runs = 0,
-                          hits = 0,
-                          rbi = 0,
-                          walks = 0,
-                          strikeouts = 0,
-                          home_runs = 0,
-                          stolen_bases = 0,
-                          # Extra-base hits
-                          doubles = 0,
-                          triples = 0,
-                          singles = 0,
-                          total_bases = 0,
-                          # Pitching stats (initially 0)
-                          innings_pitched = 0,
-                          outs_recorded = 0,
-                          hits_allowed = 0,
-                          runs_allowed = 0,
-                          earned_runs = 0,
-                          walks_allowed = 0,
-                          pitching_strikeouts = 0,
-                          home_runs_allowed = 0,
-                          pitches_thrown = 0,
-                          era = 0
-                        )
-                        
-                        if (!is.null(stats_vector) && length(stats_vector) >= 7) {
-                          # ESPN MLB stats vector structure:
-                          # [1] = "H-AB" (Hits-AtBats) - e.g., "2-4"
-                          # [2] = Runs
-                          # [3] = Hits (duplicate of parsed from [1])
-                          # [4] = Doubles
-                          # [5] = Triples
-                          # [6] = Home Runs
-                          # [7] = RBI
-                          # [8] = Walks (BB)
-                          # [9] = Strikeouts (SO)
-                          # [10] = Batting Average
-                          # [11] = On Base Percentage
-                          # [12] = Slugging Percentage
-                          
-                          # Parse H-AB from first element
-                          hit_ab <- strsplit(as.character(stats_vector[1]), "-")[[1]]
-                          if (length(hit_ab) == 2) {
-                            result$hits <- as.numeric(hit_ab[1]) %||% 0
-                            result$at_bats <- as.numeric(hit_ab[2]) %||% 0
+
+                        if (!is.null(stats_vector)) {
+                          if (stat_type == "batting" && length(stats_vector) >= 7) {
+                            # Parse H-AB
+                            hit_ab <- strsplit(as.character(stats_vector[1]), "-")[[1]]
+                            if (length(hit_ab) == 2) {
+                              result$hits <- as.numeric(hit_ab[1]) %||% 0
+                              result$at_bats <- as.numeric(hit_ab[2]) %||% 0
+                            }
+                            if (length(stats_vector) >= 2) result$runs <- as.numeric(stats_vector[2]) %||% 0
+                            if (result$hits == 0 && length(stats_vector) >= 3) result$hits <- as.numeric(stats_vector[3]) %||% 0
+                            if (length(stats_vector) >= 4) result$doubles <- as.numeric(stats_vector[4]) %||% 0
+                            if (length(stats_vector) >= 5) result$triples <- as.numeric(stats_vector[5]) %||% 0
+                            if (length(stats_vector) >= 6) result$home_runs <- as.numeric(stats_vector[6]) %||% 0
+                            if (length(stats_vector) >= 7) result$rbi <- as.numeric(stats_vector[7]) %||% 0
+                            if (length(stats_vector) >= 8) result$walks <- as.numeric(stats_vector[8]) %||% 0
+                            if (length(stats_vector) >= 9) result$strikeouts <- as.numeric(stats_vector[9]) %||% 0
+
+                            result$singles <- max(0, result$hits - (result$doubles + result$triples + result$home_runs))
+                            result$total_bases <- result$singles + (result$doubles * 2) + (result$triples * 3) + (result$home_runs * 4)
+
+                          } else if (stat_type == "pitching" && length(stats_vector) >= 9) {
+                            # [1] IP, [2] H, [3] R, [4] ER, [5] BB, [6] K, [7] HR, [8] PC-ST, [9] ERA
+                            ip_str <- as.character(stats_vector[1])
+                            result$innings_pitched <- as.numeric(ip_str) %||% 0
+
+                            # Calculate outs from IP (e.g., 5.1 -> 16 outs)
+                            ip_parts <- strsplit(ip_str, "\\.")[[1]]
+                            full_innings <- as.numeric(ip_parts[1]) %||% 0
+                            partial_outs <- if(length(ip_parts) > 1) as.numeric(ip_parts[2]) %||% 0 else 0
+                            result$outs_recorded <- (full_innings * 3) + partial_outs
+
+                            result$hits_allowed <- as.numeric(stats_vector[2]) %||% 0
+                            result$runs_allowed <- as.numeric(stats_vector[3]) %||% 0
+                            result$earned_runs <- as.numeric(stats_vector[4]) %||% 0
+                            result$walks_allowed <- as.numeric(stats_vector[5]) %||% 0
+                            result$pitching_strikeouts <- as.numeric(stats_vector[6]) %||% 0
+                            result$home_runs_allowed <- as.numeric(stats_vector[7]) %||% 0
+
+                            pc_st <- strsplit(as.character(stats_vector[8]), "-")[[1]]
+                            if (length(pc_st) >= 1) result$pitches_thrown <- as.numeric(pc_st[1]) %||% 0
+
+                            result$era <- as.numeric(stats_vector[9]) %||% 0
                           }
-                          
-                          # Parse runs (element 2)
-                          if (length(stats_vector) >= 2) {
-                            result$runs <- as.numeric(stats_vector[2]) %||% 0
-                          }
-                          
-                          # Hits (element 3) - fallback if H-AB parsing failed
-                          if (result$hits == 0 && length(stats_vector) >= 3) {
-                            result$hits <- as.numeric(stats_vector[3]) %||% 0
-                          }
-                          
-                          # Extra-base hits (elements 4-6)
-                          if (length(stats_vector) >= 4) {
-                            result$doubles <- as.numeric(stats_vector[4]) %||% 0
-                          }
-                          if (length(stats_vector) >= 5) {
-                            result$triples <- as.numeric(stats_vector[5]) %||% 0
-                          }
-                          if (length(stats_vector) >= 6) {
-                            result$home_runs <- as.numeric(stats_vector[6]) %||% 0
-                          }
-                          
-                          # RBI (element 7)
-                          if (length(stats_vector) >= 7) {
-                            result$rbi <- as.numeric(stats_vector[7]) %||% 0
-                          }
-                          
-                          # Walks and strikeouts (elements 8-9)
-                          if (length(stats_vector) >= 8) {
-                            result$walks <- as.numeric(stats_vector[8]) %||% 0
-                          }
-                          if (length(stats_vector) >= 9) {
-                            result$strikeouts <- as.numeric(stats_vector[9]) %||% 0
-                          }
-                          
-                          # Calculate singles and total bases
-                          result$singles <- result$hits - (result$doubles + result$triples + result$home_runs)
-                          result$total_bases <- result$singles + 
-                            (result$doubles * 2) + 
-                            (result$triples * 3) + 
-                            (result$home_runs * 4)
-                          
-                          debug_cat(sprintf("  Stats: AB=%d, H=%d, HR=%d, RBI=%d, TB=%d\n",
-                                            result$at_bats, result$hits, result$home_runs,
-                                            result$rbi, result$total_bases))
-                        } else {
-                          debug_cat(sprintf("  Stats vector too short: length %d\n", length(stats_vector)))
                         }
-                        
-                        return(result)
                       }
                     }
                   }
@@ -4629,12 +4707,18 @@ get_espn_mlb_player_stats <- function(game_id, player_name) {
         }
       }
     }
-    
-    debug_cat("  MLB player not found in boxscore\n")
+
+    if (found_player) {
+      return(result)
+    }
+
+    debug_cat("  MLB player not found in boxscore
+")
     return(NULL)
-    
+
   }, error = function(e) {
-    debug_cat(sprintf("  Error getting MLB player stats: %s\n", e$message))
+    debug_cat(sprintf("  Error getting MLB player stats: %s
+", e$message))
     return(NULL)
   })
 }
@@ -4653,38 +4737,21 @@ fetch_mlb_player_stats <- function(player_name, season, game_date = NULL, game_i
       
       if (!is.null(player_stats)) {
         debug_cat(sprintf("  Found player stats via ESPN API (type: %s)\n", player_stats$stat_type %||% "unknown"))
-        
-        # Build stats list based on player type
-        stats_list <- list()
-        
-        # Common stats
-        stats_list$at_bats <- player_stats$at_bats
-        stats_list$runs <- player_stats$runs
-        stats_list$hits <- player_stats$hits
-        stats_list$rbi <- player_stats$rbi
-        stats_list$walks <- player_stats$walks
-        stats_list$strikeouts <- player_stats$strikeouts
-        stats_list$home_runs <- player_stats$home_runs
-        stats_list$stolen_bases <- player_stats$stolen_bases
-        stats_list$doubles <- player_stats$doubles
-        stats_list$triples <- player_stats$triples
-        stats_list$singles <- player_stats$singles
-        stats_list$total_bases <- player_stats$total_bases
 
-        # Pitching-specific stats
-        if (!is.null(player_stats$innings_pitched) && player_stats$innings_pitched > 0) {
-          stats_list$innings_pitched <- player_stats$innings_pitched
-          stats_list$outs_recorded <- player_stats$outs_recorded
-          stats_list$hits_allowed <- player_stats$hits_allowed
-          stats_list$runs_allowed <- player_stats$runs_allowed
-          stats_list$earned_runs <- player_stats$earned_runs
-          stats_list$walks_allowed <- player_stats$walks_allowed
-          stats_list$pitching_strikeouts <- player_stats$pitching_strikeouts
-          stats_list$home_runs_allowed <- player_stats$home_runs_allowed
-          stats_list$pitches_thrown <- player_stats$pitches_thrown
-          stats_list$era <- player_stats$era
+        stats_list <- list()
+
+        stat_fields <- c("at_bats", "runs", "hits", "rbi", "walks", "strikeouts",
+                         "home_runs", "stolen_bases", "doubles", "triples",
+                         "singles", "total_bases",
+                         "innings_pitched", "outs_recorded", "hits_allowed",
+                         "runs_allowed", "earned_runs", "walks_allowed",
+                         "pitching_strikeouts", "home_runs_allowed",
+                         "pitches_thrown", "era")
+        for (field in stat_fields) {
+          val <- player_stats[[field]]
+          if (!is.null(val)) stats_list[[field]] <- val
         }
-        
+
         return(list(
           found = TRUE,
           player = player_stats$player,
@@ -9201,7 +9268,15 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
   
   tryCatch({
     sport <- normalize_sport_name(sport)
-    
+
+    # CRITICAL: MLB team override - if event contains MLB teams, force sport to "mlb"
+    if (sport != "mlb" && check_mlb_team_in_event(event_string)) {
+      debug_cat(sprintf("  SPORT OVERRIDE: '%s' -> 'mlb' (MLB team found in event: '%s')\n", sport, event_string))
+      sport <- "mlb"
+      result$sport <- "mlb"
+      result$sport_overridden <- TRUE
+    }
+
     # NCAA check for NFL
     if (sport == "nfl" || sport == "football") {
       ncaa_team_keywords <- c(
@@ -9630,7 +9705,7 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
             result$success <- TRUE
             result$resolved <- TRUE
             result$data <- stats_data
-            actual_value <- stats_data$stats$total_bases
+            actual_value <- get_correct_player_stat(stats_data, "total_bases", sport)
             if (!is.null(actual_value) && !is.na(actual_value)) {
               result$actual_value <- actual_value
               if (!is.null(line_value)) {
@@ -9682,7 +9757,9 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
           result$success <- TRUE
           result$resolved <- TRUE
           result$data <- stats_data
-          actual_value <- stats_data$stats[[market_info$stat]]
+          actual_value <- get_correct_player_stat(stats_data, market_info$stat, sport)
+          debug_cat(sprintf("  Stat lookup: requested='%s', got=%s (sport=%s)\n",
+                            market_info$stat, ifelse(is.na(actual_value), "NA", as.character(actual_value)), sport))
           if (!is.null(actual_value) && !is.na(actual_value)) {
             result$actual_value <- actual_value
             if (!is.null(line_value)) {
