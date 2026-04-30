@@ -69,6 +69,10 @@ class EnhancedPaperTradingSystem:
         # Load state
         self._load_state()
 
+        # Track placed bets in current session to prevent duplicates
+        self.placed_bet_keys = set()
+        self.resolved_bet_ids = set()
+
         logger.info("Enhanced Paper Trading System initialized")
 
     def _init_components(self):
@@ -327,9 +331,42 @@ class EnhancedPaperTradingSystem:
 
         return player_name
 
+    def _is_duplicate_bet(self, opportunity: Dict) -> bool:
+        """Check if a bet is a duplicate (already placed in this session or pending in database)"""
+        # Create unique key for this bet opportunity
+        bet_key = f"{opportunity.get('event', '')}_{opportunity.get('player', '')}_{opportunity.get('market', '')}_{opportunity.get('line_value', '')}"
+
+        # Check if placed in current session
+        if bet_key in self.placed_bet_keys:
+            logger.info(f"Skipping duplicate (session): {opportunity.get('player')} - {opportunity.get('market')}")
+            return True
+
+        # Check database for existing pending bet
+        try:
+            existing_bets = self.db.client.table('bets') \
+                .select('id') \
+                .eq('player', opportunity.get('player', '')) \
+                .eq('market', opportunity.get('market', '')) \
+                .eq('event', opportunity.get('event', '')) \
+                .eq('status', 'pending') \
+                .execute()
+
+            if existing_bets.data:
+                logger.info(
+                    f"Skipping duplicate bet (already pending in DB): {opportunity.get('player')} - {opportunity.get('market')}")
+                return True
+        except Exception as e:
+            logger.warning(f"Error checking for duplicate in DB: {e}")
+
+        return False
+
     def place_intelligent_bet(self, opportunity: Dict) -> bool:
         """Place a bet with intelligent market classification"""
         try:
+            # Check for duplicate before processing
+            if self._is_duplicate_bet(opportunity):
+                return False
+
             # Check for college games
             event = opportunity.get('event', '')
             sport = opportunity.get('sport', 'unknown').lower()
@@ -606,7 +643,11 @@ class EnhancedPaperTradingSystem:
                 logger.error("Failed to save bet to database")
                 return False
 
-            # 5. Update bankroll
+            # 5. Add to session tracker
+            bet_key = f"{opportunity.get('event', '')}_{cleaned_player}_{opportunity.get('market', '')}_{classification.line_value}"
+            self.placed_bet_keys.add(bet_key)
+
+            # 6. Update bankroll
             self.bankroll -= stake
 
             logger.info(f"✅ Bet placed: {cleaned_player} - {opportunity['market']}")
@@ -627,6 +668,11 @@ class EnhancedPaperTradingSystem:
         Routes to appropriate resolver based on market type
         """
         try:
+            # Skip if already resolved in this session
+            if bet_id in self.resolved_bet_ids:
+                return {'success': True, 'resolved': False, 'message': 'Already resolved in this session',
+                        'skip_reason': 'already_resolved'}
+
             # Get bet from database
             bet = self.db.get_bet(bet_id)
             if not bet:
@@ -722,6 +768,9 @@ class EnhancedPaperTradingSystem:
 
             # Log the resolution type for debugging
             logger.info(f"Resolving bet {bet_id} as {resolution_type} for sport {sport}")
+
+            # Mark as being resolved
+            self.resolved_bet_ids.add(bet_id)
 
             if resolution_type.startswith('player_') and resolution_type != 'player_stat':
                 # Player stat markets (including MLB, NBA, NFL, etc.)
