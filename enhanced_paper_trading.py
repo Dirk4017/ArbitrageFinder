@@ -343,7 +343,7 @@ class EnhancedPaperTradingSystem:
 
         # Check database for existing pending bet
         try:
-            existing_bets = self.db.client.table('bets') \
+            existing_bets = self.db.supabase.table('bets') \
                 .select('id') \
                 .eq('player', opportunity.get('player', '')) \
                 .eq('market', opportunity.get('market', '')) \
