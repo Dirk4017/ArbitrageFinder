@@ -1672,19 +1672,24 @@ classify_market <- function(market_type, sport = NULL) {
   }
   
   # ==================== PLAYER STAT MARKETS ====================
+  # FIX: Added explicit "home runs" pattern BEFORE the generic loop
+  if (grepl("player home runs|home runs", market_lower) && !grepl("team", market_lower)) {
+    return(list(type = "player_stat", stat = "home_runs"))
+  }
+  
   # This comes AFTER SPECIAL GAME MARKETS so "First X Minutes Total Threes" is caught first
   player_stats <- c(
     "points", "rebounds", "assists", "steals", "blocks", "turnovers",
     "threes", "three_pointers_made", "field goals made", "field goals attempted",
     "free throws made", "free throws attempted", "minutes", "plus/minus",
-    "personal fouls", "doubles", "triples", "home runs", "runs", "rbi",
+    "personal fouls", "doubles", "triples", "runs", "rbi",
     "hits", "stolen bases", "batting strikeouts", "batting walks",
     "pitching strikeouts", "earned runs allowed", "hits allowed", "walks allowed",
     "innings pitched", "outs recorded", "saves", "goals", "assists", "shots on goal",
     "faceoffs won", "blocked shots", "power play points", "time on ice",
     "penalty minutes", "fantasy score", "batting fantasy score", "pitching fantasy score",
     "singles", "doubles", "triples", "runs", "stolen_bases",
-    "total bases", "total_bases", "hits", "home_runs", "rbi", "walks", "strikeouts",
+    "total bases", "total_bases", "hits", "rbi", "walks", "strikeouts",
     "pitching_strikeouts", "earned_runs", "innings_pitched", "outs"
   )
   
@@ -3848,8 +3853,9 @@ get_espn_nhl_player_stats <- function(game_id, player_name) {
                         stats_vector <- athlete_row$stats[[1]]
                       }
                       
-                      # Initialize result
+                      # Initialize result with FOUND = TRUE
                       result <- list(
+                        found = TRUE,
                         player = athlete_name,
                         team = team_name,
                         goals = 0,
@@ -3885,7 +3891,8 @@ get_espn_nhl_player_stats <- function(game_id, player_name) {
                             result$plus_minus <- as.numeric(val) %||% 0
                           } else if (label == "pim") {
                             result$penalty_minutes <- as.numeric(val) %||% 0
-                          } else if (label == "sog") {
+                          } else if (label %in% c("s", "shots", "shotstotal")) {
+                            # FIXED: Use "S" label for Shots On Goal (not "sog")
                             result$shots <- as.numeric(val) %||% 0
                           } else if (label == "hits") {
                             result$hits <- as.numeric(val) %||% 0
@@ -3908,6 +3915,12 @@ get_espn_nhl_player_stats <- function(game_id, player_name) {
                             result$shots_against <- as.numeric(val) %||% 0
                           }
                         }
+                      }
+                      
+                      # FALLBACK: If shots still 0 and we have stats_vector, try index 13 (S)
+                      if (result$shots == 0 && !is.null(stats_vector) && length(stats_vector) >= 13) {
+                        result$shots <- as.numeric(stats_vector[13]) %||% 0
+                        debug_cat(sprintf("  Fallback: Shots extracted from index 13: %d\n", result$shots))
                       }
                       
                       # Calculate points if not provided
@@ -9268,7 +9281,7 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
   
   tryCatch({
     sport <- normalize_sport_name(sport)
-
+    
     # CRITICAL: MLB team override - if event contains MLB teams, force sport to "mlb"
     if (sport != "mlb" && check_mlb_team_in_event(event_string)) {
       debug_cat(sprintf("  SPORT OVERRIDE: '%s' -> 'mlb' (MLB team found in event: '%s')\n", sport, event_string))
@@ -9276,7 +9289,7 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
       result$sport <- "mlb"
       result$sport_overridden <- TRUE
     }
-
+    
     # NCAA check for NFL
     if (sport == "nfl" || sport == "football") {
       ncaa_team_keywords <- c(
@@ -9694,7 +9707,7 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
         result$error <- special_result$error
       }
       
-      # ==================== PLAYER STAT MARKETS (MOVED UP - BEFORE INNING MARKETS) ====================
+      # ==================== PLAYER STAT MARKETS (UPDATED TO HANDLE NHL) ====================
     } else if (market_info$type == "player_stat") {
       debug_cat(sprintf("Market type: Player stat - %s\n", market_info$stat))
       
@@ -9739,39 +9752,170 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
           result$error <- special_result$error
         }
       } else {
-        if (sport %in% c("nba", "basketball")) {
-          stats_data <- fetch_nba_player_stats(player_name, result$season, game_date_obj, game_id)
-        } else if (sport %in% c("nfl", "football")) {
-          stats_data <- fetch_nfl_player_stats(player_name, result$season, game_id = game_id)
-        } else if (sport %in% c("mlb")) {
-          stats_data <- fetch_mlb_player_stats(player_name, result$season, game_date_obj, game_id)
-        } else if (sport %in% c("wnba")) {
-          stats_data <- fetch_wnba_player_stats(player_name, result$season, game_date_obj, game_id)
-        } else if (sport %in% c("ncaab", "ncaaw")) {
-          stats_data <- fetch_ncaa_bball_player_stats(player_name, result$season, game_date_obj, game_id, sport)
-        } else {
-          stats_data <- NULL
-        }
-        
-        if (!is.null(stats_data) && stats_data$found) {
-          result$success <- TRUE
-          result$resolved <- TRUE
-          result$data <- stats_data
-          actual_value <- get_correct_player_stat(stats_data, market_info$stat, sport)
-          debug_cat(sprintf("  Stat lookup: requested='%s', got=%s (sport=%s)\n",
-                            market_info$stat, ifelse(is.na(actual_value), "NA", as.character(actual_value)), sport))
-          if (!is.null(actual_value) && !is.na(actual_value)) {
+        # NHL HANDLING - MOVED HERE TO BE BEFORE NBA/OTHER SPORTS
+        if (sport %in% c("nhl", "hockey")) {
+          debug_cat("  Fetching NHL player stats...\n")
+          
+          # Clean player name by removing over/under and line value
+          clean_player_name <- gsub("\\s+(Over|Under)\\s+[0-9.]+$", "", player_name, ignore.case = TRUE)
+          clean_player_name <- trimws(clean_player_name)
+          debug_cat(sprintf("  Cleaned player name: '%s' -> '%s'\n", player_name, clean_player_name))
+          
+          stats_data <- get_espn_nhl_player_stats(game_id, clean_player_name)
+          if (!is.null(stats_data)) {
+            result$success <- TRUE
+            result$resolved <- TRUE
+            result$data <- stats_data
+            # Map market stat to stats_data field
+            stat_field <- switch(market_info$stat,
+                                 "goals" = "goals",
+                                 "assists" = "assists", 
+                                 "points" = "points",
+                                 "shots" = "shots",
+                                 "saves" = "saves",
+                                 "hits" = "hits",
+                                 "blocked_shots" = "blocked_shots",
+                                 "penalty_minutes" = "penalty_minutes",
+                                 "plus_minus" = "plus_minus",
+                                 market_info$stat
+            )
+            actual_value <- stats_data[[stat_field]] %||% 0
+            debug_cat(sprintf("  Stat lookup: requested='%s', field='%s', got=%s\n",
+                              market_info$stat, stat_field, actual_value))
             result$actual_value <- actual_value
+            
             if (!is.null(line_value)) {
               line_val_num <- as.numeric(line_value)
-              if (grepl("over", market_lower)) result$bet_won <- actual_value > line_val_num
-              else if (grepl("under", market_lower)) result$bet_won <- actual_value < line_val_num
+              # Check direction from player_name first, then market_lower
+              direction <- NULL
+              if (grepl("over", player_name, ignore.case = TRUE)) {
+                direction <- "over"
+              } else if (grepl("under", player_name, ignore.case = TRUE)) {
+                direction <- "under"
+              } else if (grepl("over", market_lower, ignore.case = TRUE)) {
+                direction <- "over"
+              } else if (grepl("under", market_lower, ignore.case = TRUE)) {
+                direction <- "under"
+              }
+              
+              if (direction == "over") {
+                result$bet_won <- actual_value > line_val_num
+                debug_cat(sprintf("  Over %s: %s > %s = %s\n", line_val_num, actual_value, line_val_num, result$bet_won))
+              } else if (direction == "under") {
+                result$bet_won <- actual_value < line_val_num
+                debug_cat(sprintf("  Under %s: %s < %s = %s\n", line_val_num, actual_value, line_val_num, result$bet_won))
+              } else {
+                debug_cat("  WARNING: No direction found (over/under) in player_name or market_lower\n")
+              }
               result$line_value <- line_val_num
             }
+          } else {
+            result$error <- "Failed to fetch NHL player stats"
+          }
+        } else if (sport %in% c("nba", "basketball")) {
+          stats_data <- fetch_nba_player_stats(player_name, result$season, game_date_obj, game_id)
+          if (!is.null(stats_data) && stats_data$found) {
+            result$success <- TRUE
+            result$resolved <- TRUE
+            result$data <- stats_data
+            actual_value <- get_correct_player_stat(stats_data, market_info$stat, sport)
+            debug_cat(sprintf("  Stat lookup: requested='%s', got=%s (sport=%s)\n",
+                              market_info$stat, ifelse(is.na(actual_value), "NA", as.character(actual_value)), sport))
+            if (!is.null(actual_value) && !is.na(actual_value)) {
+              result$actual_value <- actual_value
+              if (!is.null(line_value)) {
+                line_val_num <- as.numeric(line_value)
+                if (grepl("over", market_lower)) result$bet_won <- actual_value > line_val_num
+                else if (grepl("under", market_lower)) result$bet_won <- actual_value < line_val_num
+                result$line_value <- line_val_num
+              }
+            }
+          } else {
+            error_msg <- if (!is.null(stats_data)) stats_data$error else "Failed to fetch player stats"
+            result$error <- error_msg
+          }
+        } else if (sport %in% c("nfl", "football")) {
+          stats_data <- fetch_nfl_player_stats(player_name, result$season, game_id = game_id)
+          if (!is.null(stats_data) && stats_data$found) {
+            result$success <- TRUE
+            result$resolved <- TRUE
+            result$data <- stats_data
+            actual_value <- get_correct_player_stat(stats_data, market_info$stat, sport)
+            if (!is.null(actual_value) && !is.na(actual_value)) {
+              result$actual_value <- actual_value
+              if (!is.null(line_value)) {
+                line_val_num <- as.numeric(line_value)
+                if (grepl("over", market_lower)) result$bet_won <- actual_value > line_val_num
+                else if (grepl("under", market_lower)) result$bet_won <- actual_value < line_val_num
+                result$line_value <- line_val_num
+              }
+            }
+          } else {
+            error_msg <- if (!is.null(stats_data)) stats_data$error else "Failed to fetch player stats"
+            result$error <- error_msg
+          }
+        } else if (sport %in% c("mlb")) {
+          stats_data <- fetch_mlb_player_stats(player_name, result$season, game_date_obj, game_id)
+          if (!is.null(stats_data) && stats_data$found) {
+            result$success <- TRUE
+            result$resolved <- TRUE
+            result$data <- stats_data
+            actual_value <- get_correct_player_stat(stats_data, market_info$stat, sport)
+            if (!is.null(actual_value) && !is.na(actual_value)) {
+              result$actual_value <- actual_value
+              if (!is.null(line_value)) {
+                line_val_num <- as.numeric(line_value)
+                if (grepl("over", market_lower)) result$bet_won <- actual_value > line_val_num
+                else if (grepl("under", market_lower)) result$bet_won <- actual_value < line_val_num
+                result$line_value <- line_val_num
+              }
+            }
+          } else {
+            error_msg <- if (!is.null(stats_data)) stats_data$error else "Failed to fetch player stats"
+            result$error <- error_msg
+          }
+        } else if (sport %in% c("wnba")) {
+          stats_data <- fetch_wnba_player_stats(player_name, result$season, game_date_obj, game_id)
+          if (!is.null(stats_data) && stats_data$found) {
+            result$success <- TRUE
+            result$resolved <- TRUE
+            result$data <- stats_data
+            actual_value <- get_correct_player_stat(stats_data, market_info$stat, sport)
+            if (!is.null(actual_value) && !is.na(actual_value)) {
+              result$actual_value <- actual_value
+              if (!is.null(line_value)) {
+                line_val_num <- as.numeric(line_value)
+                if (grepl("over", market_lower)) result$bet_won <- actual_value > line_val_num
+                else if (grepl("under", market_lower)) result$bet_won <- actual_value < line_val_num
+                result$line_value <- line_val_num
+              }
+            }
+          } else {
+            error_msg <- if (!is.null(stats_data)) stats_data$error else "Failed to fetch player stats"
+            result$error <- error_msg
+          }
+        } else if (sport %in% c("ncaab", "ncaaw")) {
+          stats_data <- fetch_ncaa_bball_player_stats(player_name, result$season, game_date_obj, game_id, sport)
+          if (!is.null(stats_data) && stats_data$found) {
+            result$success <- TRUE
+            result$resolved <- TRUE
+            result$data <- stats_data
+            actual_value <- get_correct_player_stat(stats_data, market_info$stat, sport)
+            if (!is.null(actual_value) && !is.na(actual_value)) {
+              result$actual_value <- actual_value
+              if (!is.null(line_value)) {
+                line_val_num <- as.numeric(line_value)
+                if (grepl("over", market_lower)) result$bet_won <- actual_value > line_val_num
+                else if (grepl("under", market_lower)) result$bet_won <- actual_value < line_val_num
+                result$line_value <- line_val_num
+              }
+            }
+          } else {
+            error_msg <- if (!is.null(stats_data)) stats_data$error else "Failed to fetch player stats"
+            result$error <- error_msg
           }
         } else {
-          error_msg <- if (!is.null(stats_data)) stats_data$error else "Failed to fetch player stats"
-          result$error <- error_msg
+          result$error <- paste("Player stats not supported for sport:", sport)
         }
       }
       
@@ -10479,9 +10623,9 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
       result$bet_won <- result_data$bet_won
       result$data <- result_data
       
-      # ==================== NHL MARKET HANDLING ====================
+      # ==================== NHL MARKET HANDLING (LEGACY - KEPT FOR BACKWARDS COMPATIBILITY) ====================
     } else if (sport == "nhl") {
-      debug_cat("Processing NHL market...\n")
+      debug_cat("Processing NHL market (legacy branch)...\n")
       
       if (market_info$type == "player_period_stat") {
         result_data <- resolve_nhl_player_period_market(game_id, player_name, market_info, market_lower, line_value)
@@ -10505,6 +10649,8 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string, l
           result$error <- result_data$error
         }
       } else if (market_info$type == "player_stat") {
+        # This should now be caught by the main player_stat branch above
+        # But kept here as fallback
         stats_data <- get_espn_nhl_player_stats(game_id, player_name)
         if (!is.null(stats_data)) {
           result$success <- TRUE
