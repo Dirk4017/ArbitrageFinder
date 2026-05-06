@@ -4737,52 +4737,82 @@ get_espn_mlb_player_stats <- function(game_id, player_name) {
 }
 
 # Fetch MLB player stats (main function) - UPDATED with pitching stats
-fetch_mlb_player_stats <- function(player_name, season, game_date = NULL, game_id = NULL) {
-  debug_cat(sprintf("\nDEBUG fetch_mlb_player_stats:\n"))
-  debug_cat(sprintf("  Player: %s\n", player_name))
-  debug_cat(sprintf("  Season: %s\n", season))
-  debug_cat(sprintf("  Game ID: %s\n", game_id))
+get_espn_mlb_player_stats <- function(game_id, player_name) {
+  debug_cat(sprintf("  Calling ESPN MLB API for player stats: https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=%s\n", game_id))
   
   tryCatch({
-    if (!is.null(game_id) && !is.na(game_id) && game_id != "NA") {
-      debug_cat("  Using ESPN API for MLB player stats...\n")
-      player_stats <- get_espn_mlb_player_stats(game_id, player_name)
+    url <- paste0("https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=", game_id)
+    response <- GET(url)
+    data <- fromJSON(content(response, "text"))
+    
+    # Check both teams (away = index 1, home = index 2)
+    for (team_idx in 1:2) {
+      if (is.null(data$boxscore$players[team_idx,]$statistics[[1]])) next
       
-      if (!is.null(player_stats)) {
-        debug_cat(sprintf("  Found player stats via ESPN API (type: %s)\n", player_stats$stat_type %||% "unknown"))
-
-        stats_list <- list()
-
-        stat_fields <- c("at_bats", "runs", "hits", "rbi", "walks", "strikeouts",
-                         "home_runs", "stolen_bases", "doubles", "triples",
-                         "singles", "total_bases",
-                         "innings_pitched", "outs_recorded", "hits_allowed",
-                         "runs_allowed", "earned_runs", "walks_allowed",
-                         "pitching_strikeouts", "home_runs_allowed",
-                         "pitches_thrown", "era")
-        for (field in stat_fields) {
-          val <- player_stats[[field]]
-          if (!is.null(val)) stats_list[[field]] <- val
+      team_stats <- data$boxscore$players[team_idx,]$statistics[[1]]
+      batting_idx <- which(team_stats$type == "batting")
+      
+      if (length(batting_idx) > 0) {
+        batting_athletes <- team_stats$athletes[[batting_idx]]
+        stat_labels <- team_stats$labels[[batting_idx]]
+        
+        # Skip if no athletes
+        if (is.null(batting_athletes) || nrow(batting_athletes) == 0) next
+        
+        # Search for player
+        for (i in 1:nrow(batting_athletes)) {
+          current_name <- batting_athletes$athlete$displayName[i]
+          
+          if (grepl(player_name, current_name, ignore.case = TRUE)) {
+            debug_cat(sprintf("  Found MLB player match in batting stats: %s\n", current_name))
+            
+            # Get raw stats vector
+            raw_stats <- batting_athletes$stats[[i]]
+            
+            # Name the stats using ESPN's labels
+            if (length(raw_stats) == length(stat_labels)) {
+              names(raw_stats) <- stat_labels
+              
+              # Extract stats using NAMES (most robust method)
+              result <- list(
+                player = current_name,
+                stat_type = "batting",
+                at_bats = suppressWarnings(as.numeric(raw_stats["AB"])),
+                runs = suppressWarnings(as.numeric(raw_stats["R"])),
+                hits = suppressWarnings(as.numeric(raw_stats["H"])),
+                rbi = suppressWarnings(as.numeric(raw_stats["RBI"])),
+                walks = suppressWarnings(as.numeric(raw_stats["BB"])),
+                strikeouts = suppressWarnings(as.numeric(raw_stats["K"])),
+                home_runs = suppressWarnings(as.numeric(raw_stats["HR"])),
+                doubles = suppressWarnings(as.numeric(raw_stats["2B"])),
+                triples = suppressWarnings(as.numeric(raw_stats["3B"])),
+                stolen_bases = suppressWarnings(as.numeric(raw_stats["SB"])),
+                pitches_seen = suppressWarnings(as.numeric(raw_stats["#P"]))
+              )
+              
+              # Replace NA with 0 for numeric fields
+              for (field in names(result)) {
+                if (is.na(result[[field]]) && field != "player" && field != "stat_type") {
+                  result[[field]] <- 0
+                }
+              }
+              
+              return(result)
+            } else {
+              debug_cat(sprintf("  Warning: stats length (%d) doesn't match labels length (%d)\n", 
+                                length(raw_stats), length(stat_labels)))
+            }
+          }
         }
-
-        return(list(
-          found = TRUE,
-          player = player_stats$player,
-          games = 1,
-          stats = stats_list
-        ))
-      } else {
-        debug_cat("  ESPN API returned NULL player stats\n")
-        return(list(found = FALSE, error = "ESPN API returned no player stats for this game"))
       }
     }
     
-    debug_cat("ERROR: No game_id provided for ESPN API lookup\n")
-    return(list(found = FALSE, error = "No game_id available for ESPN API"))
+    debug_cat(sprintf("  Player '%s' not found in batting stats for game %s\n", player_name, game_id))
+    return(NULL)
     
   }, error = function(e) {
-    debug_cat(sprintf("ERROR in fetch_mlb_player_stats: %s\n", e$message))
-    return(list(found = FALSE, error = paste("Error fetching MLB stats:", e$message)))
+    debug_cat(sprintf("  Error getting MLB player stats: %s\n", e$message))
+    return(NULL)
   })
 }
 
