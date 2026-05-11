@@ -9120,8 +9120,8 @@ resolve_nhl_game_power_play_goals <- function(game_id, line_value, direction) {
   
   return(result)
 }
-
-resolve_bet <- function(player_name, sport, season, market_type, event_string, line_value = NULL, game_date = NULL) {
+resolve_bet <- function(player_name, sport, season, market_type, event_string, 
+                        line_value = NULL, game_date = NULL, direction = NULL, stat_type = NULL) {
   debug_cat("\n===============================================================================\n")
   debug_cat("STARTING BET RESOLUTION - DEBUG VERSION\n")
   debug_cat("===============================================================================\n")
@@ -11260,12 +11260,30 @@ main <- function() {
         }
       } else NULL
       
-      # Handle game_date (arg 7) from Python
+      # Handle game_date (arg 7)
       game_date_arg <- if (length(args) >= 7) {
         if (args[7] == "NULL" || args[7] == "null" || nchar(args[7]) == 0) {
           NULL
         } else {
           args[7]
+        }
+      } else NULL
+      
+      # Handle direction (arg 8)
+      direction_arg <- if (length(args) >= 8) {
+        if (args[8] == "NULL" || args[8] == "null" || nchar(args[8]) == 0) {
+          NULL
+        } else {
+          args[8]
+        }
+      } else NULL
+      
+      # Handle stat_type (arg 9)
+      stat_type_arg <- if (length(args) >= 9) {
+        if (args[9] == "NULL" || args[9] == "null" || nchar(args[9]) == 0) {
+          NULL
+        } else {
+          args[9]
         }
       } else NULL
       
@@ -11277,10 +11295,15 @@ main <- function() {
       debug_cat(sprintf("  Event: %s\n", event_string))
       debug_cat(sprintf("  Line: %s\n", line_value))
       debug_cat(sprintf("  Game Date: %s\n", game_date_arg))
+      debug_cat(sprintf("  Direction: %s\n", direction_arg))
+      debug_cat(sprintf("  Stat Type: %s\n", stat_type_arg))
       debug_cat(sprintf("  System Date: %s\n", Sys.Date()))
       
-      # Resolve the bet
-      resolution <- resolve_bet(player_name, sport, season, market_type, event_string, line_value, game_date_arg)
+      # Resolve the bet with all 9 arguments
+      resolution <- resolve_bet(
+        player_name, sport, season, market_type, event_string, 
+        line_value, game_date_arg, direction_arg, stat_type_arg
+      )
       
       # ========== CRITICAL: RESTORE STDOUT FOR JSON OUTPUT ==========
       # Close stderr sinks
@@ -11293,15 +11316,17 @@ main <- function() {
       
     } else {
       # Show usage information
-      debug_cat("Usage: Rscript bet_resolver.R \"player_name\" \"sport\" \"season\" \"market_type\" \"event_string\" [line_value] [game_date]\n")
-      debug_cat("Arguments (7 total, last 3 optional):\n")
+      debug_cat("Usage: Rscript bet_resolver.R \"player_name\" \"sport\" \"season\" \"market_type\" \"event_string\" [line_value] [game_date] [direction] [stat_type]\n")
+      debug_cat("Arguments (9 total, last 4 optional):\n")
       debug_cat("  1. player_name  : Player name (e.g., \"Patrick Mahomes\")\n")
-      debug_cat("  2. sport        : Sport (\"nfl\", \"nba\", or \"nhl\")\n")
+      debug_cat("  2. sport        : Sport (\"nfl\", \"nba\", \"nhl\", \"mlb\")\n")
       debug_cat("  3. season       : Season year (e.g., 2024)\n")
       debug_cat("  4. market_type  : Market type (e.g., \"player passing yards over\")\n")
-      debug_cat("  5. event_string : Event description (e.g., \"Chiefs @ Dolphins\")\n")
+      debug_cat("  5. event_string : Event description (e.g., \"Chiefs @ Dolphins 2024-12-14\")\n")
       debug_cat("  6. line_value   : Line value (e.g., 275.5) or NULL\n")
       debug_cat("  7. game_date    : Game date in YYYY-MM-DD format (optional, overrides extraction from event)\n")
+      debug_cat("  8. direction    : Direction (\"over\" or \"under\") or NULL\n")
+      debug_cat("  9. stat_type    : Stat type (e.g., \"passing_yards\") or NULL\n")
     }
     
     debug_cat("\n=== MAIN EXECUTION COMPLETE ===\n")
