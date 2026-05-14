@@ -1063,22 +1063,11 @@ class RStatsResolver:
                     errors='replace'
                 )
             else:
-                # Unix/Linux: Use list with shlex.quote
-                import shlex
-                quoted_args = [shlex.quote(arg) for arg in args_list]
-                cmd = [self.rscript_path, self.r_script_path] + quoted_args
-
-                self.logger.debug(f"Unix command list: {' '.join(cmd[:5])}...")
-
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=300,
-                    shell=False,
-                    encoding='utf-8',
-                    errors='replace'
-                )
+                # Unix/Linux: Pass arguments directly WITHOUT shlex.quote
+                # subprocess.run with shell=False handles argument separation automatically
+                cmd = [self.rscript_path, self.r_script_path] + args_list
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, shell=False, encoding='utf-8',
+                                        errors='replace')
 
             # Log R output for debugging
             if result.stdout:
