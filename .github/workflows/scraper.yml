@@ -80,6 +80,7 @@ jobs:
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
         DISPLAY: ':99'
         R_LIBS_USER: ~/R/x86_64-pc-linux-gnu-library/4.3
+        PYTHONPATH: ${{ github.workspace }}
       run: |
         echo "🚀 Running Enhanced Paper Trading System"
 
