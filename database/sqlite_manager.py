@@ -89,6 +89,29 @@ class DatabaseManager:
         finally:
             conn.close()
 
+    def is_duplicate_bet(self, opportunity: Dict) -> bool:
+        """Check if a bet is a duplicate (already pending in local SQLite)"""
+        conn = self.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute('''
+                SELECT id FROM bets
+                WHERE player = ?
+                  AND market = ?
+                  AND event = ?
+                  AND status = 'pending'
+            ''', (
+                opportunity.get('player', ''),
+                opportunity.get('market', ''),
+                opportunity.get('event', '')
+            ))
+            return cursor.fetchone() is not None
+        except Exception as e:
+            logger.error(f"Error checking for duplicate in SQLite: {e}")
+            return False
+        finally:
+            conn.close()
+
     def get_connection(self):
         """Get database connection with row factory"""
         conn = sqlite3.connect(self.db_path)

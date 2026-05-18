@@ -593,7 +593,21 @@ class RStatsResolver:
         if sport_lower in ("mlb", "baseball"):
             self.logger.info("DEBUG: Using MLB market mapping")
 
-            # Player stats
+            # Player stats - pitching (must be before generic batting patterns)
+            if re.search(r'player.*pitching.*strikeouts', market_lower):
+                return "player pitching strikeouts"
+            if re.search(r'player.*earned.*runs', market_lower):
+                return "player earned runs allowed"
+            if re.search(r'player.*innings.*pitched', market_lower):
+                return "player innings pitched"
+            if re.search(r'player.*outs.*recorded', market_lower):
+                return "player outs recorded"
+            if re.search(r'player.*hits.*allowed', market_lower):
+                return "player hits allowed"
+            if re.search(r'player.*walks.*allowed', market_lower):
+                return "player walks allowed"
+
+            # Player stats - batting
             if re.search(r'player.*hits', market_lower):
                 return "player hits"
             if re.search(r'player.*runs', market_lower):

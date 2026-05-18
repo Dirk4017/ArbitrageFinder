@@ -4,24 +4,43 @@ Ultra Stable Scanner - Enhanced version of your web scraper
 import re
 import time
 import logging
+import undetected_chromedriver as uc
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+from scraper.oddsportal_scraper import OddsportalScraper
+from scraper.odds_api_scraper import OddsAPIScraper
+from core.config_manager import ConfigManager
 
 logger = logging.getLogger(__name__)
 
 
 class UltraStableScanner:
-    def __init__(self):
+    def __init__(self, config: Optional[ConfigManager] = None):
+        self.config = config or ConfigManager()
         self.driver = None
         self.use_demo_mode = False
 
         # Team name mappings for parsing
         self.team_variations = self._setup_team_mappings()
+
+        # Initialize Oddsportal Scraper with reinit_callback
+        self.oddsportal_scraper = OddsportalScraper(reinit_callback=self.reinitialize_webdriver)
+
+        # Initialize The Odds API Scraper
+        api_key = self.config.api.odds_api_key
+        self.odds_api_scraper = OddsAPIScraper(api_key=api_key)
+
+    def reinitialize_webdriver(self, proxy: Optional[str] = None):
+        """Callback to re-initialize the WebDriver upon session loss."""
+        logger.warning(f"Re-initializing WebDriver with proxy: {proxy}...")
+        if self.driver:
+            try:
+                self.driver.quit()
+            except:
+                pass
+            self.driver = None
+        return self.initialize_webdriver(proxy=proxy)
 
     def _setup_team_mappings(self):
         """Setup comprehensive team name mappings"""
@@ -35,10 +54,9 @@ class UltraStableScanner:
             # ... add more teams as needed
         }
 
-    def initialize_webdriver(self):
-        """Ultra-stable WebDriver initialization"""
+    def initialize_webdriver(self, proxy: Optional[str] = None):
+        """Ultra-stable WebDriver initialization with stealth enhancements."""
         try:
-            # Close existing driver if any
             if self.driver:
                 try:
                     self.driver.quit()
@@ -47,30 +65,59 @@ class UltraStableScanner:
                 self.driver = None
 
             chrome_options = Options()
+            # Randomize window size
+            width = random.randint(1280, 1920)
+            height = random.randint(720, 1080)
+            chrome_options.add_argument(f"--window-size={width},{height}")
 
-            # Essential stability options
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-dev-shm-usage")
-            chrome_options.add_argument("--disable-gpu")
-            chrome_options.add_argument("--window-size=1920,1080")
-            chrome_options.add_argument("--headless")
-
-            # Additional stability options
+            # Additional stealth arguments
             chrome_options.add_argument("--disable-blink-features=AutomationControlled")
             chrome_options.add_experimental_option("excludeSwitches", ["enable-automation"])
             chrome_options.add_experimental_option('useAutomationExtension', False)
 
-            # Disable extensions and background pages
-            chrome_options.add_argument("--disable-extensions")
-            chrome_options.add_argument("--disable-background-timer-throttling")
-            chrome_options.add_argument("--disable-backgrounding-occluded-windows")
-            chrome_options.add_argument("--disable-renderer-backgrounding")
+            # Proxy support
+            if proxy:
+                chrome_options.add_argument(f"--proxy-server={proxy}")
+                logger.info(f"Using proxy: {proxy}")
 
-            driver = webdriver.Chrome(options=chrome_options)
+            # Initialize undetected_chromedriver
+            driver = uc.Chrome(options=chrome_options, use_subprocess=True)
+
+            # Stealth: Advanced fingerprinting masking
+            stealth_script = """
+                Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+
+                // Mask plugins
+                Object.defineProperty(navigator, 'plugins', {
+                    get: () => [1, 2, 3, 4, 5]
+                });
+
+                // Mask languages
+                Object.defineProperty(navigator, 'languages', {
+                    get: () => ['en-US', 'en']
+                });
+
+                // Mask WebGL renderer
+                const getParameter = WebGLRenderingContext.prototype.getParameter;
+                WebGLRenderingContext.prototype.getParameter = function(parameter) {
+                  if (parameter === 37445) return 'Intel Iris OpenGL Engine';
+                  if (parameter === 37446) return 'Intel Inc.';
+                  return getParameter.apply(this, arguments);
+                };
+
+                // Additional stealth properties
+                Object.defineProperty(navigator, 'vendor', { get: () => 'Google Inc.' });
+                Object.defineProperty(navigator, 'platform', { get: () => 'Win32' });
+                window.chrome = { runtime: {} };
+            """
+            driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+                "source": stealth_script
+            })
+
             driver.set_page_load_timeout(45)
             driver.implicitly_wait(15)
 
-            logger.info("WebDriver initialized successfully")
+            logger.info("WebDriver initialized successfully with stealth enhancements")
             return driver
         except Exception as e:
             logger.error(f"WebDriver initialization failed: {e}")
@@ -313,6 +360,50 @@ class UltraStableScanner:
     def scrape_crazyninja_odds(self) -> List[Dict]:
         """Main scraping method - always returns opportunities"""
         return self.scrape_crazyninja_safe()
+
+    def scrape_all_sports(self) -> List[Dict]:
+        """
+        Scrapes opportunities for all configured sports using The Odds API (primary)
+        and Oddsportal (secondary/backup).
+        """
+        logger.info("Starting real-time multi-sport scan...")
+        all_opportunities = []
+
+        # 1. Try The Odds API (More stable, real data)
+        try:
+            logger.info("Fetching from The Odds API...")
+            odds_api_opps = self.odds_api_scraper.scrape_all_sports()
+            if odds_api_opps:
+                all_opportunities.extend(odds_api_opps)
+        except Exception as e:
+            logger.error(f"The Odds API scan failed: {e}")
+
+        # 2. Try Oddsportal (Web scraping fallback for soccer)
+        if not all_opportunities:
+            try:
+                logger.info("The Odds API returned no data, falling back to Oddsportal scraping...")
+
+                # Ensure driver is initialized for Oddsportal
+                if not self.driver:
+                    self.driver = self.initialize_webdriver()
+
+                if self.driver:
+                    # Inject driver into the scraper
+                    self.oddsportal_scraper.driver = self.driver
+                    opportunities = self.oddsportal_scraper.scrape_all_sports()
+                    if opportunities:
+                        all_opportunities.extend(opportunities)
+                else:
+                    logger.warning("Could not initialize WebDriver for Oddsportal")
+            except Exception as e:
+                logger.error(f"Oddsportal scraping failed: {e}")
+
+        # 3. Fallback to simulated data only if everything else fails
+        if not all_opportunities:
+            logger.info("No real data found, using simulated data as absolute last resort")
+            all_opportunities = self.oddsportal_scraper.generate_simulated_opportunities()
+
+        return all_opportunities
 
     def close(self):
         """Close the webdriver"""

@@ -8,6 +8,7 @@
   },
   "api": {
     "mrdoge_api_key": "sk_live_e257c6e813cf98502600390cd38880c726b9c28a02ac31ec9196684f538727ea",
+    "odds_api_key": "YOUR_ODDS_API_KEY_HERE",
     "base_url": "https://api.mrdoge.co/v2",
     "timeout": 30,
     "max_retries": 3,

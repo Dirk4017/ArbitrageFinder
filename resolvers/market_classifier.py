@@ -138,7 +138,7 @@ class MarketClassifier:
             'player_defensive_rebounds': [r'player.*defensive.*rebounds', r'defensive.*rebounds'],
             'player_steals': [r'player.*steals', r'steals$', r'^steals\b', r'player.*stl'],
             'player_blocks': [r'player.*blocks', r'blocks$', r'^blocks\b', r'player.*blk'],
-            'player_turnovers': [r'player.*turnovers', r'turnovers$', r'^turnovers\b', r'player.*to'],
+            'player_turnovers': [r'player.*turnovers', r'turnovers$', r'^turnovers\b'],
             'player_threes': [r'player.*threes', r'player.*3.*point', r'threes$', r'3pm', r'player.*3pt'],
             'player_threes_attempted': [r'player.*threes.*attempted', r'3.*point.*attempted', r'3pa'],
             'player_twos': [r'player.*twos', r'twos$'],
@@ -156,10 +156,10 @@ class MarketClassifier:
             'player_passing_touchdowns': [r'player.*passing.*touchdowns', r'passing.*tds?'],
             'player_passing_interceptions': [r'player.*passing.*interceptions', r'interceptions', r'ints'],
             'player_passing_completions': [r'player.*passing.*completions', r'completions', r'comp'],
-            'player_passing_attempts': [r'player.*passing.*attempts', r'attempts', r'att'],
+            'player_passing_attempts': [r'player.*passing.*attempts', r'\battempts\b', r'\batt\b'],
             'player_rushing_yards': [r'player.*rushing.*yards', r'rushing.*yards', r'rush.*yds'],
             'player_rushing_touchdowns': [r'player.*rushing.*touchdowns', r'rushing.*tds?'],
-            'player_rushing_attempts': [r'player.*rushing.*attempts', r'rushing.*att'],
+            'player_rushing_attempts': [r'player.*rushing.*attempts', r'rushing.*\batt\b'],
             'player_receiving_yards': [r'player.*receiving.*yards', r'receiving.*yards', r'rec.*yds'],
             'player_receiving_touchdowns': [r'player.*receiving.*touchdowns', r'receiving.*tds?'],
             'player_receptions': [r'player.*receptions', r'receptions', r'rec$'],
@@ -183,17 +183,22 @@ class MarketClassifier:
 
             # MLB
             'player_hits': [r'player.*hits', r'hits$', r'^hits\b'],
-            'player_runs': [r'player.*runs', r'runs$', r'^runs\b'],
+            'player_runs': [r'player.*runs', r'runs$', r'^runs\b', r'runs.*scored'],
             'player_rbi': [r'player.*rbi', r'rbi$', r'^rbi\b'],
             'player_home_runs': [r'player.*home.*runs', r'home.*runs', r'hr$', r'player.*hr'],
-            'player_stolen_bases': [r'player.*stolen.*bases', r'stolen.*bases', r'sb$'],
-            'player_walks': [r'player.*walks', r'walks$', r'bb$'],
+            'player_stolen_bases': [r'player.*stolen.*bases', r'stolen.*bases', r'sb$', r'\bstolen\b'],
+            'player_walks': [r'player.*walks', r'walks$', r'bb$', r'\bwalks\b', r'batting.*walks'],
             'player_strikeouts': [r'player.*strikeouts', r'strikeouts$', r'so$', r'k$'],
             'player_total_bases': [r'player.*total.*bases', r'total.*bases', r'tb$'],
             'player_extra_base_hits': [r'player.*extra.*base.*hits', r'extra.*base.*hits', r'xbh$'],
             'player_hit_by_pitch': [r'player.*hit.*by.*pitch', r'hbp$'],
             'player_sacrifice_flies': [r'player.*sacrifice.*flies', r'sac.*flies', r'sf$'],
 
+            # Soccer
+            'player_goals_soccer': [r'player.*goals', r'anytime.*goalscorer', r'anytime.*goal'],
+            'player_shots_soccer': [r'player.*shots', r'shots.*on.*target'],
+            'player_cards_soccer': [r'player.*card', r'player.*to.*be.*shown.*a.*card'],
+            'player_assists_soccer': [r'player.*assists'],
             # WNBA (same as NBA but we'll keep separate entries for clarity)
             'player_points_wnba': [r'player.*points', r'points$'],
             'player_assists_wnba': [r'player.*assists', r'assists$'],
@@ -320,10 +325,20 @@ class MarketClassifier:
 
         # Game basic markets
         self.GAME_BASIC_MARKETS = {
-            'moneyline': [r'^moneyline$', r'moneyline\b'],
-            'point_spread': [r'point.*spread', r'spread$', r'^spread\b'],
-            'total_points': [r'total.*points', r'over.*under', r'^total$'],
+            'moneyline': [r'^moneyline$', r'moneyline\b', r'match.*winner', r'win.*match'],
+            'point_spread': [r'point.*spread', r'spread$', r'^spread\b', r'handicap'],
+            'total_points': [r'total.*points', r'total.*runs', r'total.*goals', r'total.*games', r'over.*under', r'^total$'],
             'total_points_odd_even': [r'total.*points.*odd.*even', r'odd.*even'],
+        }
+
+        # Soccer game markets (often 3-way or specific)
+        self.SOCCER_GAME_MARKETS = {
+            'full_time_result': [r'full.*time.*result', r'1x2', r'^1x2$', r'match.*result'],
+            'both_teams_to_score': [r'both.*teams.*to.*score', r'btts'],
+            'double_chance': [r'double.*chance'],
+            'draw_no_bet': [r'draw.*no.*bet', r'^dnb$'],
+            'asian_handicap': [r'asian.*handicap'],
+            'total_goals': [r'total.*goals'],
         }
 
         # Combine all market patterns
@@ -340,6 +355,7 @@ class MarketClassifier:
         self.ALL_MARKET_PATTERNS.update(self.FIRST_LAST_SCORER_MARKETS)
         self.ALL_MARKET_PATTERNS.update(self.TEAM_MARKETS)
         self.ALL_MARKET_PATTERNS.update(self.GAME_SPECIAL_MARKETS)
+        self.ALL_MARKET_PATTERNS.update(self.SOCCER_GAME_MARKETS)
         self.ALL_MARKET_PATTERNS.update(self.GAME_BASIC_MARKETS)
 
         # Compile regex patterns for efficiency
@@ -392,7 +408,7 @@ class MarketClassifier:
             'player_passing_touchdowns': 'passing_touchdowns',
             'player_passing_interceptions': 'interceptions',
             'player_passing_completions': 'completions',
-            'player_passing_attempts': 'attempts',
+            'player_passing_attempts': 'passing_attempts',
             'player_rushing_yards': 'rushing_yards',
             'player_rushing_touchdowns': 'rushing_touchdowns',
             'player_rushing_attempts': 'rushing_attempts',
@@ -483,6 +499,25 @@ class MarketClassifier:
             'player_first_3_minutes_points': 'first_3_minutes_points',
             'player_first_3_minutes_assists': 'first_3_minutes_assists',
             'player_first_3_minutes_rebounds': 'first_3_minutes_rebounds',
+
+            # Game-level stats mapping
+            'total_points': 'total_points',
+            'moneyline': 'moneyline',
+            'point_spread': 'point_spread',
+            'total_points_odd_even': 'total_points_odd_even',
+            'regulation_moneyline_3way': 'moneyline',
+
+            # Soccer stats mapping
+            'player_goals_soccer': 'goals',
+            'player_assists_soccer': 'assists',
+            'player_shots_soccer': 'shots',
+            'player_cards_soccer': 'cards',
+            'full_time_result': 'match_result',
+            'both_teams_to_score': 'btts',
+            'double_chance': 'double_chance',
+            'draw_no_bet': 'draw_no_bet',
+            'asian_handicap': 'handicap',
+            'total_goals': 'total_goals'
         }
 
     def get_resolution_type(self, classification: MarketClassification) -> str:
@@ -675,6 +710,17 @@ class MarketClassifier:
                 'player_turnovers_ncaab': 'turnovers',
                 'player_double_double_ncaab': 'double_double',
                 'player_triple_double_ncaab': 'triple_double',
+
+                # Soccer
+                'player_goals_soccer': 'goals',
+                'player_assists_soccer': 'assists',
+                'player_shots_soccer': 'shots',
+                'player_cards_soccer': 'cards',
+                'full_time_result': 'moneyline',
+                'both_teams_to_score': 'btts',
+                'double_chance': 'double_chance',
+                'asian_handicap': 'point_spread',
+                'total_goals': 'total_points'
             }
 
             stat_type = stat_mapping.get(classification.subcategory, 'player_stat')
@@ -1122,6 +1168,14 @@ class MarketClassifier:
                 for cp in compiled:
                     if cp.search(market_lower):
                         return 'game_special', subcategory
+
+        # Soccer game markets
+        for subcategory, patterns in self.SOCCER_GAME_MARKETS.items():
+            for pattern in patterns:
+                compiled = self.compiled_patterns.get(subcategory, [])
+                for cp in compiled:
+                    if cp.search(market_lower):
+                        return 'game', subcategory
 
         # Game basic markets
         for subcategory, patterns in self.GAME_BASIC_MARKETS.items():

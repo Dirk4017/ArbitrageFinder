@@ -20,6 +20,7 @@ class DatabaseConfig:
 @dataclass
 class APIConfig:
     mrdoge_api_key: str = ""
+    odds_api_key: str = ""
     base_url: str = "https://api.mrdoge.co/v2"
     timeout: int = 30
     max_retries: int = 3
@@ -50,7 +51,7 @@ class BettingConfig:
 @dataclass
 class LoggingConfig:
     level: str = "INFO"
-    file: str = "../sports_betting.log"
+    file: str = "logs/sports_betting.log"
     max_file_size: int = 10 * 1024 * 1024
     backup_count: int = 5
 
@@ -127,6 +128,11 @@ class ConfigManager:
 
     def _setup_logging(self):
         """Setup logging configuration"""
+        # Ensure log directory exists
+        log_dir = os.path.dirname(self.logging.file)
+        if log_dir and not os.path.exists(log_dir):
+            os.makedirs(log_dir, exist_ok=True)
+
         logging.basicConfig(
             level=getattr(logging, self.logging.level),
             format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
