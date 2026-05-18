@@ -8,8 +8,8 @@ import undetected_chromedriver as uc
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from selenium.webdriver.chrome.options import Options
-from .oddsportal_scraper import OddsportalScraper
-from .odds_api_scraper import OddsAPIScraper
+from scraper.oddsportal_scraper import OddsportalScraper
+from scraper.odds_api_scraper import OddsAPIScraper
 from core.config_manager import ConfigManager
 
 logger = logging.getLogger(__name__)
