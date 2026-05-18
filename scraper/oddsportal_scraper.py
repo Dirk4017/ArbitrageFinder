@@ -327,7 +327,43 @@ class OddsportalScraper:
 
         try:
             logger.info(f"Scraping match odds from: {match_url}")
+
+            # Stealth: Add custom headers via CDP before navigation
+            self.driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {
+                "headers": {
+                    "Referer": "https://www.google.com/",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "User-Agent": random.choice(self.user_agents)
+                }
+            })
+
+            # Navigate to homepage first to establish session
+            logger.info("Navigating to homepage first...")
+            self.driver.get("https://www.oddsportal.com/")
+            time.sleep(3)
+
+            # Log navigation steps
+            logger.info(f"Navigating to {match_url}...")
             self.driver.get(match_url)
+
+            # Add a small delay to capture the URL immediately after navigation
+            time.sleep(2)
+            current_url_after_get = self.driver.current_url
+            logger.info(f"Current URL after driver.get: {current_url_after_get}")
+
+            if "centroquote.it" in current_url_after_get:
+                logger.error(f"FATAL: Redirected to CentroQuote! Likely blocked by anti-bot.")
+                # Try to go back and retry once
+                self.driver.back()
+                time.sleep(3)
+                logger.info(f"Retry URL: {self.driver.current_url}")
+
+                # If still redirected, try deleting cookies
+                if "centroquote.it" in self.driver.current_url:
+                    self.driver.delete_all_cookies()
+                    self.driver.refresh()
+                    time.sleep(3)
+                    logger.info(f"After refresh: {self.driver.current_url}")
 
             # DEBUG: Log current URL and page title to check for redirects/blocks
             logger.info(f"Navigated to: {self.driver.current_url}")
