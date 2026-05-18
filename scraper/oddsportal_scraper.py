@@ -328,7 +328,14 @@ class OddsportalScraper:
         try:
             logger.info(f"Scraping match odds from: {match_url}")
             self.driver.get(match_url)
+
+            # DEBUG: Log current URL and page title to check for redirects/blocks
             logger.info(f"Navigated to: {self.driver.current_url}")
+            logger.info(f"Page title: {self.driver.title}")
+
+            # Check for immediate blocking signatures in page source
+            if "Access Denied" in self.driver.page_source or "challenges" in self.driver.current_url:
+                logger.warning(f"Detected potential block on {match_url}. Current URL: {self.driver.current_url}")
 
             # Wait for content to load
             WebDriverWait(self.driver, 20).until(

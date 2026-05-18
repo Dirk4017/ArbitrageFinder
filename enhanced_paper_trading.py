@@ -36,6 +36,8 @@ print(f"Log directories created: logs/, {parent_logs}, {log_dir}")
 # Add the current directory to Python path
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
+# Also add the scraper directory explicitly to ensure it's found
+sys.path.insert(0, os.path.join(current_dir, 'scraper'))
 
 # Now import modules
 try:
@@ -159,6 +161,18 @@ class EnhancedPaperTradingSystem:
 
         event_lower = event.lower()
         sport_lower = sport.lower()
+
+        # WNBA is NEVER college
+        if sport_lower == 'wnba':
+            return False
+
+        # MLB, NBA, NFL, NHL team names that should NEVER be flagged as college
+        pro_team_keywords = [
+            'yankees', 'dodgers', 'lakers', 'warriors', 'chiefs', 'ravens', 'blackhawks', 'stars',
+            'liberty', 'mystics', 'fever', 'aces', 'storm', 'wings'
+        ]
+        if any(team in event_lower for team in pro_team_keywords):
+            return False
 
         # If sport is already identified as college, return True
         if sport_lower in ['ncaaf', 'ncaab', 'ncaaw', 'college football', 'college basketball']:
@@ -314,7 +328,11 @@ class EnhancedPaperTradingSystem:
                 market_clean = re.sub(r'\s+\d+\.?\d*$', '', market_clean)
 
                 # Check if market_clean looks like a name (has space, capital letters)
-                if ' ' in market_clean and any(c.isupper() for c in market_clean):
+                # AND is not a known non-player market keyword
+                non_player_keywords = ['total', 'team', 'home', 'away', 'score', 'quarter', 'half', 'period', 'points', 'runs', 'goals', 'games']
+                is_non_player = any(kw in market_clean.lower() for kw in non_player_keywords)
+
+                if ' ' in market_clean and any(c.isupper() for c in market_clean) and not is_non_player:
                     logger.info(f"Extracted player from market: '{market_clean}'")
                     return market_clean
 
@@ -343,18 +361,28 @@ class EnhancedPaperTradingSystem:
 
         # Check database for existing pending bet
         try:
-            existing_bets = self.db.supabase.table('bets') \
-                .select('id') \
-                .eq('player', opportunity.get('player', '')) \
-                .eq('market', opportunity.get('market', '')) \
-                .eq('event', opportunity.get('event', '')) \
-                .eq('status', 'pending') \
-                .execute()
+            # Check if using Supabase
+            if hasattr(self.db, 'supabase') and self.config.database.use_supabase:
+                existing_bets = self.db.supabase.table('bets') \
+                    .select('id') \
+                    .eq('player', opportunity.get('player', '')) \
+                    .eq('market', opportunity.get('market', '')) \
+                    .eq('event', opportunity.get('event', '')) \
+                    .eq('status', 'pending') \
+                    .execute()
 
-            if existing_bets.data:
-                logger.info(
-                    f"Skipping duplicate bet (already pending in DB): {opportunity.get('player')} - {opportunity.get('market')}")
-                return True
+                if existing_bets.data:
+                    logger.info(
+                        f"Skipping duplicate bet (already pending in Supabase): {opportunity.get('player')} - {opportunity.get('market')}")
+                    return True
+            else:
+                # Use standard method (implemented in SQLite manager)
+                if hasattr(self.db, 'is_duplicate_bet'):
+                    if self.db.is_duplicate_bet(opportunity):
+                        logger.info(
+                            f"Skipping duplicate bet (already pending in SQLite): {opportunity.get('player')} - {opportunity.get('market')}")
+                        return True
+
         except Exception as e:
             logger.warning(f"Error checking for duplicate in DB: {e}")
 
@@ -411,13 +439,31 @@ class EnhancedPaperTradingSystem:
                 'golden knights'
             ]
 
+            # WNBA team names
+            wnba_team_names = [
+                'liberty', 'mystics', 'fever', 'sky', 'sun', 'aces', 'storm', 'wings',
+                'sparks', 'dream', 'lynx', 'mercury', 'valkyries'
+            ]
+
+            # Soccer team names (Top 5 leagues)
+            soccer_team_names = [
+                'arsenal', 'manchester city', 'liverpool', 'aston villa', 'tottenham',
+                'manchester united', 'newcastle', 'chelsea', 'real madrid', 'barcelona',
+                'girona', 'atletico madrid', 'athletic club', 'real sociedad', 'leverkusen',
+                'bayern munich', 'stuttgart', 'leipzig', 'dortmund', 'frankfurt',
+                'inter milan', 'ac milan', 'juventus', 'bologna', 'roma', 'atalanta',
+                'lazio', 'psg', 'monaco', 'brest', 'lille', 'nice', 'lens', 'marseille'
+            ]
+
             event_lower = event.lower()
 
-            # FIRST: Check if this is a professional game (MLB, NBA, NFL, NHL)
+            # FIRST: Check if this is a professional game (MLB, NBA, NFL, NHL, Soccer)
             is_mlb_game = any(team in event_lower for team in mlb_team_names)
             is_nba_game = any(team in event_lower for team in nba_team_names)
             is_nfl_game = any(team in event_lower for team in nfl_team_names)
             is_nhl_game = any(team in event_lower for team in nhl_team_names)
+            is_wnba_game = any(team in event_lower for team in wnba_team_names)
+            is_soccer_game = any(team in event_lower for team in soccer_team_names) or sport == 'soccer'
 
             # Determine the correct sport - professional sports take priority
             if is_mlb_game:
@@ -426,12 +472,18 @@ class EnhancedPaperTradingSystem:
             elif is_nba_game:
                 normalized_sport = 'nba'
                 logger.info(f"🏀 NBA GAME DETECTED: {event} -> {normalized_sport}")
+            elif is_wnba_game:
+                normalized_sport = 'wnba'
+                logger.info(f"🏀 WNBA GAME DETECTED: {event} -> {normalized_sport}")
             elif is_nfl_game:
                 normalized_sport = 'nfl'
                 logger.info(f"🏈 NFL GAME DETECTED: {event} -> {normalized_sport}")
             elif is_nhl_game:
                 normalized_sport = 'nhl'
                 logger.info(f"🏒 NHL GAME DETECTED: {event} -> {normalized_sport}")
+            elif is_soccer_game:
+                normalized_sport = 'soccer'
+                logger.info(f"⚽ SOCCER GAME DETECTED: {event} -> {normalized_sport}")
             else:
                 # ========== ONLY CHECK FOR COLLEGE IF NOT A PROFESSIONAL SPORT ==========
                 # College basketball indicators
@@ -725,8 +777,8 @@ class EnhancedPaperTradingSystem:
             game_date = bet.get('game_date')
             if game_date and self._is_future_game(game_date):
                 try:
-                    game_dt = datetime.strptime(str(game_date), '%Y-%m-%d')
-                    current_dt = datetime.now()
+                    game_dt = datetime.strptime(str(game_date), '%Y-%m-%d').date()
+                    current_dt = datetime.now().date()
                     days_until = (game_dt - current_dt).days
                 except:
                     days_until = None
@@ -866,6 +918,36 @@ class EnhancedPaperTradingSystem:
                 market_type = "Player Home Runs"
             elif stat_type == 'rbi':
                 market_type = "Player RBI"
+            elif stat_type == 'runs':
+                market_type = "Player Runs"
+            elif stat_type == 'strikeouts':
+                market_type = "Player Strikeouts"
+            elif stat_type == 'stolen_bases':
+                market_type = "Player Stolen Bases"
+            elif stat_type == 'walks':
+                market_type = "Player Walks"
+            elif stat_type == 'total_bases':
+                market_type = "Player Total Bases"
+            elif stat_type == 'singles':
+                market_type = "Player Singles"
+            elif stat_type == 'doubles':
+                market_type = "Player Doubles"
+            elif stat_type == 'triples':
+                market_type = "Player Triples"
+            elif stat_type == 'extra_base_hits':
+                market_type = "Player Extra Base Hits"
+            elif stat_type == 'pitching_strikeouts':
+                market_type = "Player Pitching Strikeouts"
+            elif stat_type == 'earned_runs':
+                market_type = "Player Earned Runs Allowed"
+            elif stat_type == 'innings_pitched':
+                market_type = "Player Innings Pitched"
+            elif stat_type == 'outs_recorded':
+                market_type = "Player Outs Recorded"
+            elif stat_type == 'hits_allowed':
+                market_type = "Player Hits Allowed"
+            elif stat_type == 'walks_allowed':
+                market_type = "Player Walks Allowed"
 
         elif sport in ['nhl', 'hockey']:
             if stat_type == 'goals':
@@ -876,6 +958,22 @@ class EnhancedPaperTradingSystem:
                 market_type = "Player Shots On Goal"
             elif stat_type == 'saves':
                 market_type = "Player Saves"
+
+        elif sport == 'soccer':
+            if stat_type == 'goals':
+                market_type = "Player Goals"
+            elif stat_type == 'assists':
+                market_type = "Player Assists"
+            elif stat_type == 'shots':
+                market_type = "Player Shots"
+            elif stat_type == 'shots_on_target':
+                market_type = "Player Shots On Target"
+            elif stat_type == 'cards':
+                market_type = "Player To Be Shown A Card"
+            elif stat_type == 'fouls_committed':
+                market_type = "Player Fouls Committed"
+            elif stat_type == 'fouls_drawn':
+                market_type = "Player Fouls Drawn"
 
         # Prepare parameters for R with formatted market_type
         params = {
@@ -1076,6 +1174,13 @@ class EnhancedPaperTradingSystem:
                 else:
                     return game_year - 1
 
+            # Soccer: Season typically Aug-May
+            elif sport == "soccer":
+                if game_month >= 7:  # July start for some leagues/qualifiers
+                    return game_year
+                else:
+                    return game_year - 1
+
             # MLB/WNBA: Season runs within calendar year
             elif sport in ["mlb", "wnba"]:
                 return game_year
@@ -1207,8 +1312,17 @@ class EnhancedPaperTradingSystem:
         for scan_num in range(1, max_scans + 1):
             logger.info(f"\nScan #{scan_num}/{max_scans} | Bankroll: €{self.bankroll:.2f}")
 
-            # Scan for opportunities
-            opportunities = self.scanner.scrape_crazyninja_odds()
+            # 1. Scan for CrazyNinja opportunities
+            logger.info("Scanning CrazyNinjaOdds...")
+            ninja_opportunities = self.scanner.scrape_crazyninja_odds()
+
+            # 2. Scan for Oddsportal opportunities (Soccer)
+            logger.info("Scanning Oddsportal (Soccer)...")
+            oddsportal_opportunities = self.scanner.scrape_oddsportal_opportunities()
+
+            # Combine all opportunities
+            opportunities = ninja_opportunities + oddsportal_opportunities
+            logger.info(f"Total opportunities found: {len(opportunities)} ({len(ninja_opportunities)} Ninja, {len(oddsportal_opportunities)} Oddsportal)")
 
             # Get current pending bets
             pending_bets = self.db.get_pending_bets()

@@ -8,8 +8,7 @@ import undetected_chromedriver as uc
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from selenium.webdriver.chrome.options import Options
-from scraper.oddsportal_scraper import OddsportalScraper
-from scraper.odds_api_scraper import OddsAPIScraper
+# from scraper.odds_api_scraper import OddsAPIScraper
 from core.config_manager import ConfigManager
 
 logger = logging.getLogger(__name__)
@@ -27,9 +26,9 @@ class UltraStableScanner:
         # Initialize Oddsportal Scraper with reinit_callback
         self.oddsportal_scraper = OddsportalScraper(reinit_callback=self.reinitialize_webdriver)
 
-        # Initialize The Odds API Scraper
-        api_key = self.config.api.odds_api_key
-        self.odds_api_scraper = OddsAPIScraper(api_key=api_key)
+        # Initialize The Odds API Scraper - EXCLUDED
+        # api_key = self.config.api.odds_api_key
+        # self.odds_api_scraper = OddsAPIScraper(api_key=api_key)
 
     def reinitialize_webdriver(self, proxy: Optional[str] = None):
         """Callback to re-initialize the WebDriver upon session loss."""
@@ -369,36 +368,26 @@ class UltraStableScanner:
         logger.info("Starting real-time multi-sport scan...")
         all_opportunities = []
 
-        # 1. Try The Odds API (More stable, real data)
+        # 1. Try Oddsportal (Web scraping)
         try:
-            logger.info("Fetching from The Odds API...")
-            odds_api_opps = self.odds_api_scraper.scrape_all_sports()
-            if odds_api_opps:
-                all_opportunities.extend(odds_api_opps)
+            logger.info("Falling back to Oddsportal scraping...")
+
+            # Ensure driver is initialized for Oddsportal
+            if not self.driver:
+                self.driver = self.initialize_webdriver()
+
+            if self.driver:
+                # Inject driver into the scraper
+                self.oddsportal_scraper.driver = self.driver
+                opportunities = self.oddsportal_scraper.scrape_all_sports()
+                if opportunities:
+                    all_opportunities.extend(opportunities)
+            else:
+                logger.warning("Could not initialize WebDriver for Oddsportal")
         except Exception as e:
-            logger.error(f"The Odds API scan failed: {e}")
+            logger.error(f"Oddsportal scraping failed: {e}")
 
-        # 2. Try Oddsportal (Web scraping fallback for soccer)
-        if not all_opportunities:
-            try:
-                logger.info("The Odds API returned no data, falling back to Oddsportal scraping...")
-
-                # Ensure driver is initialized for Oddsportal
-                if not self.driver:
-                    self.driver = self.initialize_webdriver()
-
-                if self.driver:
-                    # Inject driver into the scraper
-                    self.oddsportal_scraper.driver = self.driver
-                    opportunities = self.oddsportal_scraper.scrape_all_sports()
-                    if opportunities:
-                        all_opportunities.extend(opportunities)
-                else:
-                    logger.warning("Could not initialize WebDriver for Oddsportal")
-            except Exception as e:
-                logger.error(f"Oddsportal scraping failed: {e}")
-
-        # 3. Fallback to simulated data only if everything else fails
+        # 2. Fallback to simulated data only if everything else fails
         if not all_opportunities:
             logger.info("No real data found, using simulated data as absolute last resort")
             all_opportunities = self.oddsportal_scraper.generate_simulated_opportunities()
