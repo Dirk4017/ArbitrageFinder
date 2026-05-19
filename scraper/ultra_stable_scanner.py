@@ -78,7 +78,6 @@ class UltraStableScanner:
 
             # Additional stealth arguments
             chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-            chrome_options.add_experimental_option('useAutomationExtension', False)
             chrome_options.add_argument("--disable-infobars")
             chrome_options.add_argument("--disable-popup-blocking")
             chrome_options.add_argument("--window-position=0,0")

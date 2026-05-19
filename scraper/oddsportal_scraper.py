@@ -41,10 +41,10 @@ class OddsportalScraper:
             # and often requires restarting the driver, which is handled by reinit_callback.
 
         self.user_agents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0'
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36'
         ]
 
         self.session = requests.Session()
@@ -296,8 +296,11 @@ class OddsportalScraper:
         # Add CDP/stealth tweaks
         self.driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": """
-                // Overwrite the navigator.webdriver property
                 Object.defineProperty(navigator, 'webdriver', { get: () => undefined });
+
+                // Block/fake common anti-bot libraries and properties
+                window.navigator.chrome = { runtime: {} };
+                Object.defineProperty(navigator, 'languages', { get: () => ['en-US', 'en'] });
 
                 // Emulate canvas to avoid simple fingerprinting
                 const getContext = HTMLCanvasElement.prototype.getContext;
@@ -319,6 +322,12 @@ class OddsportalScraper:
                 Object.defineProperty(navigator, 'platform', { get: () => 'Win32' });
                 Object.defineProperty(navigator, 'vendor', { get: () => 'Google Inc.' });
                 Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 8 });
+
+                // Add fake screen properties
+                Object.defineProperty(screen, 'width', { get: () => 1920 });
+                Object.defineProperty(screen, 'height', { get: () => 1080 });
+                Object.defineProperty(screen, 'availWidth', { get: () => 1920 });
+                Object.defineProperty(screen, 'availHeight', { get: () => 1080 });
             """
         })
 
@@ -329,41 +338,58 @@ class OddsportalScraper:
             logger.info(f"Scraping match odds from: {match_url}")
 
             # Stealth: Add custom headers via CDP before navigation
+            # Removing Referer and Sec-Fetch-Site to look more like a fresh start
             self.driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {
                 "headers": {
-                    "Referer": "https://www.google.com/",
                     "Accept-Language": "en-US,en;q=0.9",
-                    "User-Agent": random.choice(self.user_agents)
+                    "User-Agent": random.choice(self.user_agents),
+                    "Upgrade-Insecure-Requests": "1"
                 }
             })
 
             # Navigate to homepage first to establish session
             logger.info("Navigating to homepage first...")
             self.driver.get("https://www.oddsportal.com/")
-            time.sleep(3)
+            time.sleep(random.uniform(15, 25)) # Increased delay further to be extra safe
+
+            # Instead of immediate URL check, maybe wait for a specific element
+            try:
+                WebDriverWait(self.driver, 10).until(
+                    EC.presence_of_element_located((By.CSS_SELECTOR, "div.header-logo"))
+                )
+            except TimeoutException:
+                logger.warning("Homepage didn't load expected elements. Redirection likely.")
+
+            # Check for immediate redirection upon homepage load
+            if "centroquote.it" in self.driver.current_url:
+                logger.warning("Homepage redirected! Trying to clear cookies and retry.")
+                self.driver.delete_all_cookies()
+                self.driver.refresh()
+                time.sleep(10)
+                if "centroquote.it" in self.driver.current_url:
+                    logger.error("Still redirected after cookie clear. Blocked.")
+                    return []
 
             # Log navigation steps
             logger.info(f"Navigating to {match_url}...")
+            # Use direct navigation after browsing homepage first,
+            # this is often less suspicious than script-based navigation.
             self.driver.get(match_url)
+            time.sleep(random.uniform(7, 10))
 
             # Add a small delay to capture the URL immediately after navigation
             time.sleep(2)
             current_url_after_get = self.driver.current_url
-            logger.info(f"Current URL after driver.get: {current_url_after_get}")
+            logger.info(f"Current URL after navigation: {current_url_after_get}")
 
             if "centroquote.it" in current_url_after_get:
                 logger.error(f"FATAL: Redirected to CentroQuote! Likely blocked by anti-bot.")
-                # Try to go back and retry once
-                self.driver.back()
-                time.sleep(3)
-                logger.info(f"Retry URL: {self.driver.current_url}")
-
-                # If still redirected, try deleting cookies
-                if "centroquote.it" in self.driver.current_url:
-                    self.driver.delete_all_cookies()
-                    self.driver.refresh()
-                    time.sleep(3)
-                    logger.info(f"After refresh: {self.driver.current_url}")
+                # If redirected, try using a different approach: click a link if possible
+                # or just accept that we are blocked for this session.
+                # Since we can't easily click a link here, we will try to refresh.
+                self.driver.refresh()
+                time.sleep(5)
+                logger.info(f"After refresh: {self.driver.current_url}")
 
             # DEBUG: Log current URL and page title to check for redirects/blocks
             logger.info(f"Navigated to: {self.driver.current_url}")

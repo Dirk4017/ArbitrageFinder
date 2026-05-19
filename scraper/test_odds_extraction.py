@@ -13,20 +13,32 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-from selenium_stealth import stealth
-from .oddsportal_scraper import OddsportalScraper
+# from selenium_stealth import stealth
+from oddsportal_scraper import OddsportalScraper
 import undetected_chromedriver as uc
 from selenium.webdriver.chrome.options import Options
 
 from selenium.webdriver.common.by import By
 options = Options()
 options.add_argument("--disable-blink-features=AutomationControlled")
+import random
 # Add more robust stealth
 options.add_argument("--disable-gpu")
 options.add_argument("--no-sandbox")
 options.add_argument("--disable-dev-shm-usage")
+# Specifically randomize user agent here, or pass it to the driver
+# Use the same list as scraper
+user_agents = [
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36',
+]
+options.add_argument(f"user-agent={random.choice(user_agents)}")
+
 # Add a realistic screen resolution
 options.add_argument("--window-size=1920,1080")
+options.add_argument("--start-maximized")
+options.add_argument("--disable-infobars")
+options.add_argument("--disable-extensions")
 
 # Proxy setup - provide a working proxy URL here if available
 PROXY_URL = None
@@ -35,14 +47,14 @@ if PROXY_URL:
 
 driver = uc.Chrome(options=options)
 
-stealth(driver,
-        languages=["en-US", "en"],
-        vendor="Google Inc.",
-        platform="Win32",
-        webgl_vendor="Intel Inc.",
-        renderer="Intel Iris OpenGL Engine",
-        fix_hairline=True,
-        )
+# stealth(driver,
+#         languages=["en-US", "en"],
+#         vendor="Google Inc.",
+#         platform="Win32",
+#         webgl_vendor="Intel Inc.",
+#         renderer="Intel Iris OpenGL Engine",
+#         fix_hairline=True,
+#         )
 
 scraper = OddsportalScraper(driver=driver)
 
