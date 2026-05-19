@@ -3,6 +3,7 @@ Ultra Stable Scanner - Enhanced version of your web scraper
 """
 import re
 import time
+import random
 import logging
 import undetected_chromedriver as uc
 from datetime import datetime, timedelta
@@ -414,6 +415,10 @@ class UltraStableScanner:
             all_opportunities = self.oddsportal_scraper.generate_simulated_opportunities()
 
         return all_opportunities
+
+    def scrape_oddsportal_opportunities(self) -> List[Dict]:
+        """Wrapper to call scrape_all_sports for compatibility."""
+        return self.scrape_all_sports()
 
     def close(self):
         """Close the webdriver"""
