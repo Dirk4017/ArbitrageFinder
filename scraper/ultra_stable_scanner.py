@@ -5,6 +5,7 @@ import re
 import time
 import random
 import logging
+import os
 import undetected_chromedriver as uc
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
