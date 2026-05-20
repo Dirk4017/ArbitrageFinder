@@ -1,0 +1,28 @@
+{
+  "sports": ["football", "tennis", "basketball", "baseball", "ice-hockey"],
+  "leagues": {
+    "football": ["england-premier-league", "spain-laliga", "germany-bundesliga", "italy-serie-a", "france-ligue-1"],
+    "tennis": [],
+    "basketball": [],
+    "baseball": [],
+    "ice-hockey": []
+  },
+  "markets": {
+    "football": ["1x2", "btts"],
+    "tennis": [],
+    "basketball": [],
+    "baseball": [],
+    "ice-hockey": []
+  },
+  "scraping": {
+    "headless": false,
+    "concurrency": 3,
+    "request_delay": 1.0,
+    "preview_mode": true,
+    "base_url": "https://www.oddsportal.com",
+    "use_proxy": false,
+    "proxy_url": "",
+    "locale": "en-US",
+    "timezone": "America/New_York"
+  }
+}

@@ -14,6 +14,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from .oddsportal_scraper import OddsportalScraper
+from .odds_harvester_adapter import OddsHarvesterAdapter
 # from scraper.odds_api_scraper import OddsAPIScraper
 from core.config_manager import ConfigManager
 

@@ -9,3 +9,4 @@ pandas>=1.5.0
 numpy>=1.24.0
 beautifulsoup4>=4.11.0
 lxml>=4.9.0
+oddsharvester>=0.2.0
