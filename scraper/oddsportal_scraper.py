@@ -1,3 +1,6 @@
+import warnings
+warnings.warn("OddsportalScraper is deprecated. Use OddsHarvesterAdapter instead.", DeprecationWarning, stacklevel=2)
+
 import requests
 from bs4 import BeautifulSoup
 import time
@@ -53,10 +56,117 @@ class OddsportalScraper:
         self.sports_config = {
             'soccer': {
                 'leagues': {
-                    'premier-league': 'https://www.oddsportal.com/football/england/premier-league/',
-                    'la-liga': 'https://www.oddsportal.com/football/spain/la-liga/',
-                    'bundesliga': 'https://www.oddsportal.com/football/germany/bundesliga/',
-                    # ... (rest of soccer leagues)
+                    'argentina-copa-de-la-liga-profesional': 'https://www.oddsportal.com/football/argentina/copa-de-la-liga-profesional/',
+                    'argentina-primera-nacional': 'https://www.oddsportal.com/football/argentina/primera-nacional/',
+                    'armenia-premier-league': 'https://www.oddsportal.com/football/armenia/premier-league/',
+                    'australia-a-league': 'https://www.oddsportal.com/football/australia/a-league/',
+                    'austria-bundesliga': 'https://www.oddsportal.com/football/austria/bundesliga/',
+                    'austria-2-liga': 'https://www.oddsportal.com/football/austria/2-liga/',
+                    'azerbaijan-premier-league': 'https://www.oddsportal.com/football/azerbaijan/premier-league/',
+                    'bahrain-premier-league': 'https://www.oddsportal.com/football/bahrain/premier-league/',
+                    'belarus-vysshaya-liga': 'https://www.oddsportal.com/football/belarus/vysshaya-liga/',
+                    'belgium-challenger-pro-league': 'https://www.oddsportal.com/football/belgium/challenger-pro-league/',
+                    'belgium-jupiler-pro-league': 'https://www.oddsportal.com/football/belgium/jupiler-pro-league/',
+                    'bolivia-division-profesional': 'https://www.oddsportal.com/football/bolivia/division-profesional/',
+                    'bosnia-and-herzegovina-premijer-liga-bih': 'https://www.oddsportal.com/football/bosnia-and-herzegovina/premijer-liga-bih/',
+                    'brazil-serie-a': 'https://www.oddsportal.com/football/brazil/serie-a/',
+                    'brazil-serie-b': 'https://www.oddsportal.com/football/brazil/serie-b/',
+                    'bulgaria-parva-liga': 'https://www.oddsportal.com/football/bulgaria/parva-liga/',
+                    'chile-primera-division': 'https://www.oddsportal.com/football/chile/primera-division/',
+                    'chile-primera-b': 'https://www.oddsportal.com/football/chile/primera-b/',
+                    'china-super-league': 'https://www.oddsportal.com/football/china/super-league/',
+                    'colombia-primera-b': 'https://www.oddsportal.com/football/colombia/primera-b/',
+                    'colombia-primera-a': 'https://www.oddsportal.com/football/colombia/primera-a/',
+                    'costa-rica-primera-division': 'https://www.oddsportal.com/football/costa-rica/primera-division/',
+                    'croatia-prva-nl': 'https://www.oddsportal.com/football/croatia/prva-nl/',
+                    'croatia-hnl': 'https://www.oddsportal.com/football/croatia/hnl/',
+                    'cyprus-cyta-championship': 'https://www.oddsportal.com/football/cyprus/cyta-championship/',
+                    'czech-republic-fnl': 'https://www.oddsportal.com/football/czech-republic/fnl/',
+                    'czech-republic-fortuna-liga': 'https://www.oddsportal.com/football/czech-republic/fortuna-liga/',
+                    'denmark-1st-division': 'https://www.oddsportal.com/football/denmark/1st-division/',
+                    'denmark-superliga': 'https://www.oddsportal.com/football/denmark/superliga/',
+                    'ecuador-liga-pro': 'https://www.oddsportal.com/football/ecuador/liga-pro/',
+                    'egypt-premier-league': 'https://www.oddsportal.com/football/egypt/premier-league/',
+                    'england-league-two': 'https://www.oddsportal.com/football/england/league-two/',
+                    'england-league-one': 'https://www.oddsportal.com/football/england/league-one/',
+                    'england-premier-league': 'https://www.oddsportal.com/football/england/premier-league/',
+                    'england-championship': 'https://www.oddsportal.com/football/england/championship/',
+                    'england-national-league': 'https://www.oddsportal.com/football/england/national-league/',
+                    'estonia-meistriliiga': 'https://www.oddsportal.com/football/estonia/meistriliiga/',
+                    'finland-ykkonen': 'https://www.oddsportal.com/football/finland/ykkonen/',
+                    'finland-veikkausliiga': 'https://www.oddsportal.com/football/finland/veikkausliiga/',
+                    'france-ligue-1': 'https://www.oddsportal.com/football/france/ligue-1/',
+                    'france-national': 'https://www.oddsportal.com/football/france/national/',
+                    'france-ligue-2': 'https://www.oddsportal.com/football/france/ligue-2/',
+                    'germany-bundesliga': 'https://www.oddsportal.com/football/germany/bundesliga/',
+                    'germany-2-bundesliga': 'https://www.oddsportal.com/football/germany/2-bundesliga/',
+                    'germany-3-liga': 'https://www.oddsportal.com/football/germany/3-liga/',
+                    'greece-super-league': 'https://www.oddsportal.com/football/greece/super-league/',
+                    'honduras-liga-nacional': 'https://www.oddsportal.com/football/honduras/liga-nacional/',
+                    'hungary-otp-bank-liga': 'https://www.oddsportal.com/football/hungary/otp-bank-liga/',
+                    'iceland-besta-deild-karla': 'https://www.oddsportal.com/football/iceland/besta-deild-karla/',
+                    'india-isl': 'https://www.oddsportal.com/football/india/isl/',
+                    'ireland-division-1': 'https://www.oddsportal.com/football/ireland/division-1/',
+                    'ireland-premier-division': 'https://www.oddsportal.com/football/ireland/premier-division/',
+                    'israel-leumit-league': 'https://www.oddsportal.com/football/israel/leumit-league/',
+                    'israel-ligat-ha-al': 'https://www.oddsportal.com/football/israel/ligat-ha-al/',
+                    'italy-serie-b': 'https://www.oddsportal.com/football/italy/serie-b/',
+                    'italy-serie-a': 'https://www.oddsportal.com/football/italy/serie-a/',
+                    'japan-j1-league': 'https://www.oddsportal.com/football/japan/j1-league/',
+                    'japan-j2-league': 'https://www.oddsportal.com/football/japan/j2-league/',
+                    'jordan-premier-league': 'https://www.oddsportal.com/football/jordan/premier-league/',
+                    'kazakhstan-premier-league': 'https://www.oddsportal.com/football/kazakhstan/premier-league/',
+                    'kuwait-premier-league': 'https://www.oddsportal.com/football/kuwait/premier-league/',
+                    'lithuania-a-lyga': 'https://www.oddsportal.com/football/lithuania/a-lyga/',
+                    'malaysia-super-league': 'https://www.oddsportal.com/football/malaysia/super-league/',
+                    'malta-premier-league': 'https://www.oddsportal.com/football/malta/premier-league/',
+                    'mexico-liga-mx': 'https://www.oddsportal.com/football/mexico/liga-mx/',
+                    'montenegro-prva-crnogorska-liga': 'https://www.oddsportal.com/football/montenegro/prva-crnogorska-liga/',
+                    'morocco-botola-pro': 'https://www.oddsportal.com/football/morocco/botola-pro/',
+                    'netherlands-eredivisie': 'https://www.oddsportal.com/football/netherlands/eredivisie/',
+                    'netherlands-eerste-divisie': 'https://www.oddsportal.com/football/netherlands/eerste-divisie/',
+                    'northern-ireland-nifl-premiership': 'https://www.oddsportal.com/football/northern-ireland/nifl-premiership/',
+                    'norway-obos-ligaen': 'https://www.oddsportal.com/football/norway/obos-ligaen/',
+                    'norway-eliteserien': 'https://www.oddsportal.com/football/norway/eliteserien/',
+                    'paraguay-primera-division': 'https://www.oddsportal.com/football/paraguay/primera-division/',
+                    'peru-liga-1': 'https://www.oddsportal.com/football/peru/liga-1/',
+                    'poland-division-1': 'https://www.oddsportal.com/football/poland/division-1/',
+                    'poland-ekstraklasa': 'https://www.oddsportal.com/football/poland/ekstraklasa/',
+                    'portugal-liga-portugal': 'https://www.oddsportal.com/football/portugal/liga-portugal/',
+                    'portugal-liga-portugal-2': 'https://www.oddsportal.com/football/portugal/liga-portugal-2/',
+                    'qatar-qsl': 'https://www.oddsportal.com/football/qatar/qsl/',
+                    'romania-liga-2': 'https://www.oddsportal.com/football/romania/liga-2/',
+                    'romania-liga-1': 'https://www.oddsportal.com/football/romania/liga-1/',
+                    'russia-fnl': 'https://www.oddsportal.com/football/russia/fnl/',
+                    'russia-premier-league': 'https://www.oddsportal.com/football/russia/premier-league/',
+                    'saudi-arabia-saudi-professional-league': 'https://www.oddsportal.com/football/saudi-arabia/saudi-professional-league/',
+                    'scotland-league-two': 'https://www.oddsportal.com/football/scotland/league-two/',
+                    'scotland-league-one': 'https://www.oddsportal.com/football/scotland/league-one/',
+                    'scotland-championship': 'https://www.oddsportal.com/football/scotland/championship/',
+                    'scotland-premiership': 'https://www.oddsportal.com/football/scotland/premiership/',
+                    'serbia-super-liga': 'https://www.oddsportal.com/football/serbia/super-liga/',
+                    'slovakia-nike-liga': 'https://www.oddsportal.com/football/slovakia/nike-liga/',
+                    'slovenia-prva-liga': 'https://www.oddsportal.com/football/slovenia/prva-liga/',
+                    'south-africa-premier-league': 'https://www.oddsportal.com/football/south-africa/premier-league/',
+                    'south-korea-k-league-2': 'https://www.oddsportal.com/football/south-korea/k-league-2/',
+                    'south-korea-k-league-1': 'https://www.oddsportal.com/football/south-korea/k-league-1/',
+                    'spain-laliga': 'https://www.oddsportal.com/football/spain/laliga/',
+                    'spain-laliga2': 'https://www.oddsportal.com/football/spain/laliga2/',
+                    'sweden-superettan': 'https://www.oddsportal.com/football/sweden/superettan/',
+                    'sweden-allsvenskan': 'https://www.oddsportal.com/football/sweden/allsvenskan/',
+                    'switzerland-challenge-league': 'https://www.oddsportal.com/football/switzerland/challenge-league/',
+                    'switzerland-super-league': 'https://www.oddsportal.com/football/switzerland/super-league/',
+                    'thailand-thai-league-1': 'https://www.oddsportal.com/football/thailand/thai-league-1/',
+                    'turkey-1-lig': 'https://www.oddsportal.com/football/turkey/1-lig/',
+                    'turkey-super-lig': 'https://www.oddsportal.com/football/turkey/super-lig/',
+                    'ukraine-premier-league': 'https://www.oddsportal.com/football/ukraine/premier-league/',
+                    'united-arab-emirates-uae-league': 'https://www.oddsportal.com/football/united-arab-emirates/uae-league/',
+                    'uruguay-primera-division': 'https://www.oddsportal.com/football/uruguay/primera-division/',
+                    'usa-usl-championship': 'https://www.oddsportal.com/football/usa/usl-championship/',
+                    'usa-mls': 'https://www.oddsportal.com/football/usa/mls/',
+                    'venezuela-liga-futve': 'https://www.oddsportal.com/football/venezuela/liga-futve/',
+                    'vietnam-v-league-1': 'https://www.oddsportal.com/football/vietnam/v-league-1/',
+                    'wales-cymru-premier': 'https://www.oddsportal.com/football/wales/cymru-premier/'
                 },
                 'market_map': {
                     '1x2': 'Full Time Result',
@@ -70,8 +180,17 @@ class OddsportalScraper:
             },
             'tennis': {
                 'leagues': {
-                    'atp-wimbledon': 'https://www.oddsportal.com/tennis/united-kingdom/atp-wimbledon/',
-                    'wta-wimbledon': 'https://www.oddsportal.com/tennis/united-kingdom/wta-wimbledon/'
+                    'atp': 'https://www.oddsportal.com/tennis/atp/',
+                    'wta': 'https://www.oddsportal.com/tennis/wta/',
+                },
+                'market_map': {
+                    'h2h': 'Match Result',
+                    'media': 'Average'
+                }
+            },
+            'volleyball': {
+                'leagues': {
+                    'champions-league': 'https://www.oddsportal.com/volleyball/europe/champions-league/'
                 },
                 'market_map': {
                     'h2h': 'Match Result',
@@ -87,6 +206,15 @@ class OddsportalScraper:
                     'media': 'Average'
                 }
             },
+            'mma': {
+                'leagues': {
+                    'ufc': 'https://www.oddsportal.com/mma/usa/ufc/'
+                },
+                'market_map': {
+                    'h2h': 'Match Result',
+                    'media': 'Average'
+                }
+            },
             'rugby': {
                 'leagues': {
                     'premiership': 'https://www.oddsportal.com/rugby-union/england/premiership/'
@@ -96,15 +224,171 @@ class OddsportalScraper:
                     'media': 'Average'
                 }
             },
-            'mma': {
+            'horse-racing': {
                 'leagues': {
-                    'ufc': 'https://www.oddsportal.com/mma/usa/ufc/'
+                    'uk-ireland': 'https://www.oddsportal.com/horse-racing/uk-ireland/',
+                    'usa': 'https://www.oddsportal.com/horse-racing/usa/',
+                    'australia': 'https://www.oddsportal.com/horse-racing/australia/'
                 },
-                'market_map': {
-                    'h2h': 'Match Result',
-                    'media': 'Average'
-                }
-            }
+                'market_map': {'h2h': 'Winner', 'media': 'Average'}
+            },
+            'golf': {
+                'leagues': {
+                    'pga-tour': 'https://www.oddsportal.com/golf/usa/pga-tour/',
+                    'dp-world-tour': 'https://www.oddsportal.com/golf/europe/dp-world-tour/',
+                    'majors': 'https://www.oddsportal.com/golf/majors/'
+                },
+                'market_map': {'h2h': 'Winner', 'media': 'Average'}
+            },
+            'cycling': {
+                'leagues': {
+                    'tour-de-france': 'https://www.oddsportal.com/cycling/france/tour-de-france/',
+                    'giro-d-italia': 'https://www.oddsportal.com/cycling/italy/giro-d-italia/',
+                    'vuelta-a-espana': 'https://www.oddsportal.com/cycling/spain/vuelta-a-espana/'
+                },
+                'market_map': {'h2h': 'Winner', 'media': 'Average'}
+            },
+            'esports': {
+                'leagues': {
+                    'league-of-legends': 'https://www.oddsportal.com/esports/league-of-legends/',
+                    'cs-go': 'https://www.oddsportal.com/esports/cs-go/',
+                    'dota-2': 'https://www.oddsportal.com/esports/dota-2/',
+                    'valorant': 'https://www.oddsportal.com/esports/valorant/',
+                    'call-of-duty': 'https://www.oddsportal.com/esports/call-of-duty/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'boxing': {
+                'leagues': {
+                    'heavyweight': 'https://www.oddsportal.com/boxing/heavyweight/',
+                    'light-heavyweight': 'https://www.oddsportal.com/boxing/light-heavyweight/',
+                    'middleweight': 'https://www.oddsportal.com/boxing/middleweight/',
+                    'welterweight': 'https://www.oddsportal.com/boxing/welterweight/',
+                    'lightweight': 'https://www.oddsportal.com/boxing/lightweight/',
+                    'featherweight': 'https://www.oddsportal.com/boxing/featherweight/'
+                },
+                'market_map': {'h2h': 'Winner', 'media': 'Average'}
+            },
+            'motorsports': {
+                'leagues': {
+                    'formula-1': 'https://www.oddsportal.com/motorsports/formula-1/',
+                    'formula-2': 'https://www.oddsportal.com/motorsports/formula-2/',
+                    'formula-3': 'https://www.oddsportal.com/motorsports/formula-3/',
+                    'motogp': 'https://www.oddsportal.com/motorsports/motogp/',
+                    'nascar': 'https://www.oddsportal.com/motorsports/nascar/',
+                    'indycar': 'https://www.oddsportal.com/motorsports/indycar/',
+                    'world-rally': 'https://www.oddsportal.com/motorsports/world-rally/'
+                },
+                'market_map': {'h2h': 'Winner', 'media': 'Average'}
+            },
+            'snooker': {
+                'leagues': {
+                    'world-championship': 'https://www.oddsportal.com/snooker/world-championship/',
+                    'uk-championship': 'https://www.oddsportal.com/snooker/uk-championship/',
+                    'masters': 'https://www.oddsportal.com/snooker/masters/',
+                    'ranking-events': 'https://www.oddsportal.com/snooker/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'darts': {
+                'leagues': {
+                    'pdc-world-championship': 'https://www.oddsportal.com/darts/pdc-world-championship/',
+                    'premier-league': 'https://www.oddsportal.com/darts/premier-league/',
+                    'world-matchplay': 'https://www.oddsportal.com/darts/world-matchplay/',
+                    'grand-slam': 'https://www.oddsportal.com/darts/grand-slam/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'lacrosse': {
+                'leagues': {
+                    'pll': 'https://www.oddsportal.com/lacrosse/usa/pll/',
+                    'nll': 'https://www.oddsportal.com/lacrosse/usa/nll/',
+                    'world-championship': 'https://www.oddsportal.com/lacrosse/world-championship/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'australian-rules': {
+                'leagues': {
+                    'afl': 'https://www.oddsportal.com/australian-rules/afl/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'handball': {
+                'leagues': {
+                    'world-championship': 'https://www.oddsportal.com/handball/world-championship/',
+                    'european-championship': 'https://www.oddsportal.com/handball/european-championship/',
+                    'champions-league': 'https://www.oddsportal.com/handball/champions-league/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'water-polo': {
+                'leagues': {
+                    'world-championship': 'https://www.oddsportal.com/water-polo/world-championship/',
+                    'olympic-games': 'https://www.oddsportal.com/water-polo/olympic-games/',
+                    'euro-league': 'https://www.oddsportal.com/water-polo/euro-league/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'table-tennis': {
+                'leagues': {
+                    'ittf-world-tour': 'https://www.oddsportal.com/table-tennis/ittf-world-tour/',
+                    'world-championship': 'https://www.oddsportal.com/table-tennis/world-championship/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'badminton': {
+                'leagues': {
+                    'bwf-world-tour': 'https://www.oddsportal.com/badminton/bwf-world-tour/',
+                    'world-championship': 'https://www.oddsportal.com/badminton/world-championship/',
+                    'thomas-uber-cup': 'https://www.oddsportal.com/badminton/thomas-uber-cup/',
+                    'sudirman-cup': 'https://www.oddsportal.com/badminton/sudirman-cup/',
+                    'olympic-games': 'https://www.oddsportal.com/badminton/olympic-games/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'floorball': {
+                'leagues': {
+                    'world-championship': 'https://www.oddsportal.com/floorball/world-championship/',
+                    'champions-cup': 'https://www.oddsportal.com/floorball/champions-cup/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'futsal': {
+                'leagues': {
+                    'world-cup': 'https://www.oddsportal.com/futsal/world-cup/',
+                    'champions-league': 'https://www.oddsportal.com/futsal/champions-league/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'beach-volleyball': {
+                'leagues': {
+                    'world-tour': 'https://www.oddsportal.com/beach-volleyball/world-tour/',
+                    'world-championship': 'https://www.oddsportal.com/beach-volleyball/world-championship/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'winter-sports': {
+                'leagues': {
+                    'alpine-skiing': 'https://www.oddsportal.com/winter-sports/alpine-skiing/',
+                    'biathlon': 'https://www.oddsportal.com/winter-sports/biathlon/',
+                    'speed-skating': 'https://www.oddsportal.com/winter-sports/speed-skating/',
+                    'figure-skating': 'https://www.oddsportal.com/winter-sports/figure-skating/'
+                },
+                'market_map': {'h2h': 'Winner', 'media': 'Average'}
+            },
+            'bandy': {
+                'leagues': {
+                    'world-championship': 'https://www.oddsportal.com/bandy/world-championship/'
+                },
+                'market_map': {'h2h': 'Match Result', 'media': 'Average'}
+            },
+            'surfing': {
+                'leagues': {
+                    'wsl-championship-tour': 'https://www.oddsportal.com/surfing/wsl-championship-tour/'
+                },
+                'market_map': {'h2h': 'Winner', 'media': 'Average'}
+            },
+
         }
 
         self.soft_bookmakers = [
@@ -475,10 +759,49 @@ class OddsportalScraper:
             logger.error(f"Error scraping match {match_url}: {e}")
             return []
 
-    def calculate_ev(self, soft_odds: float, baseline_odds: float) -> Dict:
-        """Calculate EV using baseline (Average)."""
-        if not soft_odds or not baseline_odds or baseline_odds <= 1.0:
+    def calculate_ev(self, soft_odds: float, all_odds: List[Dict], market_key: str = 'odds_1') -> Dict:
+        """
+        Calculate EV using Pinnacle as the baseline if available,
+        otherwise use the market average adjusted for overround.
+        """
+        if not soft_odds or soft_odds <= 1.0:
             return {'ev': 0, 'ev_pct': 0}
+
+        # 1. Find Pinnacle odds
+        pinnacle_odds = None
+        for opp in all_odds:
+            if 'pinnacle' in opp.get('bookmaker', '').lower():
+                pinnacle_odds = float(opp.get(market_key, 0))
+                break
+
+        if pinnacle_odds and pinnacle_odds > 1.0:
+            baseline_odds = pinnacle_odds
+        else:
+            # 2. If no Pinnacle, use market average and adjust for overround
+            valid_odds = []
+            for opp in all_odds:
+                try:
+                    val = float(opp.get(market_key, 0))
+                    if val > 1.0:
+                        valid_odds.append(val)
+                except (ValueError, TypeError):
+                    continue
+
+            if not valid_odds:
+                return {'ev': 0, 'ev_pct': 0}
+
+            # Calculate overround (sum of implied probabilities)
+            implied_probs = [1 / o for o in valid_odds]
+            overround = sum(implied_probs)
+
+            # Average odds
+            avg_odds = sum(valid_odds) / len(valid_odds)
+
+            # Adjusted baseline (fair odds)
+            # Fair probability = (1 / odds) / overround
+            # Fair odds = 1 / ( (1/odds) / overround ) = odds * overround
+            baseline_odds = avg_odds * overround
+
         ev = (soft_odds / baseline_odds) - 1
         return {'ev': ev, 'ev_pct': ev * 100}
 
