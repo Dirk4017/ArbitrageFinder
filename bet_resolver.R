@@ -403,8 +403,8 @@ resolve_game_market <- function(event_string, sport, season, market_type, line_v
     return(list(
       success = inning_result$success,
       resolved = inning_result$success,
-      won = if(is.null(inning_result$bet_won)) NA else inning_result$bet_won,
-      actual = paste0(inning_result$away_score, "-", inning_result$home_score),
+      bet_won = if(is.null(inning_result$bet_won)) NA else inning_result$bet_won,
+      actual_value = paste0(inning_result$away_score, "-", inning_result$home_score),
       bet_type = "first_inning_moneyline",
       winner = inning_result$winner,
       home_score = inning_result$home_score,
@@ -442,8 +442,8 @@ resolve_game_market <- function(event_string, sport, season, market_type, line_v
     return(list(
       success = inning_result$success,
       resolved = inning_result$success,
-      won = if(is.null(inning_result$bet_won)) NA else inning_result$bet_won,
-      actual = paste0(inning_result$away_score, "-", inning_result$home_score),
+      bet_won = if(is.null(inning_result$bet_won)) NA else inning_result$bet_won,
+      actual_value = paste0(inning_result$away_score, "-", inning_result$home_score),
       bet_type = "first_5_innings_moneyline",
       winner = inning_result$winner,
       home_score = inning_result$home_score,
@@ -488,8 +488,8 @@ resolve_game_market <- function(event_string, sport, season, market_type, line_v
     return(list(
       success = inning_result$success,
       resolved = inning_result$success,
-      won = inning_result$bet_won,
-      actual = paste0(inning_result$away_score, "-", inning_result$home_score),
+      bet_won = inning_result$bet_won,
+      actual_value = paste0(inning_result$away_score, "-", inning_result$home_score),
       bet_type = "first_half_moneyline",
       winner = inning_result$winner,
       home_score = inning_result$home_score,
@@ -520,8 +520,8 @@ resolve_game_market <- function(event_string, sport, season, market_type, line_v
     return(list(
       success = inning_result$success,
       resolved = inning_result$success,
-      won = inning_result$bet_won,
-      actual = inning_result$total,
+      bet_won = inning_result$bet_won,
+      actual_value = inning_result$total,
       line_value = line_num,
       direction = direction,
       bet_type = "first_half_total",
@@ -572,8 +572,8 @@ resolve_game_market <- function(event_string, sport, season, market_type, line_v
     return(list(
       success = TRUE,
       resolved = TRUE,
-      won = bet_won,
-      actual = paste0(away_2nd_half, "-", home_2nd_half),
+      bet_won = bet_won,
+      actual_value = paste0(away_2nd_half, "-", home_2nd_half),
       bet_type = "second_half_moneyline",
       winner = winner,
       home_score = home_2nd_half,
@@ -628,8 +628,8 @@ resolve_game_market <- function(event_string, sport, season, market_type, line_v
       return(list(
         success = inning_result$success,
         resolved = inning_result$success,
-        won = inning_result$bet_won,
-        actual = paste0(inning_result$away_score, "-", inning_result$home_score),
+        bet_won = inning_result$bet_won,
+        actual_value = paste0(inning_result$away_score, "-", inning_result$home_score),
         bet_type = paste0(inning_num, suffix, "_inning_moneyline"),
         winner = inning_result$winner,
         home_score = inning_result$home_score,
@@ -668,8 +668,8 @@ resolve_game_market <- function(event_string, sport, season, market_type, line_v
       return(list(
         success = inning_result$success,
         resolved = inning_result$success,
-        won = inning_result$bet_won,
-        actual = inning_result$total,
+        bet_won = inning_result$bet_won,
+        actual_value = inning_result$total,
         line_value = line_num,
         direction = direction,
         bet_type = paste0(inning_num, "_inning_total"),
@@ -700,7 +700,8 @@ resolve_game_market <- function(event_string, sport, season, market_type, line_v
     return(list(
       success = inning_result$success,
       resolved = inning_result$success,
-      won = inning_result$bet_won,
+      bet_won = inning_result$bet_won,
+      actual_value = if(inning_result$both_scored) "Yes" else "No",
       both_scored = inning_result$both_scored,
       bet_type = "both_teams_to_score",
       game_id = game_id
@@ -733,8 +734,8 @@ resolve_game_market <- function(event_string, sport, season, market_type, line_v
     return(list(
       success = TRUE,
       resolved = TRUE,
-      won = bet_won,
-      actual = actual_score,
+      bet_won = bet_won,
+      actual_value = actual_score,
       line_value = line_num,
       direction = direction,
       bet_type = "team_inning_total",
