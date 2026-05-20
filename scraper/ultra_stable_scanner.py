@@ -10,6 +10,9 @@ import undetected_chromedriver as uc
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 from .oddsportal_scraper import OddsportalScraper
 # from scraper.odds_api_scraper import OddsAPIScraper
 from core.config_manager import ConfigManager
@@ -76,29 +79,15 @@ class UltraStableScanner:
             user_data_dir = os.path.join(os.getcwd(), "chrome_profile")
             chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
 
-            # Additional stealth arguments
+            # Essential stealth arguments
             chrome_options.add_argument("--disable-blink-features=AutomationControlled")
-            chrome_options.add_argument("--disable-infobars")
-            chrome_options.add_argument("--disable-popup-blocking")
-            chrome_options.add_argument("--window-position=0,0")
-            chrome_options.add_argument("--disable-notifications")
             chrome_options.add_argument("--disable-dev-shm-usage")
-            chrome_options.add_argument("--disable-gpu")
             chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--disable-extensions")
 
             # Proxy support
             if proxy:
                 chrome_options.add_argument(f"--proxy-server={proxy}")
                 logger.info(f"Using proxy: {proxy}")
-
-            # Set a random User-Agent before initializing the driver
-            user_agents = [
-                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
-            ]
-            chrome_options.add_argument(f"--user-agent={random.choice(user_agents)}")
 
             # Initialize undetected_chromedriver
             driver = uc.Chrome(options=chrome_options, use_subprocess=True)
@@ -144,12 +133,12 @@ class UltraStableScanner:
             return None
 
     def scrape_crazyninja_safe(self) -> List[Dict]:
-        """Safe scraping that falls back to demo data on failure"""
+        """Safe scraping"""
         self.driver = self.initialize_webdriver()
 
         if not self.driver:
-            logger.info("Using demo mode - WebDriver unavailable")
-            return self.generate_realistic_opportunities()
+            logger.info("WebDriver unavailable")
+            return []
 
         try:
             logger.info("Opening: https://crazyninjaodds.com/site/tools/positive-ev.aspx")
@@ -181,20 +170,19 @@ class UltraStableScanner:
                 except:
                     pass
                 self.driver = None
-            # Fall back to demo data
-            return self.generate_realistic_opportunities()
+            return []
 
     def parse_opportunities_safe(self) -> List[Dict]:
         """Safe parsing with player name extraction"""
         try:
             if not self.driver:
-                return self.generate_realistic_opportunities()
+                return []
 
             tables = self.driver.find_elements(By.TAG_NAME, "table")
             logger.info(f"Found {len(tables)} tables")
 
             if not tables or len(tables) == 0:
-                return self.generate_realistic_opportunities()
+                return []
 
             opportunities = []
             # Try to parse the main table (usually first one)
@@ -257,8 +245,8 @@ class UltraStableScanner:
                 logger.info(f"Successfully parsed {len(opportunities)} opportunities from website")
                 return opportunities
             else:
-                logger.info("No valid opportunities found, using demo data")
-                return self.generate_realistic_opportunities()
+                logger.info("No valid opportunities found")
+                return []
 
         except Exception as e:
             logger.error(f"Parsing error: {e}")
@@ -410,8 +398,7 @@ class UltraStableScanner:
 
         # 2. Fallback to simulated data only if everything else fails
         if not all_opportunities:
-            logger.info("No real data found, using simulated data as absolute last resort")
-            all_opportunities = self.oddsportal_scraper.generate_simulated_opportunities()
+            logger.info("No real data found")
 
         return all_opportunities
 
