@@ -6,12 +6,13 @@ import time
 import random
 import logging
 import os
+import undetected_chromedriver as uc
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
-# import undetected_chromedriver as uc
-import chromedriver_autoinstaller_fix
-chromedriver_autoinstaller_fix.install()
+# import chromedriver_autoinstaller_fix
+# chromedriver_autoinstaller_fix.install()
+
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 from selenium.webdriver.chrome.options import Options
@@ -97,10 +98,8 @@ class UltraStableScanner:
                 chrome_options.add_argument(f"--proxy-server={proxy}")
                 logger.info(f"Using proxy: {proxy}")
 
-            # Initialize WebDriver using the specific path to the driver
-            driver_path = r"C:\Users\David\.wdm\drivers\chromedriver\win64\148.0.7778.178\chromedriver-win32\chromedriver.exe"
-            service = Service(driver_path)
-            driver = webdriver.Chrome(service=service, options=chrome_options)
+            # Initialize undetected_chromedriver
+            driver = uc.Chrome(options=chrome_options, use_subprocess=True)
 
             # Stealth: Advanced fingerprinting masking
             stealth_script = """
