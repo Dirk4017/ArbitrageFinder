@@ -8,6 +8,13 @@ import os
 import logging
 import json
 import re
+import time
+import random
+import logging
+import os
+import json
+import sys
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Any
 
@@ -1316,9 +1323,20 @@ class EnhancedPaperTradingSystem:
             logger.info("Scanning CrazyNinjaOdds...")
             ninja_opportunities = self.scanner.scrape_crazyninja_odds()
 
-            # 2. Scan for Oddsportal opportunities (Soccer)
-            logger.info("Scanning Oddsportal (Soccer)...")
-            oddsportal_opportunities = self.scanner.scrape_oddsportal_opportunities()
+            # 2. Scan for Oddsportal opportunities (Soccer) - with timeout
+            oddsportal_opportunities = []
+            ODDSPORTAL_TIMEOUT = 120  # 2 minutes max
+            logger.info(f"Scanning Oddsportal (Soccer) with {ODDSPORTAL_TIMEOUT}s timeout...")
+            try:
+                with ThreadPoolExecutor(max_workers=1) as executor:
+                    future = executor.submit(self.scanner.scrape_oddsportal_opportunities)
+                    oddsportal_opportunities = future.result(timeout=ODDSPORTAL_TIMEOUT)
+                    if oddsportal_opportunities is None:
+                        oddsportal_opportunities = []
+            except FuturesTimeoutError:
+                logger.warning(f"Oddsportal scraping timed out after {ODDSPORTAL_TIMEOUT}s, proceeding with CrazyNinja results only")
+            except Exception as e:
+                logger.error(f"Oddsportal scraping failed: {e}, proceeding with CrazyNinja results only")
 
             # Combine all opportunities
             opportunities = ninja_opportunities + oddsportal_opportunities
@@ -1326,11 +1344,13 @@ class EnhancedPaperTradingSystem:
 
             # Get current pending bets
             pending_bets = self.db.get_pending_bets()
+            logger.info(f"DEBUG: Found {len(pending_bets)} pending bets for filtering.")
 
             # Process opportunities with intelligent filtering
             filtered_opps = self.arbitrage_system.process_opportunities(
                 opportunities, self.bankroll, pending_bets
             )
+            logger.info(f"DEBUG: process_opportunities returned {len(filtered_opps)} filtered opportunities.")
 
             # Place bets intelligently
             bets_placed = 0
