@@ -78,7 +78,7 @@ class UltraStableScanner:
                     pass
                 self.driver = None
 
-            chrome_options = Options()
+            chrome_options = uc.ChromeOptions()
             # Randomize window size
             width = random.randint(1280, 1920)
             height = random.randint(720, 1080)
@@ -89,9 +89,11 @@ class UltraStableScanner:
             chrome_options.add_argument(f"--user-data-dir={user_data_dir}")
 
             # Essential stealth arguments
+            chrome_options.add_argument("--headless")
             chrome_options.add_argument("--disable-blink-features=AutomationControlled")
             chrome_options.add_argument("--disable-dev-shm-usage")
             chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--disable-gpu")
 
             # Proxy support
             if proxy:
@@ -99,7 +101,8 @@ class UltraStableScanner:
                 logger.info(f"Using proxy: {proxy}")
 
             # Initialize undetected_chromedriver
-            driver = uc.Chrome(options=chrome_options, use_subprocess=True)
+            # FIX: Force ChromeDriver version 148 to match Chrome browser
+            driver = uc.Chrome(options=chrome_options, use_subprocess=True, version_main=148)
 
             # Stealth: Advanced fingerprinting masking
             stealth_script = """
