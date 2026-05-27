@@ -39,7 +39,7 @@ class UltraStableScanner:
         self.team_variations = self._setup_team_mappings()
 
         # Initialize Oddsportal Scraper with reinit_callback
-        self.oddsportal_scraper = OddsportalScraper(reinit_callback=self.reinitialize_webdriver)
+        self.oddsportal_scraper = OddsportalScraper(config=self.config.get('oddsportal', {}))
 
         # Initialize The Odds API Scraper - EXCLUDED
         # api_key = self.config.api.odds_api_key

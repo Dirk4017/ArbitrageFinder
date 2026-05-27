@@ -1323,9 +1323,23 @@ class EnhancedPaperTradingSystem:
             logger.info("Scanning CrazyNinjaOdds...")
             ninja_opportunities = self.scanner.scrape_crazyninja_odds()
 
-            # 2. Scan for Oddsportal opportunities (Soccer) - disabled as it hangs indefinitely
-            logger.info("Scanning Oddsportal (Soccer) - SKIPPED (disabled due to timeout/hanging issues)")
+            # 2. Scan for Oddsportal opportunities (Soccer)
             oddsportal_opportunities = []
+            if self.config.oddsportal.enabled:
+                logger.info("Scanning Oddsportal (Soccer)...")
+                try:
+                    # Load leagues config
+                    with open(os.path.join(os.getcwd(), "configs", "leagues.json"), "r") as f:
+                        leagues_config = json.load(f)
+
+                    # Use the OddsportalScraper integrated in UltraStableScanner
+                    oddsportal_opportunities = self.scanner.oddsportal_scraper.scrape_all_sports(leagues_config.get('soccer', {}))
+                    logger.info(f"Successfully scraped {len(oddsportal_opportunities)} Oddsportal opportunities")
+                except Exception as e:
+                    logger.error(f"Oddsportal scraping failed: {e}")
+                    oddsportal_opportunities = []
+            else:
+                logger.info("Scanning Oddsportal (Soccer) - SKIPPED (disabled in config)")
 
             # Combine all opportunities
             opportunities = ninja_opportunities + oddsportal_opportunities

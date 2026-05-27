@@ -10,6 +10,13 @@ from typing import Dict, Any
 logger = logging.getLogger(__name__)
 
 @dataclass
+class OddsportalConfig:
+    enabled: bool = False
+    max_leagues: int = 30
+    timeout: int = 120
+    cache_duration_hours: int = 1
+
+@dataclass
 class DatabaseConfig:
     db_path: str = "../sports_betting.db"
     backup_interval: int = 3600
@@ -64,6 +71,7 @@ class ConfigManager:
         self.scanner = ScannerConfig()
         self.betting = BettingConfig()
         self.logging = LoggingConfig()
+        self.oddsportal = OddsportalConfig()
 
         self._load_from_env()
         self._load_from_file()
@@ -113,6 +121,8 @@ class ConfigManager:
                     self._update_from_dict(self.scanner, config_data['scanner'])
                 if 'betting' in config_data:
                     self._update_from_dict(self.betting, config_data['betting'])
+                if 'oddsportal' in config_data:
+                    self._update_from_dict(self.oddsportal, config_data['oddsportal'])
                 if 'logging' in config_data:
                     self._update_from_dict(self.logging, config_data['logging'])
 
@@ -178,6 +188,7 @@ class ConfigManager:
             'bankroll': self.bankroll.__dict__,
             'scanner': self.scanner.__dict__,
             'betting': self.betting.__dict__,
+            'oddsportal': self.oddsportal.__dict__,
             'logging': self.logging.__dict__,
         }
 
