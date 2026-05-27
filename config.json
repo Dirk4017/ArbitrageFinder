@@ -28,6 +28,12 @@
     "page_load_timeout": 45,
     "implicit_wait": 15
   },
+  "oddsportal": {
+    "enabled": true,
+    "max_leagues": 30,
+    "timeout": 120,
+    "cache_duration_hours": 1
+  },
   "betting": {
     "min_ev_threshold": 0.02,
     "max_bets_per_scan": 5,
