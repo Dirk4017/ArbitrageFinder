@@ -1323,20 +1323,9 @@ class EnhancedPaperTradingSystem:
             logger.info("Scanning CrazyNinjaOdds...")
             ninja_opportunities = self.scanner.scrape_crazyninja_odds()
 
-            # 2. Scan for Oddsportal opportunities (Soccer) - with timeout
+            # 2. Scan for Oddsportal opportunities (Soccer) - disabled as it hangs indefinitely
+            logger.info("Scanning Oddsportal (Soccer) - SKIPPED (disabled due to timeout/hanging issues)")
             oddsportal_opportunities = []
-            ODDSPORTAL_TIMEOUT = 120  # 2 minutes max
-            logger.info(f"Scanning Oddsportal (Soccer) with {ODDSPORTAL_TIMEOUT}s timeout...")
-            try:
-                with ThreadPoolExecutor(max_workers=1) as executor:
-                    future = executor.submit(self.scanner.scrape_oddsportal_opportunities)
-                    oddsportal_opportunities = future.result(timeout=ODDSPORTAL_TIMEOUT)
-                    if oddsportal_opportunities is None:
-                        oddsportal_opportunities = []
-            except FuturesTimeoutError:
-                logger.warning(f"Oddsportal scraping timed out after {ODDSPORTAL_TIMEOUT}s, proceeding with CrazyNinja results only")
-            except Exception as e:
-                logger.error(f"Oddsportal scraping failed: {e}, proceeding with CrazyNinja results only")
 
             # Combine all opportunities
             opportunities = ninja_opportunities + oddsportal_opportunities
