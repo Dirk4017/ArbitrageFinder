@@ -1333,7 +1333,7 @@ class EnhancedPaperTradingSystem:
                         leagues_config = json.load(f)
 
                     # Use the OddsportalScraper integrated in UltraStableScanner
-                    oddsportal_opportunities = self.scanner.oddsportal_scraper.scrape_all_sports(leagues_config.get('soccer', {}))
+                    oddsportal_opportunities = self.scanner.oddsportal_scraper.scrape_all_sports(leagues_config)
                     logger.info(f"Successfully scraped {len(oddsportal_opportunities)} Oddsportal opportunities")
                 except Exception as e:
                     logger.error(f"Oddsportal scraping failed: {e}")
