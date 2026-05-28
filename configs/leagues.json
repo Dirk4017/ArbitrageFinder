@@ -1,0 +1,63 @@
+{
+  "soccer": {
+    "enabled": true,
+    "leagues": [
+      {"name": "england-premier-league", "url": "https://www.oddsportal.com/football/england/premier-league/"},
+      {"name": "spain-laliga", "url": "https://www.oddsportal.com/football/spain/laliga/"},
+      {"name": "germany-bundesliga", "url": "https://www.oddsportal.com/football/germany/bundesliga/"},
+      {"name": "italy-serie-a", "url": "https://www.oddsportal.com/football/italy/serie-a/"},
+      {"name": "france-ligue-1", "url": "https://www.oddsportal.com/football/france/ligue-1/"},
+      {"name": "usa-mls", "url": "https://www.oddsportal.com/football/usa/mls/"},
+      {"name": "brazil-serie-a", "url": "https://www.oddsportal.com/football/brazil/serie-a/"},
+      {"name": "netherlands-eredivisie", "url": "https://www.oddsportal.com/football/netherlands/eredivisie/"},
+      {"name": "portugal-liga-portugal", "url": "https://www.oddsportal.com/football/portugal/liga-portugal/"},
+      {"name": "japan-j1-league", "url": "https://www.oddsportal.com/football/japan/j1-league/"}
+    ]
+  },
+  "tennis": {
+    "enabled": true,
+    "leagues": [
+      {"name": "atp", "url": "https://www.oddsportal.com/tennis/atp/"},
+      {"name": "wta", "url": "https://www.oddsportal.com/tennis/wta/"},
+      {"name": "atp-challenger", "url": "https://www.oddsportal.com/tennis/atp-challenger/"}
+    ]
+  },
+  "basketball": {
+    "enabled": true,
+    "leagues": [
+      {"name": "nba", "url": "https://www.oddsportal.com/basketball/usa/nba/"},
+      {"name": "euroleague", "url": "https://www.oddsportal.com/basketball/europe/euroleague/"}
+    ]
+  },
+  "mma": {
+    "enabled": true,
+    "leagues": [
+      {"name": "ufc", "url": "https://www.oddsportal.com/mma/usa/ufc/"}
+    ]
+  },
+  "volleyball": {
+    "enabled": true,
+    "leagues": [
+      {"name": "champions-league", "url": "https://www.oddsportal.com/volleyball/europe/champions-league/"}
+    ]
+  },
+  "cricket": {
+    "enabled": true,
+    "leagues": [
+      {"name": "ipl", "url": "https://www.oddsportal.com/cricket/india/ipl/"},
+      {"name": "world-cup", "url": "https://www.oddsportal.com/cricket/world/"}
+    ]
+  },
+  "baseball": {
+    "enabled": true,
+    "leagues": [
+      {"name": "mlb", "url": "https://www.oddsportal.com/baseball/usa/mlb/"}
+    ]
+  },
+  "rugby": {
+    "enabled": true,
+    "leagues": [
+      {"name": "premiership", "url": "https://www.oddsportal.com/rugby-union/england/premiership/"}
+    ]
+  }
+}
