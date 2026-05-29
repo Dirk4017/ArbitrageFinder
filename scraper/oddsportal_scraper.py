@@ -35,6 +35,8 @@ class OddsportalScraper:
             if self.driver is None:
                 options = uc.ChromeOptions()
                 options.add_argument("--headless")
+                options.add_argument("--ignore-certificate-errors")
+                options.add_argument("--allow-running-insecure-content")
                 # Force version 148 as verified
                 self.driver = uc.Chrome(options=options, use_subprocess=True, version_main=148)
             return self.driver
@@ -147,11 +149,15 @@ class OddsportalScraper:
             for future in future_to_league:
                 match_urls.extend(future.result())
 
+        logger.info(f"Found {len(match_urls)} match URLs from {len(all_leagues)} leagues")
+
         all_opportunities = []
         # Serialized scraping of match odds (due to file-locking with undetected-chromedriver)
         logger.info(f"Scraping odds for {len(match_urls[:50])} matches (sequentially)")
         for url in match_urls[:50]:
             all_opportunities.extend(self.scrape_match_odds(url))
+
+        logger.info(f"Scraped {len(all_opportunities)} total odds opportunities")
 
         return all_opportunities
 
