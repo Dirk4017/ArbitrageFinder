@@ -83,13 +83,16 @@ class OddsportalScraper:
         return match_urls
 
     def scrape_match_odds(self, match_url: str) -> List[Dict]:
+        logger.info(f"DEBUG: Starting to scrape match odds: {match_url}")
         with self.driver_lock:
             driver = self._get_driver()
             try:
+                logger.info(f"DEBUG: Navigating to {match_url}")
                 driver.get(match_url)
+                logger.info(f"DEBUG: Navigation complete, waiting for odds-cell")
                 WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CSS_SELECTOR, "div.odds-cell")))
+                logger.info(f"DEBUG: Found odds-cell, parsing source")
 
-                soup = BeautifulSoup(driver.page_source, 'html.parser')
                 event_name = soup.select_one("h1").text.strip() if soup.select_one("h1") else "Unknown"
 
                 rows = soup.select("div.flex.h-9.border-b")
