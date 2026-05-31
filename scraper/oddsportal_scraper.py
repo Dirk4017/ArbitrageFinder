@@ -1,6 +1,7 @@
 import logging
 import json
 import threading
+import os
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional
@@ -12,7 +13,6 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from bs4 import BeautifulSoup
 import requests
-from selenium_stealth import stealth
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -32,6 +32,7 @@ class OddsportalScraper:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'
         })
+        self.profile_path = os.path.join(os.getcwd(), "chrome_profile")
 
     def _get_driver(self):
         with self.driver_lock:
@@ -49,18 +50,13 @@ class OddsportalScraper:
                 options.add_argument("--ignore-certificate-errors")
                 options.add_argument("--allow-running-insecure-content")
                 options.add_argument("--disable-blink-features=AutomationControlled")
+                options.add_argument(f"--user-data-dir={self.profile_path}")
                 # Using subprocess=True often helps with some undetected-chromedriver issues
                 self.driver = uc.Chrome(options=options, use_subprocess=True)
 
                 # Apply stealth
-                stealth(self.driver,
-                        languages=["en-US", "en"],
-                        vendor="Google Inc.",
-                        platform="Win32",
-                        webgl_vendor="Intel Inc.",
-                        renderer="Intel Iris OpenGL Engine",
-                        fix_hairline=True,
-                )
+                # (undetected-chromedriver has built-in stealth)
+                pass
 
                 # Force user agent update directly in the driver, in case it's missed
                 self.driver.execute_cdp_cmd('Network.setUserAgentOverride', {"userAgent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36'})
@@ -95,7 +91,9 @@ class OddsportalScraper:
             # Check if we were redirected to a different domain
             # Be more tolerant: check if oddsportal is in the URL at all, even if redirected
             if "oddsportal.com" not in response.url:
-                logger.warning(f"Requests redirected to {response.url} for {league_name}. Forcing browser fallback.")
+                from urllib.parse import urlparse
+                domain = urlparse(response.url).netloc
+                logger.warning(f"Requests redirected to {response.url} (Domain: {domain}) for {league_name}. Forcing browser fallback.")
                 raise Exception(f"Redirected to {response.url}")
 
             soup = BeautifulSoup(response.text, 'html.parser')
