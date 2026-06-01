@@ -30,9 +30,11 @@
   },
   "oddsportal": {
     "enabled": true,
+    "value_bets_enabled": true,
     "max_leagues": 30,
     "timeout": 120,
-    "cache_duration_hours": 1
+    "cache_duration_hours": 1,
+    "proxy": null
   },
   "betting": {
     "min_ev_threshold": 0.02,
