@@ -10,7 +10,7 @@
     ]
   },
   "tennis": {
-    "enabled": false,
+    "enabled": true,
     "leagues": [
       {"name": "atp", "url": "https://www.oddsportal.com/tennis/atp/"},
       {"name": "wta", "url": "https://www.oddsportal.com/tennis/wta/"},
@@ -18,39 +18,39 @@
     ]
   },
   "basketball": {
-    "enabled": false,
+    "enabled": true,
     "leagues": [
       {"name": "nba", "url": "https://www.oddsportal.com/basketball/usa/nba/"},
       {"name": "euroleague", "url": "https://www.oddsportal.com/basketball/europe/euroleague/"}
     ]
   },
   "mma": {
-    "enabled": false,
+    "enabled": true,
     "leagues": [
       {"name": "ufc", "url": "https://www.oddsportal.com/mma/usa/ufc/"}
     ]
   },
   "volleyball": {
-    "enabled": false,
+    "enabled": true,
     "leagues": [
       {"name": "champions-league", "url": "https://www.oddsportal.com/volleyball/europe/champions-league/"}
     ]
   },
   "cricket": {
-    "enabled": false,
+    "enabled": true,
     "leagues": [
       {"name": "ipl", "url": "https://www.oddsportal.com/cricket/india/ipl/"},
       {"name": "world-cup", "url": "https://www.oddsportal.com/cricket/world/"}
     ]
   },
   "baseball": {
-    "enabled": false,
+    "enabled": true,
     "leagues": [
       {"name": "mlb", "url": "https://www.oddsportal.com/baseball/usa/mlb/"}
     ]
   },
   "rugby": {
-    "enabled": false,
+    "enabled": true,
     "leagues": [
       {"name": "premiership", "url": "https://www.oddsportal.com/rugby-union/england/premiership/"}
     ]
