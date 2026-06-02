@@ -1325,7 +1325,7 @@ class EnhancedPaperTradingSystem:
 
             # 2. Scan for Oddsportal opportunities (Soccer)
             oddsportal_opportunities = []
-            if self.config.oddsportal.enabled:
+            if self.config.oddsportal.get('enabled', False):
                 logger.info("Scanning Oddsportal (Soccer)...")
                 try:
                     # Load leagues config
@@ -1341,9 +1341,17 @@ class EnhancedPaperTradingSystem:
             else:
                 logger.info("Scanning Oddsportal (Soccer) - SKIPPED (disabled in config)")
 
+            # 3. Scan Oddsportal Value Bets (if enabled)
+            oddsportal_value_opportunities = []
+            if self.config.oddsportal.get('value_bets_enabled', False):
+                logger.info("Scanning Oddsportal Value Bets...")
+                oddsportal_value_opportunities = self.scanner.scrape_oddsportal_value_bets()
+            else:
+                logger.info("Oddsportal Value Bets - SKIPPED (disabled in config)")
+
             # Combine all opportunities
-            opportunities = ninja_opportunities + oddsportal_opportunities
-            logger.info(f"Total opportunities found: {len(opportunities)} ({len(ninja_opportunities)} Ninja, {len(oddsportal_opportunities)} Oddsportal)")
+            opportunities = ninja_opportunities + oddsportal_opportunities + oddsportal_value_opportunities
+            logger.info(f"Total opportunities found: {len(opportunities)} ({len(ninja_opportunities)} Ninja, {len(oddsportal_opportunities)} Oddsportal Soccer, {len(oddsportal_value_opportunities)} Oddsportal Value Bets)")
 
             # Get current pending bets
             pending_bets = self.db.get_pending_bets()
