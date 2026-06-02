@@ -1325,7 +1325,7 @@ class EnhancedPaperTradingSystem:
 
             # 2. Scan for Oddsportal opportunities (Soccer)
             oddsportal_opportunities = []
-            if self.config.oddsportal.get('enabled', False):
+            if self.config.oddsportal.enabled:
                 logger.info("Scanning Oddsportal (Soccer)...")
                 try:
                     # Load leagues config
@@ -1343,7 +1343,7 @@ class EnhancedPaperTradingSystem:
 
             # 3. Scan Oddsportal Value Bets (if enabled)
             oddsportal_value_opportunities = []
-            if self.config.oddsportal.get('value_bets_enabled', False):
+            if self.config.oddsportal.value_bets_enabled:
                 logger.info("Scanning Oddsportal Value Bets...")
                 oddsportal_value_opportunities = self.scanner.scrape_oddsportal_value_bets()
             else:
