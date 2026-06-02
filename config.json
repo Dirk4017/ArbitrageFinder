@@ -29,7 +29,7 @@
     "implicit_wait": 15
   },
   "oddsportal": {
-    "enabled": true,
+    "enabled": false,
     "value_bets_enabled": true,
     "max_leagues": 30,
     "timeout": 120,
