@@ -93,7 +93,7 @@ class EnhancedPaperTradingSystem:
         self.market_classifier = MarketClassifier()
 
         # Scanner
-        self.scanner = UltraStableScanner()
+        self.scanner = UltraStableScanner(config=self.config)
 
         # Arbitrage system
         self.arbitrage_system = FixedArbitrageSystem(
@@ -1343,7 +1343,12 @@ class EnhancedPaperTradingSystem:
 
             # 3. Scan Oddsportal Value Bets (if enabled)
             oddsportal_value_opportunities = []
-            if getattr(self.config.oddsportal, 'value_bets_enabled', False):
+
+            # DEBUG: Log the actual value being used
+            is_enabled = getattr(self.config.oddsportal, 'value_bets_enabled', False)
+            logger.info(f"DEBUG: Oddsportal Value Bets enabled status check: {is_enabled}")
+
+            if is_enabled:
                 logger.info("Scanning Oddsportal Value Bets...")
                 oddsportal_value_opportunities = self.scanner.scrape_oddsportal_value_bets()
             else:
