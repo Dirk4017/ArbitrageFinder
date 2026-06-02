@@ -1343,7 +1343,7 @@ class EnhancedPaperTradingSystem:
 
             # 3. Scan Oddsportal Value Bets (if enabled)
             oddsportal_value_opportunities = []
-            if self.config.oddsportal.value_bets_enabled:
+            if getattr(self.config.oddsportal, 'value_bets_enabled', False):
                 logger.info("Scanning Oddsportal Value Bets...")
                 oddsportal_value_opportunities = self.scanner.scrape_oddsportal_value_bets()
             else:
