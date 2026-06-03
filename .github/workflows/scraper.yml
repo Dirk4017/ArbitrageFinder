@@ -126,6 +126,6 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: raw-opportunities
-        path: raw_opportunities.json
+        path: raw_opportunities_*.json
         if-no-files-found: ignore
 

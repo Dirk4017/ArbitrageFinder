@@ -1359,9 +1359,12 @@ class EnhancedPaperTradingSystem:
 
             # Save raw opportunities to a file for GitHub artifacts
             try:
-                with open("raw_opportunities.json", "w") as f:
+                # Add timestamp to filename to avoid overwriting if run multiple times
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                filename = f"raw_opportunities_{timestamp}.json"
+                with open(filename, "w") as f:
                     json.dump(opportunities, f, indent=2, default=str)
-                logger.info(f"Saved {len(opportunities)} raw opportunities to raw_opportunities.json")
+                logger.info(f"Saved {len(opportunities)} raw opportunities to {filename}")
             except Exception as e:
                 logger.error(f"Failed to save raw opportunities: {e}")
 
