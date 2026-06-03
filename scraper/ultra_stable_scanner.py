@@ -44,10 +44,11 @@ class UltraStableScanner:
         logger.info(f"DEBUG: Value bets enabled: {self.config.oddsportal.value_bets_enabled if hasattr(self.config, 'oddsportal') else 'N/A'}")
         self.oddsportal_scraper = OddsportalScraper(config=oddsportal_config)
 
-        # Initialize The Odds API Scraper
-        api_key = self.config.api.odds_api_key if hasattr(self.config, 'api') else None
-        sports_config = self.config.sports_config if hasattr(self.config, 'sports_config') else None
-        self.odds_api_scraper = OddsAPIScraper(api_key=api_key, sports_config=sports_config)
+        # Initialize The Odds API Scraper (disabled)
+        # api_key = self.config.api.odds_api_key if hasattr(self.config, 'api') else None
+        # sports_config = self.config.sports_config if hasattr(self.config, 'sports_config') else None
+        # self.odds_api_scraper = OddsAPIScraper(api_key=api_key, sports_config=sports_config)
+        self.odds_api_scraper = None
 
     def reinitialize_webdriver(self, proxy: Optional[str] = None):
         """Callback to re-initialize the WebDriver upon session loss."""
