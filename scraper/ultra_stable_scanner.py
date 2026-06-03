@@ -105,8 +105,8 @@ class UltraStableScanner:
                 logger.info(f"Using proxy: {proxy}")
 
             # Initialize undetected_chromedriver
-            # FIX: Allow auto-detection of chromedriver version to match Chrome browser
-            driver = uc.Chrome(options=chrome_options, use_subprocess=True)
+            # FIX: Force ChromeDriver version 148 to match Chrome browser
+            driver = uc.Chrome(options=chrome_options, use_subprocess=True, version_main=148)
 
             # Stealth: Advanced fingerprinting masking
             stealth_script = """
