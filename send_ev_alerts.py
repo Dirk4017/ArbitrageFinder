@@ -48,6 +48,14 @@ def get_opportunities():
     except Exception as e:
         logger.error(f"Error scraping Oddsportal: {e}")
 
+    # Save opportunities to file for potential workflow artifact use
+    try:
+        with open("raw_opportunities.json", "w") as f:
+            json.dump(opportunities, f, indent=2, default=str)
+        logger.info(f"Saved {len(opportunities)} opportunities to raw_opportunities.json")
+    except Exception as e:
+        logger.error(f"Failed to save opportunities file: {e}")
+
     return opportunities
 
 def main():
