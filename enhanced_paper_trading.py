@@ -10,10 +10,7 @@ import json
 import re
 import time
 import random
-import logging
-import os
-import json
-import sys
+import requests
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple, Any
@@ -1312,6 +1309,31 @@ class EnhancedPaperTradingSystem:
         logger.info(f"Game result: won={won}")
         return won, profit
 
+    def send_alert(self, message: str, is_premium: bool = False):
+        """Send alert to Telegram"""
+        bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+        free_channel = os.getenv("FREE_CHANNEL_ID")
+        premium_channel = os.getenv("PREMIUM_CHANNEL_ID")
+
+        chat_id = premium_channel if is_premium else free_channel
+
+        if not bot_token or not chat_id:
+            logger.error("Missing Telegram bot token or chat ID in environment variables")
+            return
+
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        payload = {
+            "chat_id": chat_id,
+            "text": message,
+            "parse_mode": "Markdown"
+        }
+        try:
+            response = requests.post(url, json=payload)
+            if not response.ok:
+                logger.error(f"Failed to send to Telegram: {response.text}")
+        except Exception as e:
+            logger.error(f"Failed to send to Telegram: {e}")
+
     def automated_scanning(self, max_scans: int = 2):
         """Enhanced automated scanning with intelligent betting"""
         logger.info(f"Starting enhanced automated scanning ({max_scans} scans)")
@@ -1356,6 +1378,39 @@ class EnhancedPaperTradingSystem:
 
             # Combine all opportunities
             opportunities = ninja_opportunities + oddsportal_opportunities + oddsportal_value_opportunities
+
+            # ========== ADDED TELEGRAM ALERT CODE ==========
+            # Send alerts for positive EV opportunities
+            logger.info(f"📨 Sending Telegram alerts for {len(opportunities)} opportunities...")
+
+            for opp in opportunities:
+                try:
+                    ev = float(opp.get('ev', 0))
+                    if ev > 0:
+                        # Format the message
+                        sport = opp.get('sport', 'Unknown')
+                        event = opp.get('event', 'Unknown')
+                        player = opp.get('player', opp.get('team', 'Unknown'))
+                        odds = opp.get('odds', 'N/A')
+                        bookmaker = opp.get('sportsbook', 'Unknown')
+
+                        message = (f"🎯 *New Opportunity!*\n"
+                                  f"🏆 *Sport:* {sport}\n"
+                                  f"📋 *Event:* {event}\n"
+                                  f"👤 *Player:* {player}\n"
+                                  f"📊 *Odds:* {odds}\n"
+                                  f"💰 *EV:* {ev*100:.1f}%\n"
+                                  f"🏢 *Bookmaker:* {bookmaker}")
+
+                        # Send to appropriate channel
+                        is_premium = ev >= 0.08  # Premium if EV >= 8%
+                        self.send_alert(message, is_premium)
+                        logger.info(f"✅ Sent alert for {player} (EV: {ev*100:.1f}%)")
+
+                except Exception as e:
+                    logger.error(f"Failed to send alert for opportunity: {e}")
+
+            # ========== END TELEGRAM CODE ==========
 
             # Save raw opportunities to a file for GitHub artifacts
             try:
