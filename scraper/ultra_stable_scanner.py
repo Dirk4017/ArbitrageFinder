@@ -23,7 +23,7 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from .oddsportal_scraper import OddsportalScraper
 from .odds_harvester_adapter import OddsHarvesterAdapter
-# from scraper.odds_api_scraper import OddsAPIScraper
+from .odds_api_scraper import OddsAPIScraper
 from core.config_manager import ConfigManager
 
 logger = logging.getLogger(__name__)
