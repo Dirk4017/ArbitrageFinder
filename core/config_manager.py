@@ -12,9 +12,11 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OddsportalConfig:
     enabled: bool = False
+    value_bets_enabled: bool = False
     max_leagues: int = 30
     timeout: int = 120
     cache_duration_hours: int = 1
+    proxy: Optional[str] = None
 
 @dataclass
 class DatabaseConfig:
