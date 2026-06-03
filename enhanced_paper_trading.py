@@ -1397,7 +1397,7 @@ class EnhancedPaperTradingSystem:
                         message = (f"🎯 *New Opportunity!*\n"
                                   f"🏆 *Sport:* {sport}\n"
                                   f"📋 *Event:* {event}\n"
-                                  f"👤 *Player:* {player}\n"
+                                  f"👤 *Bet:* {player} {opp.get('market', '')}\n"
                                   f"📊 *Odds:* {odds}\n"
                                   f"💰 *EV:* {ev*100:.1f}%\n"
                                   f"🏢 *Bookmaker:* {bookmaker}")
