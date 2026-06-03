@@ -1356,6 +1356,15 @@ class EnhancedPaperTradingSystem:
 
             # Combine all opportunities
             opportunities = ninja_opportunities + oddsportal_opportunities + oddsportal_value_opportunities
+
+            # Save raw opportunities to a file for GitHub artifacts
+            try:
+                with open("raw_opportunities.json", "w") as f:
+                    json.dump(opportunities, f, indent=2, default=str)
+                logger.info(f"Saved {len(opportunities)} raw opportunities to raw_opportunities.json")
+            except Exception as e:
+                logger.error(f"Failed to save raw opportunities: {e}")
+
             logger.info(f"Total opportunities found: {len(opportunities)} ({len(ninja_opportunities)} Ninja, {len(oddsportal_opportunities)} Oddsportal Soccer, {len(oddsportal_value_opportunities)} Oddsportal Value Bets)")
 
             # Get current pending bets
