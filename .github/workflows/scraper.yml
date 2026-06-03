@@ -76,6 +76,9 @@ jobs:
       env:
         SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
         SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+        FREE_CHANNEL_ID: ${{ secrets.FREE_CHANNEL_ID }}
+        PREMIUM_CHANNEL_ID: ${{ secrets.PREMIUM_CHANNEL_ID }}
         DISPLAY: ':99'
         R_LIBS_USER: ~/R/x86_64-pc-linux-gnu-library/4.3
         PYTHONPATH: ${{ github.workspace }}
