@@ -36,6 +36,13 @@
     "cache_duration_hours": 1,
     "proxy": null
   },
+  "sports_config": {
+    "soccer": ["soccer_epl", "soccer_spain_la_liga", "soccer_germany_bundesliga", "soccer_italy_serie_a", "soccer_france_ligue_1", "soccer_usa_mls"],
+    "tennis": ["tennis_atp_wimbledon", "tennis_wta_wimbledon", "tennis_atp_french_open", "tennis_wta_french_open", "tennis_atp_us_open", "tennis_wta_us_open"],
+    "cricket": ["cricket_ipl", "cricket_international_t20"],
+    "rugby": ["rugby_union_premiership", "rugby_union_six_nations"],
+    "mma": ["mma_mixed_martial_arts"]
+  },
   "betting": {
     "min_ev_threshold": 0.02,
     "max_bets_per_scan": 5,
