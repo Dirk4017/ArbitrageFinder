@@ -12,3 +12,6 @@ fuzzywuzzy==0.18.0
 python-Levenshtein==0.25.1
 setuptools
 wheel
+undetected-chromedriver
+webdriver-manager
+selenium-stealth
