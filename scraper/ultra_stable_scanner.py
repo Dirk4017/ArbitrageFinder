@@ -40,11 +40,14 @@ class UltraStableScanner:
 
         # Initialize Oddsportal Scraper with config
         oddsportal_config = self.config.oddsportal.__dict__ if hasattr(self.config, 'oddsportal') else {}
+        logger.info(f"DEBUG: Oddsportal config: {oddsportal_config}")
+        logger.info(f"DEBUG: Value bets enabled: {self.config.oddsportal.value_bets_enabled if hasattr(self.config, 'oddsportal') else 'N/A'}")
         self.oddsportal_scraper = OddsportalScraper(config=oddsportal_config)
 
-        # Initialize The Odds API Scraper - EXCLUDED
-        # api_key = self.config.api.odds_api_key
-        # self.odds_api_scraper = OddsAPIScraper(api_key=api_key)
+        # Initialize The Odds API Scraper
+        api_key = self.config.api.odds_api_key if hasattr(self.config, 'api') else None
+        sports_config = self.config.sports_config if hasattr(self.config, 'sports_config') else None
+        self.odds_api_scraper = OddsAPIScraper(api_key=api_key, sports_config=sports_config)
 
     def reinitialize_webdriver(self, proxy: Optional[str] = None):
         """Callback to re-initialize the WebDriver upon session loss."""
@@ -102,8 +105,8 @@ class UltraStableScanner:
                 logger.info(f"Using proxy: {proxy}")
 
             # Initialize undetected_chromedriver
-            # FIX: Force ChromeDriver version 148 to match Chrome browser
-            driver = uc.Chrome(options=chrome_options, use_subprocess=True, version_main=148)
+            # FIX: Allow auto-detection of chromedriver version to match Chrome browser
+            driver = uc.Chrome(options=chrome_options, use_subprocess=True)
 
             # Stealth: Advanced fingerprinting masking
             stealth_script = """
@@ -418,6 +421,20 @@ class UltraStableScanner:
     def scrape_oddsportal_opportunities(self) -> List[Dict]:
         """Wrapper to call scrape_all_sports for compatibility."""
         return self.scrape_all_sports()
+
+    def scrape_oddsportal_value_bets(self) -> List[Dict]:
+        """Scrape Oddsportal Value Bets page for +EV opportunities"""
+        if not self.oddsportal_scraper:
+            logger.warning("Oddsportal scraper not initialized")
+            return []
+
+        try:
+            opportunities = self.oddsportal_scraper.scrape_value_bets()
+            logger.info(f"Found {len(opportunities)} opportunities from Oddsportal Value Bets")
+            return opportunities
+        except Exception as e:
+            logger.error(f"Oddsportal Value Bets scraping failed: {e}")
+            return []
 
     def close(self):
         """Close the webdriver"""
