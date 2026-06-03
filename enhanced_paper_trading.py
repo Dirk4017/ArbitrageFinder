@@ -1379,6 +1379,30 @@ class EnhancedPaperTradingSystem:
             # Combine all opportunities
             opportunities = ninja_opportunities + oddsportal_opportunities + oddsportal_value_opportunities
 
+            # ========== CALCULATE STAKES FOR TELEGRAM ALERTS ==========
+            pending_bets = self.db.get_pending_bets()
+            for opp in opportunities:
+                if opp.get('ev', 0) > 0:
+                    try:
+                        decimal_odds = self.arbitrage_system.parse_odds(opp.get('odds', ''))
+                        if decimal_odds and decimal_odds > 0:
+                            stake = self.arbitrage_system.calculate_stake(
+                                opp.get('ev', 0),
+                                self.bankroll,
+                                pending_bets,
+                                decimal_odds
+                            )
+                            opp['calculated_stake'] = stake
+                            opp['stake_percent'] = (stake / self.bankroll * 100) if self.bankroll > 0 else 0
+                        else:
+                            opp['calculated_stake'] = 0
+                            opp['stake_percent'] = 0
+                    except Exception as e:
+                        logger.debug(f"Stake calculation failed for {opp.get('player', 'Unknown')}: {e}")
+                        opp['calculated_stake'] = 0
+                        opp['stake_percent'] = 0
+            # ========== END STAKE CALCULATION ==========
+
             # ========== ADDED TELEGRAM ALERT CODE ==========
             # Send alerts for positive EV opportunities
             logger.info(f"📨 Sending Telegram alerts for {len(opportunities)} opportunities...")
@@ -1399,8 +1423,15 @@ class EnhancedPaperTradingSystem:
                                   f"📋 *Event:* {event}\n"
                                   f"👤 *Bet:* {player} {opp.get('market', '')}\n"
                                   f"📊 *Odds:* {odds}\n"
-                                  f"💰 *EV:* {ev*100:.1f}%\n"
-                                  f"🏢 *Bookmaker:* {bookmaker}")
+                                  f"💰 *EV:* {ev*100:.1f}%")
+
+                        # Add stake info if calculated successfully and > 0
+                        stake_amount = opp.get('calculated_stake', 0)
+                        stake_percent = opp.get('stake_percent', 0)
+                        if stake_amount > 0:
+                            message += f"\n💵 *Stake:* €{stake_amount:.2f} ({stake_percent:.1f}%)"
+
+                        message += f"\n🏢 *Bookmaker:* {bookmaker}"
 
                         # Send to appropriate channel
                         is_premium = ev >= 0.08  # Premium if EV >= 8%
