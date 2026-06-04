@@ -1429,7 +1429,15 @@ class EnhancedPaperTradingSystem:
                 try:
                     ev = float(opp.get('ev', 0))
                     if ev > 0:
-                        # Format the message (no emojis)
+                        # Define variables FIRST
+                        is_premium = ev >= 0.08
+                        sport = opp.get('sport', 'Unknown')
+                        event = opp.get('event', 'Unknown')
+                        player = opp.get('player', opp.get('team', 'Unknown'))
+                        odds = opp.get('odds', 'N/A')
+                        bookmaker = opp.get('sportsbook', 'Unknown')
+
+                        # Build message (no emojis)
                         if is_premium:
                             message = f"PREMIUM ALERT\n"
                         else:
@@ -1453,8 +1461,7 @@ class EnhancedPaperTradingSystem:
 
                         message += f"\nBookmaker: {bookmaker}"
 
-                        # Send to appropriate channel
-                        is_premium = ev >= 0.08  # Premium if EV >= 8%
+                        # Send alert
                         self.send_alert(message, is_premium)
                         logger.info(f"✅ Sent alert for {player} (EV: {ev*100:.1f}%)")
 
