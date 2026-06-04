@@ -1386,6 +1386,23 @@ class EnhancedPaperTradingSystem:
                     try:
                         decimal_odds = self.arbitrage_system.parse_odds(opp.get('odds', ''))
                         if decimal_odds and decimal_odds > 0:
+                            # Use existing Kelly method for full details
+                            kelly_info = self.bankroll_manager.get_kelly_calculation_details(
+                                opp.get('ev', 0),
+                                decimal_odds,
+                                self.bankroll
+                            )
+
+                            if kelly_info:
+                                opp['win_probability'] = kelly_info.get('actual_prob', 0)
+                                opp['stake_percent'] = kelly_info.get('recommended_kelly_percent', 0)
+                                opp['edge'] = kelly_info.get('edge', 0)
+                            else:
+                                opp['win_probability'] = 0
+                                opp['stake_percent'] = 0
+                                opp['edge'] = 0
+
+                            # Still keep existing stake calculation for the betting system
                             stake = self.arbitrage_system.calculate_stake(
                                 opp.get('ev', 0),
                                 self.bankroll,
@@ -1393,7 +1410,6 @@ class EnhancedPaperTradingSystem:
                                 decimal_odds
                             )
                             opp['calculated_stake'] = stake
-                            opp['stake_percent'] = (stake / self.bankroll * 100) if self.bankroll > 0 else 0
                         else:
                             opp['calculated_stake'] = 0
                             opp['stake_percent'] = 0
@@ -1401,6 +1417,8 @@ class EnhancedPaperTradingSystem:
                         logger.debug(f"Stake calculation failed for {opp.get('player', 'Unknown')}: {e}")
                         opp['calculated_stake'] = 0
                         opp['stake_percent'] = 0
+                        opp['win_probability'] = 0
+                        opp['edge'] = 0
             # ========== END STAKE CALCULATION ==========
 
             # ========== ADDED TELEGRAM ALERT CODE ==========
@@ -1411,27 +1429,29 @@ class EnhancedPaperTradingSystem:
                 try:
                     ev = float(opp.get('ev', 0))
                     if ev > 0:
-                        # Format the message
-                        sport = opp.get('sport', 'Unknown')
-                        event = opp.get('event', 'Unknown')
-                        player = opp.get('player', opp.get('team', 'Unknown'))
-                        odds = opp.get('odds', 'N/A')
-                        bookmaker = opp.get('sportsbook', 'Unknown')
+                        # Format the message (no emojis)
+                        if is_premium:
+                            message = f"PREMIUM ALERT\n"
+                        else:
+                            message = f"ALERT\n"
 
-                        message = (f"🎯 *New Opportunity!*\n"
-                                  f"🏆 *Sport:* {sport}\n"
-                                  f"📋 *Event:* {event}\n"
-                                  f"👤 *Bet:* {player} {opp.get('market', '')}\n"
-                                  f"📊 *Odds:* {odds}\n"
-                                  f"💰 *EV:* {ev*100:.1f}%")
+                        message += (f"Sport: {sport}\n"
+                                   f"Event: {event}\n"
+                                   f"Bet: {player} {opp.get('market', '')}\n"
+                                   f"Odds: {odds}\n"
+                                   f"EV: +{ev*100:.1f}%")
 
-                        # Add stake info if calculated successfully and > 0
-                        stake_amount = opp.get('calculated_stake', 0)
+                        # Add win probability if available
+                        win_prob = opp.get('win_probability', 0)
+                        if win_prob > 0:
+                            message += f"\nWin Probability: {win_prob:.1f}%"
+
+                        # Add stake percentage if available
                         stake_percent = opp.get('stake_percent', 0)
-                        if stake_amount > 0:
-                            message += f"\n💵 *Stake:* €{stake_amount:.2f} ({stake_percent:.1f}%)"
+                        if stake_percent > 0:
+                            message += f"\nStake: {stake_percent:.1f}% of bankroll"
 
-                        message += f"\n🏢 *Bookmaker:* {bookmaker}"
+                        message += f"\nBookmaker: {bookmaker}"
 
                         # Send to appropriate channel
                         is_premium = ev >= 0.08  # Premium if EV >= 8%
