@@ -1317,6 +1317,10 @@ class EnhancedPaperTradingSystem:
 
         chat_id = premium_channel if is_premium else free_channel
 
+        # Ensure chat_id has the -100 prefix for Telegram channels
+        if chat_id and not chat_id.startswith("-100"):
+            chat_id = f"-100{chat_id}"
+
         if not bot_token or not chat_id:
             logger.error("Missing Telegram bot token or chat ID in environment variables")
             return
