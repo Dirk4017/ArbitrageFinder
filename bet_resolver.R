@@ -6158,9 +6158,9 @@ get_espn_basketball_player_stats_from_data <- function(data, player_name) {
                 stats_list$points <- safe_numeric(stats_vector[2])
                 stats_list$rebounds <- safe_numeric(stats_vector[6])
                 stats_list$assists <- safe_numeric(stats_vector[7])
-                stats_list$steals <- safe_numeric(stats_vector[8])
-                stats_list$blocks <- safe_numeric(stats_vector[9])
-                stats_list$turnovers <- safe_numeric(stats_vector[10])
+                stats_list$turnovers <- safe_numeric(stats_vector[8])
+                stats_list$steals <- safe_numeric(stats_vector[9])
+                stats_list$blocks <- safe_numeric(stats_vector[10])
                 
                 if (length(stats_vector) >= 3 && grepl("-", stats_vector[3])) {
                   fg_parts <- strsplit(stats_vector[3], "-")[[1]]
@@ -6976,17 +6976,18 @@ get_espn_nba_player_stats <- function(game_id, player_name, league = "nba") {
                 }
                 
                 if (!is.null(stats_vector) && length(stats_vector) >= 14) {
-                  # ESPN stats format (from our examination)
-                  # [1] minutes, [2] points, [3] FG (e.g., "6-12"), [4] 3PT, [5] FT,
-                  # [6] rebounds, [7] assists, [8] steals, [9] blocks, [10] turnovers
-                  
+                  # ESPN NBA stats format (corrected):
+                  # [1] minutes, [2] points, [3] fgm-a, [4] 3pm-a, [5] ftm-a,
+                  # [6] rebounds, [7] assists, [8] turnovers, [9] steals, [10] blocks,
+                  # [11] offensive rebounds, [12] defensive rebounds, [13] fouls, [14] plus/minus
+
                   stats_list$minutes <- safe_numeric(stats_vector[1])
                   stats_list$points <- safe_numeric(stats_vector[2])
                   stats_list$rebounds <- safe_numeric(stats_vector[6])
                   stats_list$assists <- safe_numeric(stats_vector[7])
-                  stats_list$steals <- safe_numeric(stats_vector[8])
-                  stats_list$blocks <- safe_numeric(stats_vector[9])
-                  stats_list$turnovers <- safe_numeric(stats_vector[10])
+                  stats_list$turnovers <- safe_numeric(stats_vector[8])
+                  stats_list$steals <- safe_numeric(stats_vector[9])
+                  stats_list$blocks <- safe_numeric(stats_vector[10])
                   
                   # Parse shooting splits
                   if (length(stats_vector) >= 3 && grepl("-", stats_vector[3])) {
