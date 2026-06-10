@@ -158,15 +158,19 @@ class KellyBankrollManager:
             q = 1.0 - p
 
             full_kelly = (b * p - q) / b
+            logger.info(f"DEBUG: Kelly calc: b={b}, p={p}, q={q}, full_kelly={full_kelly}")
             recommended_kelly = full_kelly * max_kelly_fraction
+            logger.info(f"DEBUG: Kelly calc: max_kelly_fraction={max_kelly_fraction}, recommended_kelly_raw={recommended_kelly}")
             recommended_stake = bankroll * recommended_kelly
 
             # Apply practical limits
             min_stake_percent = self._get_config_value(['bankroll', 'min_stake_percent'], 0.005)
             max_stake_percent = self._get_config_value(['bankroll', 'max_stake_percent'], 0.10)
 
+            logger.info(f"DEBUG: Kelly calc: limits min={min_stake_percent}, max={max_stake_percent}")
             recommended_kelly = max(recommended_kelly, min_stake_percent)
             recommended_kelly = min(recommended_kelly, max_stake_percent)
+            logger.info(f"DEBUG: Kelly calc: after limits, recommended_kelly={recommended_kelly}")
             recommended_stake = bankroll * recommended_kelly
 
             return {

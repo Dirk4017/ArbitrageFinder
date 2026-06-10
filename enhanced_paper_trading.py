@@ -1391,20 +1391,29 @@ class EnhancedPaperTradingSystem:
                         decimal_odds = self.arbitrage_system.parse_odds(opp.get('odds', ''))
                         if decimal_odds and decimal_odds > 0:
                             # Use existing Kelly method for full details
-                            kelly_info = self.bankroll_manager.get_kelly_calculation_details(
+                            logger.info(f"DEBUG: bankroll = {self.bankroll}")
+                            logger.info(f"DEBUG: calling get_kelly_calculation_details with ev={opp.get('ev', 0)}, odds={decimal_odds}")
+
+                            kelly_info = self.arbitrage_system.bankroll_manager.get_kelly_calculation_details(
                                 opp.get('ev', 0),
                                 decimal_odds,
                                 self.bankroll
                             )
 
+                            logger.info(f"DEBUG: kelly_info for {opp.get('player', 'Unknown')} = {kelly_info}")
+                            logger.info(f"DEBUG: EV value = {opp.get('ev', 0)}")
+                            logger.info(f"DEBUG: decimal_odds = {decimal_odds}")
+
                             if kelly_info:
                                 opp['win_probability'] = kelly_info.get('actual_prob', 0)
                                 opp['stake_percent'] = kelly_info.get('recommended_kelly_percent', 0)
                                 opp['edge'] = kelly_info.get('edge', 0)
+                                logger.info(f"DEBUG: stake_percent set to = {opp.get('stake_percent', 'NOT SET')}")
                             else:
                                 opp['win_probability'] = 0
                                 opp['stake_percent'] = 0
                                 opp['edge'] = 0
+                                logger.info(f"DEBUG: stake_percent set to = {opp.get('stake_percent', 'NOT SET')}")
 
                             # Still keep existing stake calculation for the betting system
                             stake = self.arbitrage_system.calculate_stake(
@@ -1460,8 +1469,13 @@ class EnhancedPaperTradingSystem:
 
                         # Add stake percentage if available
                         stake_percent = opp.get('stake_percent', 0)
+                        logger.info(f"DEBUG: stake_percent retrieved = {stake_percent}")
+                        logger.info(f"DEBUG: stake_percent > 0 = {stake_percent > 0}")
                         if stake_percent > 0:
                             message += f"\nStake: {stake_percent:.1f}% of bankroll"
+                            logger.info(f"DEBUG: Added stake line to message")
+                        else:
+                            logger.info(f"DEBUG: stake_percent is 0 or not found, skipping stake line")
 
                         message += f"\nBookmaker: {bookmaker}"
 
