@@ -78,6 +78,60 @@ debug_print <- function(x) {
 # ==============================================
 # MLB STAT MAPPING - Ensures correct stat is extracted
 # ==============================================
+# Helper function to calculate total bases
+calculate_total_bases <- function(plays_df = NULL, player_name = NULL, stats_vector = NULL) {
+  # If play-by-play data provided, use it for accurate calculation
+  if (!is.null(plays_df) && is.data.frame(plays_df) && nrow(plays_df) > 0) {
+    # Parse play-by-play to find hits
+    player_bases <- list()
+
+    for (i in 1:nrow(plays_df)) {
+      play <- plays_df[i, ]
+
+      # Only process play-result events
+      if (!is.null(play$type$type) && play$type$type == "play-result") {
+        result_text <- play$text %||% ""
+        if (result_text == "") next
+
+        # Extract batter name (first word)
+        words <- strsplit(result_text, " ")[[1]]
+        if (length(words) == 0) next
+
+        batter <- words[1]
+        result_lower <- tolower(result_text)
+
+        # Determine bases based on hit type
+        bases <- 0
+        if (grepl("singled", result_lower)) bases <- 1
+        else if (grepl("doubled", result_lower)) bases <- 2
+        else if (grepl("tripled", result_lower)) bases <- 3
+        else if (grepl("homered", result_lower) || grepl("home run", result_lower)) bases <- 4
+
+        if (bases > 0) {
+          if (is.null(player_bases[[batter]])) player_bases[[batter]] <- 0
+          player_bases[[batter]] <- player_bases[[batter]] + bases
+        }
+      }
+    }
+
+    # Return requested player's total bases
+    if (!is.null(player_name) && nchar(player_name) > 0) {
+      for (batter in names(player_bases)) {
+        if (grepl(tolower(player_name), tolower(batter), fixed = TRUE)) {
+          return(player_bases[[batter]])
+        }
+      }
+      return(NA)
+    }
+
+    return(player_bases)
+  }
+
+  # Fallback for when no play-by-play data (returns NA instead of incorrect value)
+  debug_cat("WARNING: No play-by-play data provided. Cannot calculate accurate total bases.\n")
+  return(NA)
+}
+
 get_correct_player_stat <- function(stats_data, requested_stat, sport = "mlb") {
   if (is.null(stats_data) || is.null(stats_data$stats)) return(NA)
 
@@ -130,6 +184,23 @@ get_correct_player_stat <- function(stats_data, requested_stat, sport = "mlb") {
     outs_recorded = c("outs_recorded", "outs"),
     home_runs_allowed = c("home_runs_allowed", "hra")
   )
+
+  # Custom logic for total_bases
+  if (requested_stat == "total_bases") {
+    # Return total_bases if available
+    val <- stats_data$stats$total_bases %||% NA
+    if (!is.na(val)) return(val)
+
+    # Fallback: calculate from hits, doubles, triples, HR
+    hits <- stats_data$stats$hits %||% 0
+    doubles <- stats_data$stats$doubles %||% 0
+    triples <- stats_data$stats$triples %||% 0
+    home_runs <- stats_data$stats$home_runs %||% 0
+
+    singles <- hits - (doubles + triples + home_runs)
+    total_bases <- singles + (doubles * 2) + (triples * 3) + (home_runs * 4)
+    return(total_bases)
+  }
 
   possible_fields <- mlb_mapping[[requested_stat]]
   if (is.null(possible_fields)) {
@@ -369,6 +440,51 @@ resolve_game_market <- function(event_string, sport, season, market_type, line_v
   
   debug_cat(sprintf("Found game ID: %s\n", game_id))
   
+  # =========================================================
+  # HANDLE 3-WAY MONEYLINE
+  # =========================================================
+
+  if (grepl("moneyline 3-way", market_type, ignore.case = TRUE) ||
+      grepl("moneyline 3 way", market_type, ignore.case = TRUE)) {
+
+    debug_cat(sprintf("  Handling 3-way moneyline for %s\n", sport))
+
+    bet_side <- "home"
+    if (!is.null(team)) {
+      team_mapped <- map_team_name(team)
+      team_lower <- tolower(team_mapped)
+      home_lower <- tolower(teams$home)
+      away_lower <- tolower(teams$away)
+
+      if (grepl(team_lower, home_lower) || team_lower == "home") {
+        bet_side <- "home"
+      } else if (grepl(team_lower, away_lower) || team_lower == "away") {
+        bet_side <- "away"
+      }
+      debug_cat(sprintf("    Bet side: %s (team: %s)\n", bet_side, team))
+    }
+
+    # Resolve 3-way moneyline
+    inning_result <- resolve_multi_inning_market(
+      game_id = game_id,
+      num_innings = 9,
+      market_type = "moneyline_3way",
+      bet_team = bet_side
+    )
+
+    return(list(
+      success = inning_result$success,
+      resolved = inning_result$success,
+      bet_won = if(is.null(inning_result$bet_won)) NA else inning_result$bet_won,
+      actual_value = paste0(inning_result$away_score, "-", inning_result$home_score),
+      bet_type = "moneyline_3way",
+      winner = inning_result$winner,
+      home_score = inning_result$home_score,
+      away_score = inning_result$away_score,
+      game_id = game_id
+    ))
+  }
+
   # =========================================================
   # HANDLE SPECIFIC INNING MONEYLINES
   # =========================================================
@@ -2374,7 +2490,7 @@ classify_market <- function(market_type, sport = NULL) {
   market_lower <- tolower(market_type)
 
   # DEBUG logging
-  debug_cat(sprintf("Classifying market: %s (sport: %s)\n", market_type, sport %||% "unknown"))
+  debug_cat(sprintf("Classifying market: '%s' (sport: %s)\n", market_type, sport %||% "unknown"))
 
   # ========== WNBA SPECIFIC HANDLERS ==========
   if (!is.null(sport) && tolower(sport) == "wnba") {
@@ -2554,9 +2670,45 @@ classify_market <- function(market_type, sport = NULL) {
       if (grepl("total triples", market_lower)) {
         return(list(type = "inning_total_triples", inning = inning))
       }
+      # ADDED: missing MLB inning markets
+      if (grepl("total hits", market_lower)) {
+        return(list(type = "inning_total_hits", inning = inning))
+      }
+      if (grepl("total home runs", market_lower)) {
+        return(list(type = "inning_total_home_runs", inning = inning))
+      }
+      if (grepl("total plate appearances", market_lower)) {
+        return(list(type = "inning_total_pa", inning = inning))
+      }
+      if (grepl("total rbis?", market_lower)) {
+        return(list(type = "inning_total_rbis", inning = inning))
+      }
+      if (grepl("total batters", market_lower)) {
+        return(list(type = "inning_total_batters", inning = inning))
+      }
+      if (grepl("total strikeouts thrown", market_lower)) {
+        return(list(type = "inning_total_strikeouts_thrown", inning = inning))
+      }
+      if (grepl("total batting walks", market_lower)) {
+        return(list(type = "inning_total_batting_walks", inning = inning))
+      }
+      if (grepl("total doubles", market_lower)) {
+        return(list(type = "inning_total_doubles", inning = inning))
+      }
+      if (grepl("total singles", market_lower)) {
+        return(list(type = "inning_total_singles", inning = inning))
+      }
+      if (grepl("total triples", market_lower)) {
+        return(list(type = "inning_total_triples", inning = inning))
+      }
     }
   }
   
+  # ==================== 3-WAY MONEYLINE MARKETS ====================
+  if (grepl("moneyline 3-way", market_lower) || grepl("moneyline 3 way", market_lower)) {
+    return(list(type = "game_moneyline_3way"))
+  }
+
   # ==================== MULTI-INNING MARKETS (FIXED) ====================
   # Pattern: "1st 2 Innings", "1st 3 Innings", "1st 5 Innings", etc.
   multi_inning_match <- regexpr("1st\\s+([2-9])\\s+innings?", market_lower, ignore.case = TRUE)
@@ -2846,6 +2998,34 @@ classify_market <- function(market_type, sport = NULL) {
     if (grepl("inning", market_lower)) return(list(type = "team_highest_scoring_inning"))
     if (grepl("quarter", market_lower)) return(list(type = "team_highest_scoring_quarter"))
   }
+  # ADDED: more MLB game/team markets
+  if (grepl("total home runs", market_lower)) {
+    return(list(type = "total_home_runs"))
+  }
+  if (grepl("total hits", market_lower) && !grepl("team", market_lower)) {
+    return(list(type = "total_hits"))
+  }
+  if (grepl("team total hits", market_lower)) {
+    return(list(type = "team_total", stat = "hits"))
+  }
+  if (grepl("team to win the most innings 2-way", market_lower)) {
+    return(list(type = "team_most_innings_2way"))
+  }
+  if (grepl("team to have highest scoring inning 2-way", market_lower)) {
+    return(list(type = "team_highest_scoring_inning_2way"))
+  }
+
+  # ==================== 4th, 5th, 6th, 7th, 8th, 9th Inning Moneyline 3-way missing
+  for (inning in 4:9) {
+    inning_suffix <- ifelse(inning == 1, "st", ifelse(inning == 2, "nd", ifelse(inning == 3, "rd", "th")))
+    inning_pattern <- paste0("^", inning, inning_suffix, " inning")
+
+    if (grepl(inning_pattern, market_lower)) {
+      if (grepl("moneyline 3-way", market_lower)) {
+        return(list(type = "inning_moneyline_3way", inning = inning))
+      }
+    }
+  }
   if (grepl("team to have highest three-point field goal percentage", market_lower)) {
     return(list(type = "team_highest_three_pct"))
   }
@@ -2904,8 +3084,10 @@ classify_market <- function(market_type, sport = NULL) {
     "team 1st inning total pitches thrown" = "pitches_thrown",
     "team 1st inning total plate appearances" = "plate_appearances",
     "team 1st inning total rbis" = "rbis",
-    "team 1st 5 innings total batting walks" = "batting_walks",
-    "team 1st 5 innings total pitching strikeouts" = "pitching_strikeouts",
+    "team 1st 5 innings total runs" = "runs",
+    "team 1st 5 innings total doubles" = "doubles",
+    "team 1st 5 innings total singles" = "singles",
+    "team 1st 5 innings total triples" = "triples",
     "team total batting walks" = "batting_walks",
     "team total pitches thrown" = "pitches_thrown",
     "team total plate appearances" = "plate_appearances",
@@ -2913,17 +3095,21 @@ classify_market <- function(market_type, sport = NULL) {
     "team 1st inning total doubles" = "doubles",
     "team 1st inning total singles" = "singles",
     "team 1st inning total strikeouts thrown" = "strikeouts_thrown",
-    "team 1st inning total triples" = "triples"
+    "team 1st inning total triples" = "triples",
+    "team 1st inning total hits" = "hits",
+    "team 1st inning total home runs" = "home_runs"
   )
   
   for (pattern in names(team_total_patterns)) {
     if (grepl(pattern, market_lower)) {
+      debug_cat(sprintf("  Matched team total pattern: %s\n", pattern))
       if (grepl("odd/even", market_lower)) {
         return(list(type = "team_total_oddeven", stat = team_total_patterns[[pattern]]))
       }
       return(list(type = "team_total", stat = team_total_patterns[[pattern]]))
     }
   }
+  debug_cat(sprintf("  No team total pattern matched for: %s\n", market_lower))
   
   # ==================== REGULATION MARKETS (MOVED BEFORE GAME MARKETS) ====================
   if (grepl("regulation", market_lower)) {
@@ -2995,7 +3181,6 @@ classify_market <- function(market_type, sport = NULL) {
   if (grepl("total hits", market_lower)) {
     return(list(type = "total_hits"))
   }
-  # Added missing MLB total markets (These map to player_stat if no team prefix)
   if (grepl("total doubles", market_lower) && !grepl("team", market_lower)) {
     return(list(type = "player_stat", stat = "doubles"))
   }
@@ -3022,6 +3207,15 @@ classify_market <- function(market_type, sport = NULL) {
   }
   if (grepl("total extra base hits", market_lower) && !grepl("team", market_lower)) {
     return(list(type = "player_stat", stat = "extra_base_hits"))
+  }
+  if (grepl("total home runs", market_lower) && !grepl("team", market_lower)) {
+    return(list(type = "player_stat", stat = "home_runs"))
+  }
+  if (grepl("total hits", market_lower) && !grepl("team", market_lower)) {
+    return(list(type = "player_stat", stat = "hits"))
+  }
+  if (grepl("total fantasy score", market_lower) && !grepl("team", market_lower)) {
+    return(list(type = "player_stat", stat = "fantasy_score"))
   }
   
   # ========== GENERIC TOTAL MARKETS (LAST RESORT FOR TOTAL MARKETS) ==========
@@ -5842,7 +6036,18 @@ get_espn_mlb_player_stats <- function(game_id, player_name) {
                     doubles = suppressWarnings(as.numeric(raw_stats["2B"])),
                     triples = suppressWarnings(as.numeric(raw_stats["3B"])),
                     stolen_bases = suppressWarnings(as.numeric(raw_stats["SB"])),
-                    pitches_seen = suppressWarnings(as.numeric(raw_stats["#P"]))
+                    pitches_seen = suppressWarnings(as.numeric(raw_stats["#P"])),
+                    # Get play-by-play data for accurate total bases
+                    total_bases = {
+                      plays_url <- paste0("https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=", game_id)
+                      plays_response <- GET(plays_url, timeout = 10)
+                      plays_data <- fromJSON(content(plays_response, "text", encoding = "UTF-8"), flatten = FALSE)
+                      if (!is.null(plays_data$plays)) {
+                        calculate_total_bases(plays_df = plays_data$plays, player_name = current_name)
+                      } else {
+                        NA
+                      }
+                    }
                   )
                 } else {
                   # Pitching stats
@@ -9435,10 +9640,11 @@ resolve_multi_inning_total_runs <- function(game_data, num_innings, line_value, 
           
           # ========== NEW: If team is specified, only sum that team's runs ==========
           if (!is.null(team) && nchar(team) > 0) {
-            debug_cat(sprintf("  Calculating runs for specific team: %s\n", team))
-            
+            target_team <- map_team_name(team)
+            debug_cat(sprintf("  Calculating runs for specific team: %s (mapped from: %s)\n", target_team, team))
+
             for (i in 1:nrow(competitors)) {
-              if (grepl(team, competitors$team.displayName[i], ignore.case = TRUE)) {
+              if (grepl(target_team, competitors$team.displayName[i], ignore.case = TRUE)) {
                 if ("linescores" %in% names(competitors) && length(competitors$linescores) >= i) {
                   linescores_df <- competitors$linescores[[i]]
                   if (!is.null(linescores_df) && is.data.frame(linescores_df)) {
@@ -9841,8 +10047,19 @@ get_team_inning_totals <- function(game_data, team_name, innings, stat_type) {
     # Count strikeouts thrown by pitching team
     team_plays <- inning_plays[grepl(team_name, inning_plays$text, ignore.case = TRUE), ]
     total <- sum(grepl("struck out", team_plays$text, ignore.case = TRUE))
+
+  } else if(stat_type == "hits") {
+    # Count hits
+    team_plays <- inning_plays[grepl(team_name, inning_plays$text, ignore.case = TRUE), ]
+    # Hits: batter safely reaches base (single, double, triple, HR)
+    total <- sum(grepl("singles|doubles|triples|homered|hits to", team_plays$text, ignore.case = TRUE))
+
+  } else if(stat_type == "home_runs") {
+    # Count home runs
+    team_plays <- inning_plays[grepl(team_name, inning_plays$text, ignore.case = TRUE), ]
+    total <- sum(grepl("homered|home run", team_plays$text, ignore.case = TRUE))
   }
-  
+
   return(total)
 }
 
@@ -9910,23 +10127,27 @@ resolve_team_inning_pitches <- function(game_data, team_name) {
   ))
 }
 
-# Resolve team 1st inning total strikeouts thrown
-resolve_team_inning_strikeouts_thrown <- function(game_data, team_name) {
-  if(is.null(game_data$plays)) {
-    return(list(success = FALSE, error = "No play-by-play data"))
-  }
-  
-  # Get 1st inning plays
-  inning_1_plays <- game_data$plays[game_data$plays$period == 1, ]
-  
-  # Count strikeouts by the pitching team
-  team_plays <- inning_1_plays[grepl(team_name, inning_1_plays$text, ignore.case = TRUE), ]
-  strikeouts <- sum(grepl("struck out", team_plays$text, ignore.case = TRUE))
-  
+# Resolve team inning total hits
+resolve_team_inning_hits <- function(game_data, team_name, innings) {
+  total <- get_team_inning_totals(game_data, team_name, innings, "hits")
+
   return(list(
     success = TRUE,
-    actual_value = strikeouts,
-    team = team_name
+    actual_value = total,
+    team = team_name,
+    innings = innings
+  ))
+}
+
+# Resolve team inning total home runs
+resolve_team_inning_home_runs <- function(game_data, team_name, innings) {
+  total <- get_team_inning_totals(game_data, team_name, innings, "home_runs")
+
+  return(list(
+    success = TRUE,
+    actual_value = total,
+    team = team_name,
+    innings = innings
   ))
 }
 
@@ -12055,7 +12276,33 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string,
       } else {
         result$error <- "Could not fetch game data"
       }
-      
+
+    } else if (market_info$type == "team_total" && market_info$stat == "hits") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        innings <- if(!is.null(market_info$innings)) market_info$innings else 5
+        result_data <- resolve_team_inning_hits(game_data, teams$home, innings)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$actual_value <- result_data$actual_value
+        result$data <- result_data
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+
+    } else if (market_info$type == "team_total" && market_info$stat == "home_runs") {
+      game_data <- fetch_game_data_for_resolution(game_id, sport)
+      if(!is.null(game_data)) {
+        innings <- if(!is.null(market_info$innings)) market_info$innings else 5
+        result_data <- resolve_team_inning_home_runs(game_data, teams$home, innings)
+        result$success <- result_data$success
+        result$resolved <- result_data$success
+        result$actual_value <- result_data$actual_value
+        result$data <- result_data
+      } else {
+        result$error <- "Could not fetch game data"
+      }
+
     } else if (market_info$type == "team_total" && market_info$stat == "batters") {
       game_data <- fetch_game_data_for_resolution(game_id, sport)
       if(!is.null(game_data)) {
