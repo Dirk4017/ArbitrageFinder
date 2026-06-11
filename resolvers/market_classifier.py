@@ -17,6 +17,7 @@ class MarketClassification:
     line_value: Optional[float]
     period: Optional[str]  # '1st quarter', '1st half', '1st period', etc.
     stat_type: Optional[str]  # 'points', 'yards', 'tds', 'goals', etc.
+    inning: Optional[int] = None # Added for inning-based markets
     original_player: str
     original_market: str
     confidence: float = 0.5  # Confidence score for prediction reliability
@@ -306,6 +307,19 @@ class MarketClassifier:
             'team_to_score_last': [r'team.*to.*score.*last'],
             'team_to_win_opening_tip_off': [r'team.*to.*win.*opening.*tip.*off'],
             'team_first_3_minutes_total_threes': [r'team.*first.*3.*minutes.*total.*threes'],
+            'team_inning_total_runs': [
+                r'team\s+\d+(?:st|nd|rd|th)?\s+inning\s+total\s+runs',
+                r'team\s+\d+(?:st|nd|rd|th)?\s+inning\s+runs',
+                r'team\s+1st\s+inning\s+total\s+runs',
+                r'team\s+2nd\s+inning\s+total\s+runs',
+                r'team\s+3rd\s+inning\s+total\s+runs',
+                r'team\s+4th\s+inning\s+total\s+runs',
+                r'team\s+5th\s+inning\s+total\s+runs',
+                r'team\s+6th\s+inning\s+total\s+runs',
+                r'team\s+7th\s+inning\s+total\s+runs',
+                r'team\s+8th\s+inning\s+total\s+runs',
+                r'team\s+9th\s+inning\s+total\s+runs',
+            ],
         }
 
         # Game specials
@@ -776,6 +790,8 @@ class MarketClassifier:
                 return 'team_highest_three_point_percentage'
             elif 'score_first_field_goal' in classification.subcategory:
                 return 'team_score_first_field_goal'
+            elif 'team_inning_total_runs' in classification.subcategory:
+                return 'team_inning_total'
 
         # ==============================================
         # PERIOD MARKETS
@@ -922,6 +938,10 @@ class MarketClassifier:
         # Step 4: Determine category and subcategory
         category, subcategory = self._determine_category(market_lower, player_lower)
 
+        # Step 4.5: Extract inning number (if applicable)
+        inning_match = re.search(r'(\d+)(?:st|nd|rd|th)?\s+inning', market_lower)
+        inning = int(inning_match.group(1)) if inning_match else None
+
         # Step 5: Extract stat type
         stat_type = self.STAT_TYPE_MAPPING.get(subcategory)
 
@@ -931,7 +951,7 @@ class MarketClassifier:
         logger.info(f"Market classified: {category}.{subcategory}")
         logger.info(f"  Player: '{clean_player}', Team: '{clean_team}'")
         logger.info(f"  Direction: {direction}, Line: {line_value}")
-        logger.info(f"  Period: {period}, Stat: {stat_type}")
+        logger.info(f"  Period: {period}, Inning: {inning}, Stat: {stat_type}")
         logger.info(f"  Confidence: {confidence:.2f}")
 
         return MarketClassification(
@@ -942,6 +962,7 @@ class MarketClassifier:
             direction=direction,
             line_value=line_value,
             period=period,
+            inning=inning,
             stat_type=stat_type,
             original_player=player_or_team,
             original_market=market,
