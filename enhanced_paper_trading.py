@@ -920,6 +920,8 @@ class EnhancedPaperTradingSystem:
                 market_type = "Player Hits"
             elif stat_type == 'home_runs':
                 market_type = "Player Home Runs"
+            elif stat_type == 'home_runs':
+                market_type = "Player Home Runs"
             elif stat_type == 'rbi':
                 market_type = "Player RBI"
             elif stat_type == 'runs':

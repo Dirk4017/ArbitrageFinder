@@ -146,9 +146,7 @@ class RStatsResolver:
         """
         # College team indicators - MOVED TO AFTER PRO SPORTS CHECKS
         college_indicators = [
-            'State$', 'University', 'College', 'FL$', 'AL$', 'GA$', 'TX$',
-            'CA$', 'OH$', 'IL$', 'PA$', 'NY$', 'NC$', 'MI$', 'NJ$', 'VA$',
-            'WA$', 'AZ$', 'TN$', 'IN$', 'MA$', 'MO$', 'MN$', 'WI$', 'CO$',
+            'State$', 'University', 'College',
             'McNeese', 'East Texas A&M', 'UMBC', 'New Hampshire', 'Bethune-Cookman',
             'Alcorn State', 'Kansas State', 'Oklahoma State', 'TCU', 'North Carolina',
             'Pittsburgh', 'NC State', 'Miami \(FL\)', 'Boise State', 'UNLV',
@@ -219,6 +217,16 @@ class RStatsResolver:
                 result['confidence'] = 0.9
                 self.logger.info(f"  Detected MLB team: {team}")
                 return result  # Return immediately - MLB detected
+
+        # ========== STEP 1.5: Check for Tennis ==========
+        tennis_keywords = ['atp', 'wta', 'wimbledon', 'us open', 'australian open', 'french open', 'roland garros']
+        for keyword in tennis_keywords:
+            if keyword in event.lower():
+                result['sport'] = 'tennis'
+                result['league'] = 'ATP/WTA'
+                result['confidence'] = 0.9
+                self.logger.info(f"  Detected tennis event: {keyword}")
+                return result
 
         # ========== STEP 2: Check for NBA teams (BEFORE college) ==========
         for team in nba_teams:
@@ -676,15 +684,15 @@ class RStatsResolver:
 
     def _map_nba_markets(self, market_lower: str, player_name: str, sport: str = None) -> str:
         """Helper method for NBA-style market mapping"""
-        # Player combo markets
-        if re.search(r'points.*\+.*assists|points.*assists', market_lower) and not re.search(r'rebounds', market_lower):
-            return "player points + assists"
-        if re.search(r'rebounds.*\+.*assists|rebounds.*assists', market_lower):
-            return "player rebounds + assists"
+        # Player combo markets - MOST SPECIFIC FIRST!
         if re.search(r'points.*rebounds.*assists|pra', market_lower):
             return "player points + rebounds + assists"
         if re.search(r'points.*\+.*rebounds|points.*rebounds', market_lower):
             return "player points + rebounds"
+        if re.search(r'points.*\+.*assists|points.*assists', market_lower) and not re.search(r'rebounds', market_lower):
+            return "player points + assists"
+        if re.search(r'rebounds.*\+.*assists|rebounds.*assists', market_lower):
+            return "player rebounds + assists"
         if re.search(r'blocks.*\+.*steals|blocks.*steals', market_lower):
             return "player blocks + steals"
 
@@ -788,6 +796,10 @@ class RStatsResolver:
         """
         Resolve player stat markets
         """
+        # When calling R for player home runs:
+        if stat_type == 'home_runs':
+            market_type = 'Player Home Runs'  # This should map to home_runs in R
+
         return self._call_r_script(
             player_name=player_name,
             sport=sport,
@@ -857,16 +869,9 @@ class RStatsResolver:
         sport_info = self._detect_sport_correctly(event_string, sport)
         self.logger.info(f"Sport detection result: {sport_info}")
 
-        # If it's a college game, return early with a specific message
+        # If it's a college game, allow it to proceed
         if sport_info['is_college']:
-            self.logger.info(f"🎓 College game detected, skipping: {event_string}")
-            return {
-                'success': False,
-                'resolved': False,
-                'error': f"College game not supported: {event_string}",
-                'is_college': True,
-                'league': 'NCAA'
-            }
+            self.logger.info(f"🎓 College game detected, proceeding: {event_string}")
 
         # If it's an NFL game, make sure we're using the correct sport
         if sport_info['is_nfl']:

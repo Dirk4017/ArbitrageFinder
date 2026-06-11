@@ -185,7 +185,7 @@ class MarketClassifier:
             'player_hits': [r'player.*hits', r'hits$', r'^hits\b'],
             'player_runs': [r'player.*runs', r'runs$', r'^runs\b', r'runs.*scored'],
             'player_rbi': [r'player.*rbi', r'rbi$', r'^rbi\b'],
-            'player_home_runs': [r'player.*home.*runs', r'home.*runs', r'hr$', r'player.*hr'],
+            'player_home_runs': [r'home.*run', r'home.*runs', r'hr$', r'player.*hr'],
             'player_stolen_bases': [r'player.*stolen.*bases', r'stolen.*bases', r'sb$', r'\bstolen\b'],
             'player_walks': [r'player.*walks', r'walks$', r'bb$', r'\bwalks\b', r'batting.*walks'],
             'player_strikeouts': [r'player.*strikeouts', r'strikeouts$', r'so$', r'k$'],
