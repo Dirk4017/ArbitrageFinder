@@ -1523,7 +1523,25 @@ class EnhancedPaperTradingSystem:
             if pending_bets:
                 logger.info(f"Checking for completed games...")
                 for bet in pending_bets:
-                    result = self.resolve_bet_intelligently(bet['id'])
+                    # FIX: Handle team inning total markets specifically
+                    if bet.get('market_category') == 'team_inning_total':
+                        # Extract inning number
+                        market_type = bet.get('market', '')
+                        inning_match = re.search(r'(\d+)(?:st|nd|rd|th)?\s+Inning', market_type, re.IGNORECASE)
+                        inning = int(inning_match.group(1)) if inning_match else 1
+
+                        # Resolve using the new team_inning_total method
+                        result = self.idempotent_resolver.resolve_team_inning_total(
+                            team=bet.get('player', ''),
+                            inning=inning,
+                            line_value=bet.get('market_line_value'),
+                            direction=bet.get('market_direction'),
+                            game_date=bet.get('game_date'),
+                            event_string=bet.get('event')
+                        )
+                    else:
+                        result = self.resolve_bet_intelligently(bet['id'])
+
                     if result.get('resolved'):
                         logger.info(f"  Resolved bet {bet['id']}: {'WIN' if result['won'] else 'LOSS'}")
 

@@ -183,10 +183,11 @@ class MarketClassifier:
             'player_goals_against': [r'player.*goals.*against', r'goals.*against', r'ga'],
 
             # MLB
-            'player_hits': [r'player.*hits', r'hits$', r'^hits\b'],
-            'player_runs': [r'player.*runs', r'runs$', r'^runs\b', r'runs.*scored'],
-            'player_rbi': [r'player.*rbi', r'rbi$', r'^rbi\b'],
+            'player_hits': [r'player.*hits', r'hits$', r'\bhits\b'],
+            'player_runs': [r'player.*runs', r'runs$', r'\bruns\b', r'runs.*scored'],
+            'player_rbi': [r'player.*rbi', r'rbi$', r'\brbi\b'],
             'player_home_runs': [r'home.*run', r'home.*runs', r'hr$', r'player.*hr'],
+            'player_singles': [r'player.*singles', r'singles$', r'\bsingles\b'],
             'player_stolen_bases': [r'player.*stolen.*bases', r'stolen.*bases', r'sb$', r'\bstolen\b'],
             'player_walks': [r'player.*walks', r'walks$', r'bb$', r'\bwalks\b', r'batting.*walks'],
             'player_strikeouts': [r'player.*strikeouts', r'strikeouts$', r'so$', r'k$'],
@@ -229,6 +230,13 @@ class MarketClassifier:
             'player_turnovers_ncaab': [r'player.*turnovers', r'turnovers$'],
             'player_double_double_ncaab': [r'player.*double.*double', r'double.*double'],
             'player_triple_double_ncaab': [r'player.*triple.*double', r'triple.*double'],
+            'quarter_total_points': [
+                r'\d+(?:st|nd|rd|th)\s+quarter\s+total\s+points',
+                r'1st\s+quarter\s+total\s+points',
+                r'2nd\s+quarter\s+total\s+points',
+                r'3rd\s+quarter\s+total\s+points',
+                r'4th\s+quarter\s+total\s+points',
+            ],
         }
 
         # Player combo stats
@@ -308,17 +316,12 @@ class MarketClassifier:
             'team_to_win_opening_tip_off': [r'team.*to.*win.*opening.*tip.*off'],
             'team_first_3_minutes_total_threes': [r'team.*first.*3.*minutes.*total.*threes'],
             'team_inning_total_runs': [
-                r'team\s+\d+(?:st|nd|rd|th)?\s+inning\s+total\s+runs',
-                r'team\s+\d+(?:st|nd|rd|th)?\s+inning\s+runs',
+                r'team 1st inning total runs',  # Exact match
                 r'team\s+1st\s+inning\s+total\s+runs',
                 r'team\s+2nd\s+inning\s+total\s+runs',
                 r'team\s+3rd\s+inning\s+total\s+runs',
-                r'team\s+4th\s+inning\s+total\s+runs',
-                r'team\s+5th\s+inning\s+total\s+runs',
-                r'team\s+6th\s+inning\s+total\s+runs',
-                r'team\s+7th\s+inning\s+total\s+runs',
-                r'team\s+8th\s+inning\s+total\s+runs',
-                r'team\s+9th\s+inning\s+total\s+runs',
+                r'team\s+\d+th\s+inning\s+total\s+runs',
+                r'team\s+inning\s+total\s+runs',
             ],
         }
 
@@ -1176,11 +1179,19 @@ class MarketClassifier:
 
         # Team markets
         for subcategory, patterns in self.TEAM_MARKETS.items():
-            for pattern in patterns:
+            # Debug: Print all patterns for team_inning_total_runs
+            if subcategory == 'team_inning_total_runs':
                 compiled = self.compiled_patterns.get(subcategory, [])
-                for cp in compiled:
-                    if cp.search(market_lower):
-                        return 'team_market', subcategory
+                logger.info(f"DEBUG: Checking patterns for team_inning_total_runs: {[cp.pattern for cp in compiled]}")
+
+            compiled = self.compiled_patterns.get(subcategory, [])
+            for cp in compiled:
+                if cp.search(market_lower):
+                    logger.info(f"DEBUG: Matched market '{market_lower}' against subcategory '{subcategory}' with pattern '{cp.pattern}'")
+                    return 'team_market', subcategory
+
+        # Log if NO match found in Team markets
+        logger.info(f"DEBUG: No team total pattern matched for: {market_lower}")
 
         # Game special markets
         for subcategory, patterns in self.GAME_SPECIAL_MARKETS.items():
@@ -1489,6 +1500,7 @@ def test_market_classifier():
         ("Point Spread -7.5", "Golden State Warriors"),
         ("Total Points Over 225.5", "Lakers vs Celtics"),
         ("Total Points Odd/Even", "Odd"),
+        ("Team 1st Inning Total Runs", "Boston Red Sox"),
     ]
 
     print("=" * 100)

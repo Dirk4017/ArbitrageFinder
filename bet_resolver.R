@@ -2523,7 +2523,7 @@ classify_market <- function(market_type, sport = NULL) {
   }
   
   # ==================== PERIOD MARKETS (GENERAL) ====================
-  
+
   # 1st Half markets
   if (grepl("1st half", market_lower)) {
     if (grepl("moneyline", market_lower)) {
@@ -6008,7 +6008,7 @@ get_espn_mlb_player_stats <- function(game_id, player_name) {
           athletes <- team_stats$athletes[[stat_idx]]
           stat_labels <- team_stats$labels[[stat_idx]]
 
-          if (is.null(athletes) || nrow(athletes) == 0) next
+          if (is.null(athletes) || !is.data.frame(athletes) || nrow(athletes) == 0) next
 
           for (i in 1:nrow(athletes)) {
             current_name <- athletes$athlete$displayName[i]
@@ -6023,20 +6023,27 @@ get_espn_mlb_player_stats <- function(game_id, player_name) {
                 names(raw_stats) <- stat_labels
 
                 if (stat_type == "batting") {
+                  hits <- suppressWarnings(as.numeric(raw_stats["H"])) %||% 0
+                  doubles <- suppressWarnings(as.numeric(raw_stats["2B"])) %||% 0
+                  triples <- suppressWarnings(as.numeric(raw_stats["3B"])) %||% 0
+                  home_runs <- suppressWarnings(as.numeric(raw_stats["HR"])) %||% 0
+                  singles <- hits - (doubles + triples + home_runs)
+
                   result <- list(
                     player = current_name,
                     stat_type = "batting",
-                    at_bats = suppressWarnings(as.numeric(raw_stats["AB"])),
-                    runs = suppressWarnings(as.numeric(raw_stats["R"])),
-                    hits = suppressWarnings(as.numeric(raw_stats["H"])),
-                    rbi = suppressWarnings(as.numeric(raw_stats["RBI"])),
-                    walks = suppressWarnings(as.numeric(raw_stats["BB"])),
-                    strikeouts = suppressWarnings(as.numeric(raw_stats["K"])),
-                    home_runs = suppressWarnings(as.numeric(raw_stats["HR"])),
-                    doubles = suppressWarnings(as.numeric(raw_stats["2B"])),
-                    triples = suppressWarnings(as.numeric(raw_stats["3B"])),
-                    stolen_bases = suppressWarnings(as.numeric(raw_stats["SB"])),
-                    pitches_seen = suppressWarnings(as.numeric(raw_stats["#P"])),
+                    at_bats = suppressWarnings(as.numeric(raw_stats["AB"])) %||% 0,
+                    runs = suppressWarnings(as.numeric(raw_stats["R"])) %||% 0,
+                    hits = hits,
+                    rbi = suppressWarnings(as.numeric(raw_stats["RBI"])) %||% 0,
+                    walks = suppressWarnings(as.numeric(raw_stats["BB"])) %||% 0,
+                    strikeouts = suppressWarnings(as.numeric(raw_stats["K"])) %||% 0,
+                    home_runs = home_runs,
+                    doubles = doubles,
+                    triples = triples,
+                    singles = singles,
+                    stolen_bases = suppressWarnings(as.numeric(raw_stats["SB"])) %||% 0,
+                    pitches_seen = suppressWarnings(as.numeric(raw_stats["#P"])) %||% 0,
                     # Get play-by-play data for accurate total bases
                     total_bases = {
                       plays_url <- paste0("https://site.api.espn.com/apis/site/v2/sports/baseball/mlb/summary?event=", game_id)
@@ -11011,6 +11018,13 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string,
     debug_cat(sprintf("\n--- Step 4: Processing market type '%s' ---\n", market_type))
     
     market_info <- classify_market(market_type, sport)
+
+    if (is.null(market_info)) {
+      debug_cat(sprintf("  ERROR: Market classification failed for '%s'\n", market_type))
+      result$error <- "Market classification failed"
+      return(result)
+    }
+
     debug_cat(sprintf("Market classification: %s\n", market_info$type))
     
     # ========== FORCED OVERRIDE FOR NFL TEAM MARKETS ==========
@@ -11727,13 +11741,13 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string,
         if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
         
       } else if (market_info$type %in% c("period_total", "period_total_oddeven")) {
-        direction <- if (grepl("over", market_lower)) "over" else if (grepl("under", market_lower)) "under" else 
+        direction <- if (grepl("over", market_lower)) "over" else if (grepl("under", market_lower)) "under" else
           if (grepl("odd", market_lower)) "odd" else if (grepl("even", market_lower)) "even" else "over"
-        result_data <- resolve_period_total(game_id, sport, result$season, market_info$period, line_value, direction)
+        period_result <- resolve_period_total(game_id, sport, market_info$period, line_value, direction)
         result$success <- TRUE
         result$resolved <- TRUE
-        result$data <- result_data
-        if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+        result$data <- period_result
+        if (!is.null(period_result$bet_won)) result$bet_won <- period_result$bet_won
         
       } else if (market_info$type == "period_both_teams_score") {
         result_data <- resolve_period_moneyline(game_id, sport, market_info$period)
@@ -11778,6 +11792,20 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string,
       result$data <- result_data
       if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
       
+    } else if (market_info$type == "team_inning_total") {
+      debug_cat(sprintf("  Handling team inning total runs: %s\n", market_type))
+      # Extract team from player_name/bet_team
+      bet_team <- player_name
+      inning_num <- as.numeric(gsub("[^0-9]", "", market_type))
+      if (is.na(inning_num)) inning_num <- 1
+
+      result_data <- resolve_multi_inning_total_runs(game_data, inning_num, line_value, direction, team = bet_team)
+      result$success <- TRUE
+      result$resolved <- TRUE
+      result$data <- result_data
+      if (!is.null(result_data$bet_won)) result$bet_won <- result_data$bet_won
+      if (!is.null(result_data$total)) result$actual_value <- result_data$total
+
     } else if (grepl("multi_inning", market_info$type)) {
       market_subtype <- gsub("multi_inning_", "", market_info$type)
       direction <- if (grepl("over", market_lower)) "over" else if (grepl("under", market_lower)) "under" else NULL
@@ -12877,13 +12905,13 @@ resolve_period_moneyline <- function(game_id, sport, period, bet_team = NULL, is
 
 resolve_period_total <- function(game_id, sport, period, line_value, direction) {
   debug_cat(sprintf("  Resolving %s total: %s %s\n", period, direction, line_value))
-  
+
   period_result <- resolve_period_moneyline(game_id, sport, period)
   total <- period_result$total
   line_num <- as.numeric(line_value)
-  
+
   result <- list(actual_value = total, line_value = line_num)
-  
+
   if (direction == "over") {
     result$bet_won <- total > line_num
   } else if (direction == "under") {
@@ -12893,7 +12921,7 @@ resolve_period_total <- function(game_id, sport, period, line_value, direction) 
   } else if (direction == "even") {
     result$bet_won <- (total %% 2) == 0
   }
-  
+
   return(result)
 }
 

@@ -857,6 +857,23 @@ class RStatsResolver:
             stat_type=None
         )
 
+    def resolve_team_inning_total(self, team: str, inning: int, line_value: Optional[float] = None,
+                                  direction: Optional[str] = None, game_date: Optional[str] = None,
+                                  event_string: Optional[str] = None) -> Dict:
+        """Resolve team inning total runs market"""
+        market_type = f"team {inning} inning total runs"
+        return self._call_r_script(
+            player_name=team,
+            sport='mlb',
+            season=datetime.now().year,
+            market_type=market_type,
+            event_string=event_string or "",
+            line_value=line_value,
+            game_date=game_date,
+            direction=direction,
+            stat_type=None
+        )
+
     def _call_r_script(self, player_name: str, sport: str, season: int,
                        market_type: str, event_string: str, line_value: Optional[float],
                        game_date: Optional[str], direction: Optional[str],
