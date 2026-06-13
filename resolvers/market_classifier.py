@@ -9,18 +9,18 @@ logger = logging.getLogger(__name__)
 @dataclass
 class MarketClassification:
     """Represents a classified market with all extracted information"""
-    category: str  # 'player_stat', 'scorer', 'game_total', 'team_win', 'period', 'player_combo', 'player_special'
-    subcategory: str  # Specific market type
-    clean_player: str
-    clean_team: str
-    direction: Optional[str]  # 'over', 'under', None
-    line_value: Optional[float]
-    period: Optional[str]  # '1st quarter', '1st half', '1st period', etc.
-    stat_type: Optional[str]  # 'points', 'yards', 'tds', 'goals', etc.
-    inning: Optional[int] = None # Added for inning-based markets
+    category: str
+    subcategory: str
     original_player: str
     original_market: str
-    confidence: float = 0.5  # Confidence score for prediction reliability
+    clean_player: str = ""
+    clean_team: str = ""
+    direction: Optional[str] = None
+    line_value: Optional[float] = None
+    period: Optional[str] = None
+    stat_type: Optional[str] = None
+    inning: Optional[int] = None
+    confidence: float = 0.5
 
 
 class MarketClassifier:
