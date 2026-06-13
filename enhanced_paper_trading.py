@@ -1523,6 +1523,7 @@ class EnhancedPaperTradingSystem:
             if pending_bets:
                 logger.info(f"Checking for completed games...")
                 for bet in pending_bets:
+                    logger.info(f"DEBUG: Attempting to resolve bet {bet['id']} with market: '{bet.get('market')}'")
                     # FIX: Handle team inning total markets specifically
                     if bet.get('market_category') == 'team_inning_total':
                         # Extract inning number
@@ -1701,7 +1702,7 @@ class EnhancedPaperTradingSystem:
 
             if not result.get('success'):
                 error_msg = result.get('error', 'Unknown error')
-                print(f"    ✗ Error: {error_msg}")
+                print(f"    X Error: {error_msg}")
                 error_count += 1
             elif result.get('void'):
                 void_reason = result.get('void_reason', 'Unknown')

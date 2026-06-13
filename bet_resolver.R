@@ -2860,6 +2860,13 @@ classify_market <- function(market_type, sport = NULL) {
   if (grepl("first scoring play runs", market_lower)) {
     return(list(type = "first_scoring_play_runs"))
   }
+  # Handle "Team X Inning Total Runs" pattern
+  if (grepl("team\\s+\\d+(?:st|nd|rd|th)?\\s+inning\\s+total\\s+runs", market_lower, ignore.case = TRUE)) {
+    inning_num <- as.numeric(gsub(".*?(\\d+).*", "\\1", market_lower))
+    if (is.na(inning_num)) inning_num <- 1
+    debug_cat(sprintf("  Handling team inning total runs: %s for inning %d\n", market_lower, inning_num))
+    return(list(type = "team_inning_total", inning = inning_num))
+  }
   if (grepl("goal in each period", market_lower)) {
     return(list(type = "goal_each_period"))
   }

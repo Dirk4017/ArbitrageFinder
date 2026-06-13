@@ -1,7 +1,12 @@
+import sys
 import re
 import logging
 from typing import Dict, List, Optional, Tuple
 from dataclasses import dataclass
+
+# Set stdout to utf-8 to avoid encoding errors
+if sys.stdout.encoding != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8')
 
 logger = logging.getLogger(__name__)
 
