@@ -832,7 +832,7 @@ class RStatsResolver:
     def resolve_game_market(self, event_string: str, sport: str, season: int,
                             market_type: str, line_value: Optional[float] = None,
                             direction: Optional[str] = None, team: Optional[str] = None,
-                            game_date: Optional[str] = None) -> Dict:
+                            game_date: Optional[str] = None, match_type: str = "exact") -> Dict:
         """
         Resolve game markets (totals, spreads, moneylines)
 
@@ -840,7 +840,7 @@ class RStatsResolver:
         e.g., "Gonzaga -5.5" for a point spread bet.
         """
         self.logger.info(
-            f"DEBUG: resolve_game_market - team='{team}', market_type='{market_type}', line_value={line_value}")
+            f"DEBUG: resolve_game_market - team='{team}', market_type='{market_type}', line_value={line_value}, match_type={match_type}")
 
         # For game markets, we pass the team string as player_name
         # The R script's resolve_game_market function expects the team in the 'team' parameter
@@ -854,7 +854,8 @@ class RStatsResolver:
             line_value=line_value,
             game_date=game_date,
             direction=direction,
-            stat_type=None
+            stat_type=None,
+            match_type=match_type
         )
 
     def resolve_team_inning_total(self, team: str, inning: int, line_value: Optional[float] = None,
@@ -877,10 +878,10 @@ class RStatsResolver:
     def _call_r_script(self, player_name: str, sport: str, season: int,
                        market_type: str, event_string: str, line_value: Optional[float],
                        game_date: Optional[str], direction: Optional[str],
-                       stat_type: Optional[str]) -> Dict:
+                       stat_type: Optional[str], match_type: str = "exact") -> Dict:
         """Call R script with parameters - FIXED for Windows argument parsing and player name cleaning"""
         self.logger.info(
-            f"ENTERING _call_r_script: player={player_name}, sport={sport}, game_date={game_date}, event={event_string}")
+            f"ENTERING _call_r_script: player={player_name}, sport={sport}, game_date={game_date}, event={event_string}, match_type={match_type}")
 
         # First, detect the correct sport from the event
         sport_info = self._detect_sport_correctly(event_string, sport)
@@ -1060,7 +1061,8 @@ class RStatsResolver:
                 str(line_value) if line_value is not None else "NULL",
                 game_date if game_date else "NULL",
                 direction if direction else "NULL",
-                stat_type if stat_type else "NULL"
+                stat_type if stat_type else "NULL",
+                match_type
             ]
 
             # DEBUG: Log what we're sending

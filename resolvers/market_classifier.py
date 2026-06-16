@@ -1108,6 +1108,7 @@ class MarketClassifier:
         Determine the main category and subcategory by checking all market patterns
         """
         market_lower = market.lower()
+        logger.info(f"DEBUG: _determine_category processing market: '{market_lower}'")
 
         # Check each pattern group in priority order using COMPILED patterns
         for subcategory, patterns in self.FIRST_LAST_SCORER_MARKETS.items():

@@ -835,8 +835,11 @@ class EnhancedPaperTradingSystem:
                                      'first_touchdown_scorer', 'last_touchdown_scorer',
                                      'first_basket_scorer', 'first_field_goal']:
                 return self._resolve_scorer(bet, classification)
-            elif resolution_type in ['moneyline', 'point_spread', 'total_points']:
-                return self._resolve_game_market(bet, classification)
+            elif resolution_type in ['moneyline', 'point_spread', 'total_points', 'period_spread']:
+                # For spread bets, we might have match_type info
+                # This needs to be passed in bet_context if available from previous steps
+                bet_context = {'match_type': bet.get('team_order_match_type')}
+                return self._resolve_game_market(bet, classification, bet_context)
             else:
                 # Fallback to idempotent resolver
                 logger.info(f"Using fallback resolver for {resolution_type}")
@@ -1058,8 +1061,11 @@ class EnhancedPaperTradingSystem:
             'classification': classification.category
         }
 
-    def _resolve_game_market(self, bet: Dict, classification: MarketClassification) -> Dict:
+    def _resolve_game_market(self, bet: Dict, classification: MarketClassification, bet_context: Dict = None) -> Dict:
         """Resolve game markets (totals, spreads, moneylines)"""
+
+        # Merge context
+        bet_context = bet_context or {}
 
         # FIX: For moneyline bets, extract team from event if clean_team is empty
         team_name = classification.clean_team
@@ -1103,7 +1109,8 @@ class EnhancedPaperTradingSystem:
             'line_value': classification.line_value,
             'direction': classification.direction,
             'team': team_name,
-            'game_date': bet.get('game_date', '')
+            'game_date': bet.get('game_date', ''),
+            'match_type': bet_context.get('team_order_match_type', 'exact')
         }
 
         logger.info(f"Calling R resolver for game market: {params}")
