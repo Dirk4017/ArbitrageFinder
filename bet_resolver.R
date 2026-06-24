@@ -5012,6 +5012,153 @@ find_nba_game_id_timezone_simple <- function(game_date, away_team_search, home_t
   return(NULL)
 }
 
+# Fix the function to extract teams from the name/shortName
+find_soccer_game_id_timezone_simple <- function(game_date, away_team_search, home_team_search, league_slug = "fifa.world") {
+  debug_cat(sprintf("🕐 Timezone-aware search for soccer: %s @ %s on %s\n", away_team_search, home_team_search, game_date))
+  base_date <- as.Date(game_date)
+  
+  clean_team_name <- function(name) { 
+    if (is.null(name) || is.na(name)) return("")
+    name <- tolower(trimws(name))
+    name <- gsub("[^a-z0-9]", "", name)
+    name
+  }
+  
+  home_search_clean <- clean_team_name(home_team_search)
+  away_search_clean <- clean_team_name(away_team_search)
+  
+  date_offsets <- c(0, -1, 1, -2, 2, -3, 3)
+  
+  for (offset in date_offsets) {
+    current_date <- base_date + offset
+    debug_cat(sprintf("\n  Checking %s (offset: %+d)...\n", current_date, offset))
+    
+    games <- get_espn_soccer_games(current_date, league_slug)
+    
+    if (!is.null(games) && nrow(games) > 0) {
+      debug_cat(sprintf("    Found %d games\n", nrow(games)))
+      
+      for (i in 1:nrow(games)) {
+        game <- games[i, ]
+        
+        # Extract teams from the name column (format: "Away at Home" or "Away @ Home")
+        game_name <- if (!is.null(game$name) && !is.na(game$name)) game$name else ""
+        game_short <- if (!is.null(game$shortName) && !is.na(game$shortName)) game$shortName else ""
+        
+        # Try to extract teams from the name
+        teams <- tryCatch({
+          # Parse "Away at Home" or "Away @ Home" format
+          if (grepl(" @ ", game_name)) {
+            parts <- strsplit(game_name, " @ ")[[1]]
+            list(away = parts[1], home = parts[2])
+          } else if (grepl(" at ", game_name)) {
+            parts <- strsplit(game_name, " at ")[[1]]
+            list(away = parts[1], home = parts[2])
+          } else if (grepl(" @ ", game_short)) {
+            parts <- strsplit(game_short, " @ ")[[1]]
+            list(away = parts[1], home = parts[2])
+          } else if (grepl(" at ", game_short)) {
+            parts <- strsplit(game_short, " at ")[[1]]
+            list(away = parts[1], home = parts[2])
+          } else {
+            list(away = "", home = "")
+          }
+        }, error = function(e) {
+          list(away = "", home = "")
+        })
+        
+        away_team <- teams$away
+        home_team <- teams$home
+        game_id <- if (!is.null(game$id) && !is.na(game$id)) game$id else NULL
+        
+        if (is.null(game_id) || (away_team == "" && home_team == "")) next
+        
+        game_away_clean <- clean_team_name(away_team)
+        game_home_clean <- clean_team_name(home_team)
+        
+        # Check exact match
+        if (game_away_clean == away_search_clean && game_home_clean == home_search_clean) {
+          debug_cat(sprintf("      ✓ EXACT MATCH! %s @ %s\n", away_team, home_team))
+          return(list(
+            game_id = game_id,
+            actual_date = as.character(current_date),
+            searched_date = as.character(base_date),
+            days_off = offset,
+            match_type = "exact",
+            note = "Found exact team order match"
+          ))
+        }
+        
+        # Try partial matches (for variations like "Brazil" vs "Brazil")
+        if (grepl(away_search_clean, game_away_clean) && grepl(home_search_clean, game_home_clean)) {
+          debug_cat(sprintf("      ✓ PARTIAL MATCH! %s @ %s\n", away_team, home_team))
+          return(list(
+            game_id = game_id,
+            actual_date = as.character(current_date),
+            searched_date = as.character(base_date),
+            days_off = offset,
+            match_type = "partial",
+            note = "Found partial team match"
+          ))
+        }
+      }
+      
+      # Try swapped teams
+      for (i in 1:nrow(games)) {
+        game <- games[i, ]
+        
+        game_name <- if (!is.null(game$name) && !is.na(game$name)) game$name else ""
+        game_short <- if (!is.null(game$shortName) && !is.na(game$shortName)) game$shortName else ""
+        
+        teams <- tryCatch({
+          if (grepl(" @ ", game_name)) {
+            parts <- strsplit(game_name, " @ ")[[1]]
+            list(away = parts[1], home = parts[2])
+          } else if (grepl(" at ", game_name)) {
+            parts <- strsplit(game_name, " at ")[[1]]
+            list(away = parts[1], home = parts[2])
+          } else if (grepl(" @ ", game_short)) {
+            parts <- strsplit(game_short, " @ ")[[1]]
+            list(away = parts[1], home = parts[2])
+          } else if (grepl(" at ", game_short)) {
+            parts <- strsplit(game_short, " at ")[[1]]
+            list(away = parts[1], home = parts[2])
+          } else {
+            list(away = "", home = "")
+          }
+        }, error = function(e) {
+          list(away = "", home = "")
+        })
+        
+        away_team <- teams$away
+        home_team <- teams$home
+        game_id <- if (!is.null(game$id) && !is.na(game$id)) game$id else NULL
+        
+        if (is.null(game_id) || (away_team == "" && home_team == "")) next
+        
+        game_away_clean <- clean_team_name(away_team)
+        game_home_clean <- clean_team_name(home_team)
+        
+        # Check swapped match
+        if (game_away_clean == home_search_clean && game_home_clean == away_search_clean) {
+          debug_cat(sprintf("      ⚠️ SWAPPED MATCH! %s @ %s (teams reversed)\n", away_team, home_team))
+          return(list(
+            game_id = game_id,
+            actual_date = as.character(current_date),
+            searched_date = as.character(base_date),
+            days_off = offset,
+            match_type = "swapped",
+            note = "Teams found but home/away reversed"
+          ))
+        }
+      }
+    }
+  }
+  
+  debug_cat("\n  No matching game found\n")
+  return(NULL)
+}
+
 # ==============================================
 # NHL DATA FUNCTIONS FOR ESPN
 # ==============================================
@@ -8362,6 +8509,28 @@ find_game_id <- function(home_team, away_team, game_date, sport, team_only_mode 
       debug_cat("ERROR: Could not find game ID\n")
       return(NA)
       
+    } else if (sport == "soccer") {
+      # Soccer
+      debug_cat(sprintf("  Looking for Soccer game: %s vs %s on %s\n",
+                        away_team, home_team, game_date))
+      
+      # Use the soccer timezone function first (handles future games too)
+      result <- find_soccer_game_id_timezone_simple(game_date, away_team, home_team)
+      if (!is.null(result) && !is.na(result$game_id)) {
+        debug_cat(sprintf("  ✓ Found Soccer game ID: %s\n", result$game_id))
+        return(result$game_id)
+      }
+      
+      # Fallback to regular soccer search
+      soccer_game_id <- find_soccer_game_id(home_team, away_team, game_date)
+      if (!is.na(soccer_game_id)) {
+        debug_cat(sprintf("  ✓ Found Soccer game ID via fallback: %s\n", soccer_game_id))
+        return(soccer_game_id)
+      }
+      
+      debug_cat("ERROR: Could not find Soccer game ID\n")
+      return(NA)  
+      
     } else if (sport == "nhl") {
       # Use ESPN API for NHL games with robust finder
       debug_cat(sprintf("  Looking for NHL game: %s @ %s on %s\n",
@@ -8439,19 +8608,7 @@ find_game_id <- function(home_team, away_team, game_date, sport, team_only_mode 
       }
       debug_cat("ERROR: Could not find NCAAW game ID\n")
       return(NA)
-
-    } else if (sport == "soccer") {
-      # Soccer
-      debug_cat(sprintf("  Looking for Soccer game: %s vs %s on %s\n",
-                        away_team, home_team, game_date))
-      soccer_game_id <- find_soccer_game_id(home_team, away_team, game_date)
-      if (!is.na(soccer_game_id)) {
-        debug_cat(sprintf("  ✓ Found Soccer game ID: %s\n", soccer_game_id))
-        return(soccer_game_id)
-      }
-      debug_cat("ERROR: Could not find Soccer game ID\n")
-      return(NA)
-
+      
     } else if (sport == "hockey") {
       # Legacy handling - redirect to NHL
       debug_cat("  Redirecting 'hockey' to 'nhl' handling...\n")
@@ -11093,12 +11250,32 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string,
         game_id <- find_game_id(teams$home, teams$away, game_date_obj, sport, team_only_mode = TRUE)
       }
     } else {
-      game_info <- find_nba_game_id_timezone_simple(game_date_obj, teams$away, teams$home)
-      if (!is.null(game_info) && !is.na(game_info$game_id)) {
-        game_id <- game_info$game_id
-        result$game_info <- game_info  # Store for later use
-        debug_cat(sprintf("  Using NBA timezone-aware lookup for %s @ %s\n", teams$away, teams$home))
+      # Sport-specific timezone-aware lookup
+      if (sport %in% c("nba", "basketball")) {
+        game_info <- find_nba_game_id_timezone_simple(game_date_obj, teams$away, teams$home)
+        if (!is.null(game_info) && !is.na(game_info$game_id)) {
+          game_id <- game_info$game_id
+          result$game_info <- game_info
+          debug_cat(sprintf("  Using NBA timezone-aware lookup for %s @ %s\n", teams$away, teams$home))
+        } else {
+          game_id <- find_game_id(teams$home, teams$away, game_date_obj, sport, team_only_mode = FALSE)
+        }
+      } else if (sport == "soccer") {
+        # Use soccer-specific timezone search
+        game_info <- find_soccer_game_id_timezone_simple(game_date_obj, teams$away, teams$home)
+        if (!is.null(game_info) && !is.na(game_info$game_id)) {
+          game_id <- game_info$game_id
+          result$game_info <- game_info
+          debug_cat(sprintf("  Using Soccer timezone-aware lookup for %s @ %s\n", teams$away, teams$home))
+        } else {
+          game_id <- find_game_id(teams$home, teams$away, game_date_obj, sport, team_only_mode = FALSE)
+        }
+      } else if (sport == "mlb") {
+        # Use MLB-specific timezone search (if exists)
+        # Or just use find_game_id directly
+        game_id <- find_game_id(teams$home, teams$away, game_date_obj, sport, team_only_mode = FALSE)
       } else {
+        # For other sports, skip timezone search and go straight to find_game_id
         game_id <- find_game_id(teams$home, teams$away, game_date_obj, sport, team_only_mode = FALSE)
       }
     }
@@ -11141,7 +11318,19 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string,
     market_lower <- tolower(market_type)
     debug_cat(sprintf("\n--- Step 4: Processing market type '%s' ---\n", market_type))
     
-    market_info <- classify_market(market_type, sport)
+    # ========== SOCCER DRAW NO BET OVERRIDE ==========
+    if (sport == "soccer" && grepl("draw no bet|dnb", market_lower, ignore.case = TRUE)) {
+      debug_cat("  OVERRIDE: Setting market to 'game_draw_no_bet' for Draw No Bet\n")
+      market_info <- list(type = "game_draw_no_bet")
+    } else {
+      market_info <- classify_market(market_type, sport)
+    }
+    
+    if (is.null(market_info)) {
+      debug_cat(sprintf("  ERROR: Market classification failed for '%s'\n", market_type))
+      result$error <- "Market classification failed"
+      return(result)
+    }
     
     if (is.null(market_info)) {
       debug_cat(sprintf("  ERROR: Market classification failed for '%s'\n", market_type))
@@ -11225,7 +11414,7 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string,
         result$error <- game_data$error %||% "Could not fetch WNBA game result"
         debug_cat(sprintf("  ERROR: %s\n", result$error))
       }
-    }  # <-- THIS CLOSING BRACE WAS MISSING!
+    } 
     
     # ==================== MLB GAME TOTAL HANDLER ====================
     else if (sport == "mlb" && market_info$type == "game_total") {
@@ -11325,6 +11514,199 @@ resolve_bet <- function(player_name, sport, season, market_type, event_string,
         result$error <- "Could not fetch WNBA game data"
       }
     }
+    
+    # ==================== SOCCER GAME MONEYLINE HANDLER ====================
+    else if (sport == "soccer" && market_info$type == "game_moneyline") {
+      debug_cat("Market type: Soccer moneyline\n")
+      
+      # Call the soccer resolver
+      soccer_result <- resolve_soccer_game(
+        game_id = game_id,
+        market_type = market_type,
+        line_value = line_value,
+        direction = direction,
+        team = player_name,
+        teams = teams,
+        event_string = event_string
+      )
+      
+      if (soccer_result$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- soccer_result
+        result$actual_value <- soccer_result$total_points %||% soccer_result$actual_value
+        result$home_score <- soccer_result$home_score
+        result$away_score <- soccer_result$away_score
+        if (!is.null(soccer_result$won)) {
+          result$bet_won <- soccer_result$won
+        }
+        debug_cat(sprintf("  Bet won: %s\n", result$bet_won %||% "NULL"))
+      } else {
+        result$error <- soccer_result$error %||% "Could not resolve soccer moneyline"
+        debug_cat(sprintf("  ERROR: %s\n", result$error))
+      }
+    }
+    
+    # ==================== SOCCER GAME MONEYLINE 3-WAY HANDLER ====================
+    else if (sport == "soccer" && market_info$type == "game_moneyline_3way") {
+      debug_cat("Market type: Soccer moneyline 3-way\n")
+      
+      soccer_result <- resolve_soccer_game(
+        game_id = game_id,
+        market_type = market_type,
+        line_value = line_value,
+        direction = direction,
+        team = player_name,
+        teams = teams,
+        event_string = event_string
+      )
+      
+      if (soccer_result$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- soccer_result
+        result$home_score <- soccer_result$home_score
+        result$away_score <- soccer_result$away_score
+        if (!is.null(soccer_result$won)) {
+          result$bet_won <- soccer_result$won
+        }
+        debug_cat(sprintf("  Bet won: %s\n", result$bet_won %||% "NULL"))
+      } else {
+        result$error <- soccer_result$error %||% "Could not resolve soccer moneyline 3-way"
+        debug_cat(sprintf("  ERROR: %s\n", result$error))
+      }
+    }
+    
+    # ==================== SOCCER GAME TOTAL GOALS HANDLER ====================
+    else if (sport == "soccer" && (market_info$type == "game_total" || market_info$type == "game_total_goals")) {
+      debug_cat("Market type: Soccer total goals\n")
+      
+      # Extract direction if not provided
+      if (is.null(direction)) {
+        if (grepl("over", market_lower)) {
+          direction <- "over"
+        } else if (grepl("under", market_lower)) {
+          direction <- "under"
+        }
+      }
+      
+      soccer_result <- resolve_soccer_game(
+        game_id = game_id,
+        market_type = market_type,
+        line_value = line_value,
+        direction = direction,
+        team = player_name,
+        teams = teams,
+        event_string = event_string
+      )
+      
+      if (soccer_result$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- soccer_result
+        result$actual_value <- soccer_result$total_points
+        if (!is.null(soccer_result$won)) {
+          result$bet_won <- soccer_result$won
+        }
+        debug_cat(sprintf("  Total goals: %d\n", soccer_result$total_points))
+      } else {
+        result$error <- soccer_result$error %||% "Could not resolve soccer total goals"
+        debug_cat(sprintf("  ERROR: %s\n", result$error))
+      }
+    }
+    
+    # ==================== SOCCER GAME SPREAD HANDLER ====================
+    else if (sport == "soccer" && market_info$type == "game_point_spread") {
+      debug_cat("Market type: Soccer spread\n")
+      
+      soccer_result <- resolve_soccer_game(
+        game_id = game_id,
+        market_type = market_type,
+        line_value = line_value,
+        direction = direction,
+        team = player_name,
+        teams = teams,
+        event_string = event_string
+      )
+      
+      if (soccer_result$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- soccer_result
+        if (!is.null(soccer_result$won)) {
+          result$bet_won <- soccer_result$won
+        }
+        debug_cat(sprintf("  Spread result: %s\n", if(result$bet_won) "WON" else "LOST"))
+      } else {
+        result$error <- soccer_result$error %||% "Could not resolve soccer spread"
+        debug_cat(sprintf("  ERROR: %s\n", result$error))
+      }
+    }
+    
+    # ==================== SOCCER BTTS HANDLER ====================
+    else if (sport == "soccer" && market_info$type == "game_both_teams_score") {
+      debug_cat("Market type: Soccer Both Teams To Score (BTTS)\n")
+      
+      soccer_result <- resolve_soccer_game(
+        game_id = game_id,
+        market_type = market_type,
+        line_value = line_value,
+        direction = direction,
+        team = player_name,
+        teams = teams,
+        event_string = event_string
+      )
+      
+      if (soccer_result$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- soccer_result
+        if (!is.null(soccer_result$won)) {
+          result$bet_won <- soccer_result$won
+        }
+        debug_cat(sprintf("  BTTS result: %s\n", if(result$bet_won) "YES" else "NO"))
+      } else {
+        result$error <- soccer_result$error %||% "Could not resolve soccer BTTS"
+        debug_cat(sprintf("  ERROR: %s\n", result$error))
+      }
+    }
+    
+    # ==================== SOCCER DRAW NO BET HANDLER ====================
+    else if (sport == "soccer" && market_info$type == "game_draw_no_bet") {
+      debug_cat("Market type: Soccer Draw No Bet\n")
+      
+      soccer_result <- resolve_soccer_game(
+        game_id = game_id,
+        market_type = "Draw No Bet",
+        line_value = line_value,
+        direction = direction,
+        team = player_name,
+        teams = teams,
+        event_string = event_string
+      )
+      
+      if (soccer_result$success) {
+        result$success <- TRUE
+        result$resolved <- TRUE
+        result$data <- soccer_result
+        result$home_score <- soccer_result$home_score
+        result$away_score <- soccer_result$away_score
+        if (!is.null(soccer_result$won)) {
+          result$bet_won <- soccer_result$won
+          # If NA, it's a push (void)
+          if (is.na(soccer_result$won)) {
+            result$bet_won <- NULL
+            result$void <- TRUE
+            debug_cat("  Bet is a PUSH (void) - Draw occurred\n")
+          }
+        }
+        debug_cat(sprintf("  Bet won: %s\n", result$bet_won %||% "PUSH/VOID"))
+      } else {
+        result$error <- soccer_result$error %||% "Could not resolve soccer Draw No Bet"
+        debug_cat(sprintf("  ERROR: %s\n", result$error))
+      }
+    }
+    
     # ==================== MLB GAME TOTAL HANDLER ====================
     else if (sport == "mlb" && market_info$type == "game_total") {
       debug_cat("Market type: MLB game total runs\n")
