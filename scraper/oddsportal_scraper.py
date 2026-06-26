@@ -383,16 +383,47 @@ class OddsportalScraper:
                                 # Skip if parsing fails
                                 continue
 
+                            # ========== FIX: Add missing fields ==========
+                            # Construct event string with both teams and date
+                            event_string = f"{team_a} @ {team_b} {date}"
+                            
+                            # Map outcome to player name (what we're betting on)
+                            if outcome in ['1', '2', 'X']:
+                                # For 1X2 markets, map to actual team names
+                                if outcome == '1':
+                                    player_name = team_a  # Home team
+                                elif outcome == '2':
+                                    player_name = team_b  # Away team
+                                else:
+                                    player_name = 'Draw'
+                            else:
+                                # For Over/Under markets, outcome is already descriptive
+                                player_name = outcome
+                            
                             opportunities.append({
-                                'sport': sport, 'country': country, 'league': league,
-                                'market': market, 'date': date, 'time': time_val,
-                                'team_a': team_a, 'team_b': team_b,
-                                'outcome': outcome, 'odds': odds, 'value': value, 'prob': prob
+                                'sport': sport,
+                                'country': country,
+                                'league': league,
+                                'market': market,
+                                'date': date,
+                                'time': time_val,
+                                'team_a': team_a,
+                                'team_b': team_b,
+                                'outcome': outcome,
+                                'odds': odds,
+                                'value': value,
+                                'prob': prob,
+                                # ========== NEW FIELDS ==========
+                                'event': event_string,
+                                'player': player_name,
+                                'game_date': date,
+                                'ev': value,  # EV value from the website
                             })
                             # Keep looking for more outcomes in the same event
                             continue
                 i += 1
+            
+            logger.info(f"Scraped {len(opportunities)} value bet opportunities with full event data")
             return opportunities
         finally:
             driver.quit()
-
