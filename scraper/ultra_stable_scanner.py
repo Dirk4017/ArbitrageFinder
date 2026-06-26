@@ -431,8 +431,62 @@ class UltraStableScanner:
 
         try:
             opportunities = self.oddsportal_scraper.scrape_value_bets()
-            logger.info(f"Found {len(opportunities)} opportunities from Oddsportal Value Bets")
-            return opportunities
+            
+            # ========== FIX: Ensure all opportunities have required fields ==========
+            enhanced_opportunities = []
+            for opp in opportunities:
+                # Skip if missing critical data
+                if not opp.get('team_a') or not opp.get('team_b'):
+                    logger.warning(f"Skipping opportunity - missing team data: {opp}")
+                    continue
+                
+                # Extract date
+                date_str = opp.get('date', '')
+                if not date_str:
+                    # Try to extract from market or other fields
+                    logger.warning(f"Missing date for opportunity: {opp}")
+                    continue
+                
+                # Construct event string with both teams and date
+                event_string = f"{opp['team_a']} @ {opp['team_b']} {date_str}"
+                
+                # Map outcome to player name (what we're betting on)
+                outcome = opp.get('outcome', '')
+                if outcome in ['1', '2', 'X']:
+                    # For 1X2 markets, map to actual team names
+                    if outcome == '1':
+                        player_name = opp['team_a']  # Home team
+                    elif outcome == '2':
+                        player_name = opp['team_b']  # Away team
+                    else:
+                        player_name = 'Draw'
+                else:
+                    # For Over/Under markets, outcome is already descriptive
+                    player_name = outcome
+                
+                # Create enhanced opportunity with all required fields
+                enhanced_opp = {
+                    'sport': opp.get('sport', 'Soccer'),
+                    'event': event_string,
+                    'market': opp.get('market', 'Unknown'),
+                    'player': player_name,
+                    'odds': opp.get('odds', ''),
+                    'ev': opp.get('value', 0.0),  # EV value from the website
+                    'game_date': date_str,
+                    'sportsbook': 'Oddsportal',
+                    # Preserve original fields for debugging
+                    'team_a': opp.get('team_a', ''),
+                    'team_b': opp.get('team_b', ''),
+                    'outcome': outcome,
+                    'country': opp.get('country', ''),
+                    'league': opp.get('league', ''),
+                    'prob': opp.get('prob', ''),
+                }
+                enhanced_opportunities.append(enhanced_opp)
+                logger.info(f"Found: {opp['sport']} | {player_name} - {opp.get('market', 'Unknown')} @ {opp.get('odds', '')} | EV: +{opp.get('value', 0)*100:.1f}%")
+            
+            logger.info(f"Found {len(enhanced_opportunities)} enhanced opportunities from Oddsportal Value Bets")
+            return enhanced_opportunities
         except Exception as e:
             logger.error(f"Oddsportal Value Bets scraping failed: {e}")
             return []
